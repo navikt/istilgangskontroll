@@ -1,0 +1,178 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: istilgangskontroll
+  namespace: teamsykefravr
+  labels:
+    team: teamsykefravr
+spec:
+  image: {{ image }}
+  port: 8080
+  liveness:
+    path: /internal/is_alive
+    initialDelay: 30
+    timeout: 1
+    periodSeconds: 10
+    failureThreshold: 5
+  readiness:
+    path: /internal/is_ready
+    initialDelay: 30
+    timeout: 1
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
+  replicas:
+    min: 4
+    max: 8
+    cpuThresholdPercentage: 90
+  prometheus:
+    enabled: true
+    path: /internal/metrics/prometheus
+  ingresses:
+    - "https://istilgangskontroll.intern.dev.nav.no"
+  accessPolicy:
+    inbound:
+      rules:
+        - application: isaktivitetskrav
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: isbehandlerdialog
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: isdialogmelding
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: isdialogmote
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: isdialogmotekandidat
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: isnarmesteleder
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: isoppfolgingstilfelle
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: ispengestopp
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: ispersonoppgave
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: fastlegerest
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: finnfastlege
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: syfobehandlendeenhet
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: syfomodiaperson
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: syfooversiktsrv
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: syfoperson
+          namespace: teamsykefravr
+          cluster: dev-gcp
+        - application: esyfovarsel
+          namespace: team-esyfo
+          cluster: dev-gcp
+        - application: syfomotebehov
+          namespace: team-esyfo
+          cluster: dev-fss
+        - application: syfooppfolgingsplanservice
+          namespace: team-esyfo
+          cluster: dev-fss
+        - application: spinnsyn-backend
+          namespace: flex
+          cluster: dev-gcp
+        - application: sykepengesoknad-backend
+          namespace: flex
+          cluster: dev-gcp
+        - application: smregistrering-backend
+          namespace: teamsykmelding
+          cluster: dev-gcp
+        - application: syfosmmanuell-backend
+          namespace: teamsykmelding
+          cluster: dev-gcp
+        - application: syfosmregister
+          namespace: teamsykmelding
+          cluster: dev-gcp
+        - application: syk-dig-backend
+          namespace: teamsykmelding
+          cluster: dev-gcp
+    outbound:
+      external:
+        - host: "axsys.dev-fss-pub.nais.io"
+        - host: "norg2.dev-fss-pub.nais.io"
+        - host: "graph.microsoft.com"
+        - host: "pdl-api.dev-fss-pub.nais.io"
+        - host: "audit.nais"
+          ports:
+            - name: audit
+              port: 6514
+              protocol: TCP
+      rules:
+        - application: syfobehandlendeenhet
+        - application: skjermede-personer-pip
+          namespace: nom
+  azure:
+    application:
+      allowAllUsers: true
+      enabled: true
+      tenant: trygdeetaten.no
+      claims:
+        extra:
+          - "NAVident"
+  env:
+    - name: AXSYS_URL
+      value: "https://axsys.dev-fss-pub.nais.io"
+    - name: GRAPHAPI_URL
+      value: "https://graph.microsoft.com"
+    - name: NORG2_URL
+      value: "https://norg2.dev-fss-pub.nais.io"
+    - name: PDL_CLIENT_ID
+      value: "dev-fss.pdl.pdl-api"
+    - name: PDL_URL
+      value: "https://pdl-api.dev-fss-pub.nais.io/graphql"
+    - name: SYFOBEHANDLENDEENHET_CLIENT_ID
+      value: "dev-gcp.teamsykefravr.syfobehandlendeenhet"
+    - name: SYFOBEHANDLENDEENHET_URL
+      value: "http://syfobehandlendeenhet"
+    - name: SKJERMEDE_PERSONER_CLIENT_ID
+      value: "dev-gcp.nom.skjermede-personer-pip"
+    - name: SKJERMEDE_PERSONER_URL
+      value: "http://skjermede-personer-pip.nom"
+
+    - name: OLD_ROLE_KODE6_ID
+      value: "87ea7c87-08a2-43bc-83d6-0bfeee92185d" # 0000-GA-GOSYS_KODE6
+    - name: ROLE_KODE6_ID
+      value: "5ef775f2-61f8-4283-bf3d-8d03f428aa14" # 0000-GA-Strengt_Fortrolig_Adresse
+    - name: OLD_ROLE_KODE7_ID
+      value: "69d4a70f-1c83-42a8-8fb8-2f5d54048647" # 0000-GA-GOSYS_KODE7
+    - name: ROLE_KODE7_ID
+      value: "ea930b6b-9397-44d9-b9e6-f4cf527a632a" # 0000-GA-Fortrolig_Adresse
+    - name: ROLE_SYFO_ID
+      value: "c8957e0a-909c-4b62-8e11-93aae6d295e6" # 0000-GA-SYFO-SENSITIV
+    - name: OLD_ROLE_SKJERMING_ID
+      value: "de44052d-b062-4497-89a2-0c85b935b808" # 0000-GA-GOSYS_UTVIDET
+    - name: ROLE_SKJERMING_ID
+      value: "dbe4ad45-320b-4e9a-aaa1-73cca4ee124d" # 0000-GA-Egne_ansatte
+    - name: ROLE_NASJONAL_ID
+      value: "924badcd-b936-44f4-b7bf-97c03de0893a" # 0000-GA-GOSYS_NASJONAL
+    - name: ROLE_UTVIDBAR_NASJONAL_ID
+      value: "2ffe3262-6c0e-44f3-94f0-34dfa5659a04" # 0000-GA-GOSYS_UTVIDBAR_TIL_NASJONAL
+    - name: ROLE_REGIONAL_ID
+      value: "d2987104-63b2-4110-83ac-20ff6afe24a2" # 0000-GA-GOSYS_REGIONAL
+    - name: ROLE_UTVIDBAR_REGIONAL_ID
+      value: "a5c2370e-6b3d-4c2c-9a5e-238008526574" # 0000-GA-GOSYS_UTVIDBAR_TIL_REGIONAL
+    - name: ROLE_PAPIRSYKMELDING_ID
+      value: "16aff429-1efc-402a-ae12-4000633d0063" # 0000-GA-papirsykmelding
