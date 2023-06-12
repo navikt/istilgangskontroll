@@ -1,0 +1,8 @@
+name: main
+
+on: push
+
+jobs:
+  build-and-deploy:
+    uses: navikt/isworkflows/.github/workflows/kotlin-build-deploy.yml@master
+    secrets: inherit
