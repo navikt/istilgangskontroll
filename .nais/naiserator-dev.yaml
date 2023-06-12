@@ -20,7 +20,6 @@ spec:
     timeout: 1
   resources:
     limits:
-      cpu: 2000m
       memory: 2048Mi
     requests:
       cpu: 1000m
@@ -121,6 +120,7 @@ spec:
               port: 6514
               protocol: TCP
       rules:
+        - application: istilgangskontroll-redis
         - application: syfobehandlendeenhet
         - application: skjermede-personer-pip
           namespace: nom
