@@ -3,27 +3,22 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 group = "no.nav.syfo"
 version = "0.0.1"
 
-// TODO: Alt er kopiert fra isaktivitetskrav, aå det er kanskje ikke riktig!
 object Versions {
-    const val confluent = "7.3.1"
-    const val flyway = "9.14.0"
-    const val hikari = "5.0.1"
-    const val jacksonDataType = "2.14.2"
-    const val kafka = "3.4.0"
+    const val jacksonDataType = "2.15.2"
     const val kluent = "1.72"
-    const val ktor = "2.2.4"
-    const val logback = "1.4.5"
-    const val logstashEncoder = "7.2"
-    const val micrometerRegistry = "1.10.3"
-    const val mockk = "1.13.3"
+    const val ktor = "2.3.1"
+    const val logback = "1.4.7"
+    const val logstashEncoder = "7.3"
+    const val micrometerRegistry = "1.11.0"
+    const val mockk = "1.13.5"
     const val nimbusJoseJwt = "9.31"
     const val spek = "2.0.19"
 }
 
 plugins {
-    kotlin("jvm") version "1.8.21"
+    kotlin("jvm") version "1.8.22"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "11.4.0"
 }
 
 repositories {
