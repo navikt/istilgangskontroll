@@ -53,6 +53,7 @@ dependencies {
     // Tests
     testImplementation("io.ktor:ktor-server-tests:${Versions.ktor}")
     testImplementation("io.mockk:mockk:${Versions.mockk}")
+    testImplementation("io.ktor:ktor-client-mock:${Versions.ktor}")
     testImplementation("com.nimbusds:nimbus-jose-jwt:${Versions.nimbusJoseJwt}")
     testImplementation("org.amshove.kluent:kluent:${Versions.kluent}")
     testImplementation("org.spekframework.spek2:spek-dsl-jvm:${Versions.spek}")

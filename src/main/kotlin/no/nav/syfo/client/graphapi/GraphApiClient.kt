@@ -1,5 +1,6 @@
 package no.nav.syfo.client.graphapi
 
+import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
@@ -7,16 +8,16 @@ import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
+import no.nav.syfo.tilgang.AdRolle
 import no.nav.syfo.util.bearerHeader
 import org.slf4j.LoggerFactory
 
 class GraphApiClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
-    private val relevantSyfoRoller: List<AdRolle>
+    private val relevantSyfoRoller: List<AdRolle>,
+    private val httpClient: HttpClient = httpClientProxy()
 ) {
-    private val httpClient = httpClientProxy()
-
     suspend fun hasAccess(
         // TODO: legg inn callId
         adRolle: AdRolle,
@@ -34,14 +35,15 @@ class GraphApiClient(
         // TODO: sjekk cachen først
         // TODO: add callId for exception handling
         // TODO: add metrics
-        val oboToken = azureAdClient.getOnBehalfOfToken(
+        val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
             scopeClientId = baseUrl,
             token = token,
         )?.accessToken ?: throw RuntimeException("Failed to request list of veileder roles")
 
         val url = "$baseUrl/v1.0/$GRAPHAPI_USER_GROUPS_PATH?\$count=true&$FILTER_QUERY"
         val filter = relevantSyfoRoller.map { it.id }.joinToString(separator = " or ") { "id eq '$it'" }
-        val urlWithFilter = "$url$filter"
+        val filterWhitespaceEncoded = filter.replace(" ", "%20")
+        val urlWithFilter = "$url$filterWhitespaceEncoded"
 
         return try {
             val response: GraphApiUserGroupsResponse = httpClient.get(urlWithFilter) {
