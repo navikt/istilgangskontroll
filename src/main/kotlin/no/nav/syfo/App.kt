@@ -5,7 +5,12 @@ import io.ktor.server.config.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import no.nav.syfo.application.ApplicationState
+import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.apiModule
+import no.nav.syfo.client.azuread.AzureAdClient
+import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.wellknown.getWellKnown
+import no.nav.syfo.tilgang.AdRoller
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
@@ -14,6 +19,18 @@ const val applicationPort = 8080
 fun main() {
     val applicationState = ApplicationState()
     val logger = LoggerFactory.getLogger("ktor.application")
+    val environment = Environment()
+
+    val adRoller = AdRoller(env = environment)
+    val graphApiClient = GraphApiClient(
+        azureAdClient = AzureAdClient(azureEnvironment = environment.azure),
+        baseUrl = environment.clients.graphApiUrl,
+        relevantSyfoRoller = adRoller.toList()
+    )
+
+    val wellKnownInternalAzureAD = getWellKnown(
+        wellKnownUrl = environment.azure.appWellKnownUrl,
+    )
 
     val applicationEngineEnvironment = applicationEngineEnvironment {
         log = logger
@@ -24,6 +41,10 @@ fun main() {
         module {
             apiModule(
                 applicationState = applicationState,
+                environment = environment,
+                graphApiClient = graphApiClient,
+                wellKnownInternalAzureAD = wellKnownInternalAzureAD,
+                adRoller = adRoller,
             )
         }
     }

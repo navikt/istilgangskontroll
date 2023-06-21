@@ -1,7 +1,6 @@
 package no.nav.syfo.application
 
 import io.ktor.server.application.*
-import no.nav.syfo.client.*
 import no.nav.syfo.client.azuread.AzureEnvironment
 
 data class Environment(
@@ -13,7 +12,22 @@ data class Environment(
         openidConfigTokenEndpoint = getEnvVar("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
     ),
 
-    val electorPath: String = getEnvVar("ELECTOR_PATH"),
+    val oldKode6Id: String = getEnvVar("OLD_ROLE_KODE6_ID"),
+    val kode6Id: String = getEnvVar("ROLE_KODE6_ID"),
+    val oldKode7Id: String = getEnvVar("OLD_ROLE_KODE7_ID"),
+    val kode7Id: String = getEnvVar("ROLE_KODE7_ID"),
+    val syfoId: String = getEnvVar("ROLE_SYFO_ID"),
+    val oldSkjermingId: String = getEnvVar("OLD_ROLE_SKJERMING_ID"),
+    val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
+    val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),
+    val utvidbarNasjonalId: String = getEnvVar("ROLE_UTVIDBAR_NASJONAL_ID"),
+    val regionalId: String = getEnvVar("ROLE_REGIONAL_ID"),
+    val utvidbarRegionalId: String = getEnvVar("ROLE_UTVIDBAR_REGIONAL_ID"),
+    val papirsykmeldingId: String = getEnvVar("ROLE_PAPIRSYKMELDING_ID"),
+
+    val clients: ClientsEnvironment = ClientsEnvironment(
+        graphApiUrl = getEnvVar("GRAPHAPI_URL"),
+    ),
 
 )
 
