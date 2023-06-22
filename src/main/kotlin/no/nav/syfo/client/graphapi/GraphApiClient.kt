@@ -34,7 +34,6 @@ class GraphApiClient(
     suspend fun getRoleList(token: String): GraphApiUserGroupsResponse {
         // TODO: sjekk cachen først
         // TODO: add callId for exception handling
-        // TODO: add metrics
         val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
             scopeClientId = baseUrl,
             token = token,
@@ -51,8 +50,10 @@ class GraphApiClient(
                 header("ConsistencyLevel", "eventual")
                 accept(ContentType.Application.Json)
             }.body()
+            COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_SUCCESS.increment()
             response
         } catch (e: ResponseException) {
+            COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_FAIL.increment()
             log.error(
                 "Error while trying to fetch veileder user groups from GraphApi {}, {}",
                 StructuredArguments.keyValue("statusCode", e.response.status.value.toString()),
