@@ -1,6 +1,7 @@
 package no.nav.syfo.application
 
 import io.ktor.server.application.*
+import no.nav.syfo.cache.RedisEnvironment
 import no.nav.syfo.client.azuread.AzureEnvironment
 
 data class Environment(
@@ -10,6 +11,12 @@ data class Environment(
         appClientSecret = getEnvVar("AZURE_APP_CLIENT_SECRET"),
         appWellKnownUrl = getEnvVar("AZURE_APP_WELL_KNOWN_URL"),
         openidConfigTokenEndpoint = getEnvVar("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
+    ),
+
+    val redis: RedisEnvironment = RedisEnvironment(
+        host = getEnvVar("REDIS_HOST"),
+        port = getEnvVar("REDIS_PORT", "6379").toInt(),
+        secret = getEnvVar("REDIS_PASSWORD"),
     ),
 
     val oldKode6Id: String = getEnvVar("OLD_ROLE_KODE6_ID"),

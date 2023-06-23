@@ -3,11 +3,9 @@ package no.nav.syfo.util
 import com.auth0.jwt.JWT
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
 import io.ktor.util.pipeline.*
 
 const val JWT_CLAIM_AZP = "azp"
-const val JWT_CLAIM_NAVIDENT = "NAVident"
 
 fun ApplicationCall.getCallId(): String = this.request.headers[NAV_CALL_ID_HEADER].toString()
 

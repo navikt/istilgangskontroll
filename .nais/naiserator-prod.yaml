@@ -132,6 +132,8 @@ spec:
       claims:
         extra:
           - "NAVident"
+  envFrom:
+    - secret: istilgangskontroll-redis-password
   env:
     - name: AXSYS_URL
       value: "https://axsys.prod-fss-pub.nais.io"
@@ -151,6 +153,8 @@ spec:
       value: "prod-gcp.nom.skjermede-personer-pip"
     - name: SKJERMEDE_PERSONER_URL
       value: "http://skjermede-personer-pip.nom"
+    - name: REDIS_HOST
+      value: "istilgangskontroll-redis"
 
     - name: OLD_ROLE_KODE6_ID
       value: "c3c01903-38b8-4cf5-b551-65cd3479dea4" # 0000-GA-GOSYS_KODE6

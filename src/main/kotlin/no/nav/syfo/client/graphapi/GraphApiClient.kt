@@ -16,7 +16,7 @@ class GraphApiClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
     private val relevantSyfoRoller: List<AdRolle>,
-    private val httpClient: HttpClient = httpClientProxy()
+    private val httpClient: HttpClient = httpClientProxy(),
 ) {
     suspend fun hasAccess(
         // TODO: legg inn callId
@@ -31,8 +31,7 @@ class GraphApiClient(
         )
     }
 
-    suspend fun getRoleList(token: String): GraphApiUserGroupsResponse {
-        // TODO: sjekk cachen først
+    private suspend fun getRoleList(token: String): GraphApiUserGroupsResponse {
         // TODO: add callId for exception handling
         val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
             scopeClientId = baseUrl,
