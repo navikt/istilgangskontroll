@@ -6,6 +6,7 @@ import io.ktor.server.routing.*
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.auth.*
+import no.nav.syfo.application.metric.registerMetricApi
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.wellknown.WellKnown
 import no.nav.syfo.tilgang.*
@@ -40,6 +41,7 @@ fun Application.apiModule(
         registerPodApi(
             applicationState = applicationState,
         )
+        registerMetricApi()
         authenticate(JwtIssuerType.INTERNAL_AZUREAD.name) {
             registerTilgangApi(
                 tilgangService = tilgangService,
