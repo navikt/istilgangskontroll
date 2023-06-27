@@ -15,12 +15,14 @@ class AzureAdClient(
     private val azureEnvironment: AzureEnvironment,
     private val httpClient: HttpClient = httpClientProxy()
 ) {
-    suspend fun getOnBehalfOfToken(scopeClientId: String, token: String): AzureAdToken? = getAccessToken(
-        buildParameters(token, "api://$scopeClientId/.default")
+    suspend fun getOnBehalfOfToken(scopeClientId: String, token: String, callId: String): AzureAdToken? = getAccessToken(
+        formParameters = buildParameters(token, "api://$scopeClientId/.default"),
+        callId = callId,
     )?.toAzureAdToken()
 
-    suspend fun getOnBehalfOfTokenForGraphApi(scopeClientId: String, token: String): AzureAdToken? = getAccessToken(
-        buildParameters(token, "$scopeClientId/.default")
+    suspend fun getOnBehalfOfTokenForGraphApi(scopeClientId: String, token: String, callId: String): AzureAdToken? = getAccessToken(
+        formParameters = buildParameters(token, "$scopeClientId/.default"),
+        callId = callId,
     )?.toAzureAdToken()
 
     private fun buildParameters(token: String, scope: String) = Parameters.build {
@@ -33,19 +35,20 @@ class AzureAdClient(
         append("requested_token_use", "on_behalf_of")
     }
 
-    suspend fun getSystemToken(scopeClientId: String): AzureAdToken? {
+    suspend fun getSystemToken(scopeClientId: String, callId: String): AzureAdToken? {
         val cacheKey = "$CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX$scopeClientId"
         val cachedToken = cache.get(key = cacheKey)
         return if (cachedToken?.isExpired() == false) {
             cachedToken
         } else {
             val azureAdTokenResponse = getAccessToken(
-                Parameters.build {
+                formParameters = Parameters.build {
                     append("client_id", azureEnvironment.appClientId)
                     append("client_secret", azureEnvironment.appClientSecret)
                     append("grant_type", "client_credentials")
                     append("scope", "api://$scopeClientId/.default")
-                }
+                },
+                callId = callId,
             )
             azureAdTokenResponse?.let { token ->
                 token.toAzureAdToken().also {
@@ -57,6 +60,7 @@ class AzureAdClient(
 
     private suspend fun getAccessToken(
         formParameters: Parameters,
+        callId: String,
     ): AzureAdTokenResponse? =
         try {
             val response: HttpResponse = httpClient.post(azureEnvironment.openidConfigTokenEndpoint) {
@@ -65,15 +69,16 @@ class AzureAdClient(
             }
             response.body<AzureAdTokenResponse>()
         } catch (e: ResponseException) {
-            handleUnexpectedResponseException(e)
+            handleUnexpectedResponseException(e, callId)
             null
         }
 
     private fun handleUnexpectedResponseException(
         responseException: ResponseException,
+        callId: String,
     ) {
         log.error(
-            "Error while requesting AzureAdAccessToken with statusCode=${responseException.response.status.value}",
+            "Error while requesting AzureAdAccessToken with statusCode=${responseException.response.status.value}, callId: $callId",
             responseException
         )
     }

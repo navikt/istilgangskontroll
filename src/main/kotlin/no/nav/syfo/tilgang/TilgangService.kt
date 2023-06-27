@@ -10,7 +10,7 @@ class TilgangService(
     val redisStore: RedisStore,
 ) {
 
-    suspend fun sjekkTilgangTilTjenesten(token: String): Tilgang {
+    suspend fun sjekkTilgangTilTjenesten(token: String, callId: String): Tilgang {
         val veilederIdent = getNAVIdentFromToken(token)
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -20,7 +20,11 @@ class TilgangService(
         }
 
         val tilgang = Tilgang(
-            harTilgang = graphApiClient.hasAccess(adRoller.SYFO, token)
+            harTilgang = graphApiClient.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = token,
+                callId = callId,
+            )
         )
         redisStore.setObject(
             key = cacheKey,
