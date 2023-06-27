@@ -1,6 +1,7 @@
 package no.nav.syfo.testhelper
 
 import no.nav.syfo.application.*
+import no.nav.syfo.cache.RedisEnvironment
 import no.nav.syfo.client.azuread.AzureEnvironment
 
 fun testEnvironment() = Environment(
@@ -9,6 +10,12 @@ fun testEnvironment() = Environment(
         appClientSecret = "istilgangskontroll-secret",
         appWellKnownUrl = "wellknown",
         openidConfigTokenEndpoint = "azureOpenIdTokenEndpoint",
+    ),
+
+    redis = RedisEnvironment(
+        host = "REDIS_HOST",
+        port = 6379,
+        secret = "REDIS_PASSWORD",
     ),
 
     oldKode6Id = "oldKode6Id",
