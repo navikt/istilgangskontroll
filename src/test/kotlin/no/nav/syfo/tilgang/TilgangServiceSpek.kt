@@ -35,15 +35,16 @@ class TilgangServiceSpek : Spek({
         }
 
         it("cache response from GraphApiClient on cache miss") {
+            val callId = "123"
             every { redisStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(any(), any()) } returns true
+            coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
             runBlocking {
-                tilgangService.sjekkTilgangTilTjenesten(validToken)
+                tilgangService.sjekkTilgangTilTjenesten(validToken, callId)
             }
 
             verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken) }
+            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             verify(exactly = 1) {
                 redisStore.setObject(
                     key = cacheKey,
@@ -54,14 +55,15 @@ class TilgangServiceSpek : Spek({
         }
 
         it("return result from cache hit") {
+            val callId = "123"
             every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(harTilgang = true)
 
             runBlocking {
-                tilgangService.sjekkTilgangTilTjenesten(validToken)
+                tilgangService.sjekkTilgangTilTjenesten(validToken, callId)
             }
 
             verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any()) }
+            coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
             verify(exactly = 0) { redisStore.setObject<Any>(any(), any(), any()) }
         }
     }

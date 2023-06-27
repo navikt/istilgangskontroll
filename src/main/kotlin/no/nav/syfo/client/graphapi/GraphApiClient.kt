@@ -10,6 +10,7 @@ import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.tilgang.AdRolle
 import no.nav.syfo.util.bearerHeader
+import no.nav.syfo.util.callIdArgument
 import org.slf4j.LoggerFactory
 
 class GraphApiClient(
@@ -19,11 +20,14 @@ class GraphApiClient(
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
     suspend fun hasAccess(
-        // TODO: legg inn callId
         adRolle: AdRolle,
         token: String,
+        callId: String,
     ): Boolean {
-        val groupList = getRoleList(token = token)
+        val groupList = getRoleList(
+            token = token,
+            callId = callId,
+        )
 
         return isRoleInUserGroupList(
             groupList = groupList.value,
@@ -31,12 +35,12 @@ class GraphApiClient(
         )
     }
 
-    private suspend fun getRoleList(token: String): GraphApiUserGroupsResponse {
-        // TODO: add callId for exception handling
+    private suspend fun getRoleList(token: String, callId: String): GraphApiUserGroupsResponse {
         val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
             scopeClientId = baseUrl,
             token = token,
-        )?.accessToken ?: throw RuntimeException("Failed to request list of veileder roles")
+            callId = callId,
+        )?.accessToken ?: throw RuntimeException("Failed to request list of veileder roles, callId: $callId")
 
         val url = "$baseUrl/v1.0/$GRAPHAPI_USER_GROUPS_PATH?\$count=true&$FILTER_QUERY"
         val filter = relevantSyfoRoller.map { it.id }.joinToString(separator = " or ") { "id eq '$it'" }
@@ -54,9 +58,10 @@ class GraphApiClient(
         } catch (e: ResponseException) {
             COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_FAIL.increment()
             log.error(
-                "Error while trying to fetch veileder user groups from GraphApi {}, {}",
+                "Error while trying to fetch veileder user groups from GraphApi {}, {}, {}",
                 StructuredArguments.keyValue("statusCode", e.response.status.value.toString()),
                 StructuredArguments.keyValue("message", e.message),
+                callIdArgument(callId),
             )
             throw e
         }

@@ -5,8 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import no.nav.syfo.testhelper.*
-import no.nav.syfo.util.bearerHeader
-import no.nav.syfo.util.configuredJacksonMapper
+import no.nav.syfo.util.*
 import org.amshove.kluent.shouldBeEqualTo
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
@@ -33,6 +32,7 @@ class TilgangApiSpek : Spek({
                 with(
                     handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
                         addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                        addHeader(NAV_CALL_ID_HEADER, "123")
                     }
                 ) {
                     response.status() shouldBeEqualTo HttpStatusCode.OK
@@ -50,6 +50,7 @@ class TilgangApiSpek : Spek({
                 with(
                     handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
                         addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                        addHeader(NAV_CALL_ID_HEADER, "123")
                     }
                 ) {
                     response.status() shouldBeEqualTo HttpStatusCode.Forbidden
