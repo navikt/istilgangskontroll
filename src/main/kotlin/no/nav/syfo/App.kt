@@ -8,6 +8,7 @@ import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.wellknown.getWellKnown
@@ -26,11 +27,18 @@ fun main() {
     val adRoller = AdRoller(env = environment)
 
     val redisStore = RedisStore(environment.redis)
+    val azureAdClient = AzureAdClient(azureEnvironment = environment.azure)
 
     val graphApiClient = GraphApiClient(
-        azureAdClient = AzureAdClient(azureEnvironment = environment.azure),
+        azureAdClient = azureAdClient,
         baseUrl = environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
+    )
+
+    val axsysClient = AxsysClient(
+        azureAdClient = azureAdClient,
+        baseUrl = environment.clients.axsys.baseUrl,
+        clientId = environment.clients.axsys.clientId,
     )
 
     val wellKnownInternalAzureAD = getWellKnown(
@@ -51,6 +59,7 @@ fun main() {
                 wellKnownInternalAzureAD = wellKnownInternalAzureAD,
                 adRoller = adRoller,
                 redisStore = redisStore,
+                axsysClient = axsysClient,
             )
         }
     }

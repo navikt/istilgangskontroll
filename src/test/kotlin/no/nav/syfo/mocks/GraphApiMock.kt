@@ -4,10 +4,10 @@ import com.auth0.jwt.JWT
 import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import no.nav.syfo.application.api.auth.JWT_CLAIM_NAVIDENT
 import no.nav.syfo.client.graphapi.GraphApiGroup
 import no.nav.syfo.client.graphapi.GraphApiUserGroupsResponse
 import no.nav.syfo.testhelper.UserConstants
-import no.nav.syfo.util.JWT_CLAIM_NAVIDENT
 
 private val coffeAccess = GraphApiGroup(id = "123", displayName = "Coffe drinking", mailNickname = "XYZ_coffedrinking")
 private val syfoAccess = GraphApiGroup(id = "syfoId", displayName = "SYFO", mailNickname = "0000-GA-SYFO-SENSITIV")

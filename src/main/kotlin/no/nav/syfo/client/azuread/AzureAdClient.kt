@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.client.httpClientProxy
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -15,22 +16,22 @@ class AzureAdClient(
     private val azureEnvironment: AzureEnvironment,
     private val httpClient: HttpClient = httpClientProxy()
 ) {
-    suspend fun getOnBehalfOfToken(scopeClientId: String, token: String, callId: String): AzureAdToken? = getAccessToken(
+    suspend fun getOnBehalfOfToken(scopeClientId: String, token: Token, callId: String): AzureAdToken? = getAccessToken(
         formParameters = buildParameters(token, "api://$scopeClientId/.default"),
         callId = callId,
     )?.toAzureAdToken()
 
-    suspend fun getOnBehalfOfTokenForGraphApi(scopeClientId: String, token: String, callId: String): AzureAdToken? = getAccessToken(
+    suspend fun getOnBehalfOfTokenForGraphApi(scopeClientId: String, token: Token, callId: String): AzureAdToken? = getAccessToken(
         formParameters = buildParameters(token, "$scopeClientId/.default"),
         callId = callId,
     )?.toAzureAdToken()
 
-    private fun buildParameters(token: String, scope: String) = Parameters.build {
+    private fun buildParameters(token: Token, scope: String) = Parameters.build {
         append("client_id", azureEnvironment.appClientId)
         append("client_secret", azureEnvironment.appClientSecret)
         append("client_assertion_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
         append("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
-        append("assertion", token)
+        append("assertion", token.value)
         append("scope", scope)
         append("requested_token_use", "on_behalf_of")
     }
