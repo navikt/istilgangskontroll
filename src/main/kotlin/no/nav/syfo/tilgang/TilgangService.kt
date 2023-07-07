@@ -37,6 +37,21 @@ class TilgangService(
         return tilgang
     }
 
+    suspend fun hasTilgangTilSyfo2(token: Token, callId: String): Tilgang {
+        val veilederIdent = token.getNAVIdent()
+        val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
+
+        return cacheMethodWrapper(cacheKey) {
+            return Tilgang(
+                harTilgang = graphApiClient.hasAccess(
+                    adRolle = adRoller.SYFO,
+                    token = token,
+                    callId = callId,
+                )
+            )
+        }
+    }
+
     suspend fun hasTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent-$enhet"
@@ -50,6 +65,35 @@ class TilgangService(
         val tilgang = Tilgang(
             harTilgang = enheter.map { it.enhetId }.contains(enhet.id)
         )
+        redisStore.setObject(
+            key = cacheKey,
+            value = tilgang,
+            expireSeconds = TWELVE_HOURS_IN_SECS
+        )
+        return tilgang
+    }
+
+    suspend fun hasTilgangToEnhet2(token: Token, callId: String, enhet: Enhet): Tilgang {
+        val veilederIdent = token.getNAVIdent()
+        val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent"
+
+        return cacheMethodWrapper(cacheKey) {
+            val enheter = axsysClient.getEnheter(token = token, callId = callId)
+            return Tilgang(
+                harTilgang = enheter.map { it.enhetId }.contains(enhet.id)
+            )
+        }
+    }
+
+    inline fun cacheMethodWrapper(cacheKey: String, block: () -> Tilgang): Tilgang {
+        val cachedObject: Tilgang? = redisStore.getObject(key = cacheKey)
+
+        if (cachedObject != null) {
+            return cachedObject
+        }
+
+        val tilgang = block()
+
         redisStore.setObject(
             key = cacheKey,
             value = tilgang,
