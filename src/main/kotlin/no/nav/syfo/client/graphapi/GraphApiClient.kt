@@ -6,6 +6,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
+import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.tilgang.AdRolle
@@ -21,7 +22,7 @@ class GraphApiClient(
 ) {
     suspend fun hasAccess(
         adRolle: AdRolle,
-        token: String,
+        token: Token,
         callId: String,
     ): Boolean {
         val groupList = getRoleList(
@@ -35,7 +36,7 @@ class GraphApiClient(
         )
     }
 
-    private suspend fun getRoleList(token: String, callId: String): GraphApiUserGroupsResponse {
+    private suspend fun getRoleList(token: Token, callId: String): GraphApiUserGroupsResponse {
         val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
             scopeClientId = baseUrl,
             token = token,

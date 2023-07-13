@@ -8,6 +8,7 @@ import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.auth.*
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.application.metric.registerMetricApi
+import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.wellknown.WellKnown
 import no.nav.syfo.tilgang.*
@@ -18,7 +19,8 @@ fun Application.apiModule(
     environment: Environment,
     wellKnownInternalAzureAD: WellKnown,
     adRoller: AdRoller,
-    redisStore: RedisStore
+    redisStore: RedisStore,
+    axsysClient: AxsysClient,
 ) {
     installMetrics()
     installCallId()
@@ -38,6 +40,7 @@ fun Application.apiModule(
         graphApiClient = graphApiClient,
         adRoller = adRoller,
         redisStore = redisStore,
+        axsysClient = axsysClient,
     )
 
     routing {

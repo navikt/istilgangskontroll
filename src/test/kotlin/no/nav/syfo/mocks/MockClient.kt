@@ -19,6 +19,10 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getGraphApiResponse(request)
                 }
 
+                requestUrl.startsWith("/${env.clients.axsys.baseUrl}") -> {
+                    getAxsysResponse(request)
+                }
+
                 else -> {
                     error("Unhandled ${request.url.encodedPath}")
                 }

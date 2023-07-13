@@ -3,6 +3,7 @@ package no.nav.syfo.testhelper
 import io.ktor.server.application.*
 import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.mocks.getMockHttpClient
@@ -27,6 +28,13 @@ fun Application.testApiModule(
         httpClient = mockHttpClient,
     )
 
+    val axsysClient = AxsysClient(
+        azureAdClient = azureAdClient,
+        baseUrl = externalMockEnvironment.environment.clients.axsys.baseUrl,
+        clientId = externalMockEnvironment.environment.clients.axsys.clientId,
+        httpClient = mockHttpClient,
+    )
+
     val redisStore = RedisStore(externalMockEnvironment.environment.redis)
 
     this.apiModule(
@@ -36,5 +44,6 @@ fun Application.testApiModule(
         wellKnownInternalAzureAD = externalMockEnvironment.wellKnownInternalAzureAD,
         adRoller = adRoller,
         redisStore = redisStore,
+        axsysClient = axsysClient,
     )
 }

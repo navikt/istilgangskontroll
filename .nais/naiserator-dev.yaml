@@ -137,6 +137,8 @@ spec:
   env:
     - name: AXSYS_URL
       value: "https://axsys.dev-fss-pub.nais.io"
+    - name: AXSYS_CLIENT_ID
+      value: "dev-fss.org.axsys"
     - name: GRAPHAPI_URL
       value: "https://graph.microsoft.com"
     - name: NORG2_URL

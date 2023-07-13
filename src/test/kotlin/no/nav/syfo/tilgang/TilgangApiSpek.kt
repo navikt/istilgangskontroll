@@ -22,41 +22,85 @@ class TilgangApiSpek : Spek({
                 externalMockEnvironment = externalMockEnvironment,
             )
 
-            it("Allows access to veileder with SYFO-tilgang") {
-                val validToken = generateJWT(
-                    audience = externalMockEnvironment.environment.azure.appClientId,
-                    issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                    navIdent = UserConstants.VEILEDER_IDENT,
-                )
+            describe("SYFO access") {
+                it("Allows access to veileder with SYFO-tilgang") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                    )
 
-                with(
-                    handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
-                        addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                        addHeader(NAV_CALL_ID_HEADER, "123")
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.OK
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.harTilgang shouldBeEqualTo true
                     }
-                ) {
-                    response.status() shouldBeEqualTo HttpStatusCode.OK
-                    val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                    tilgang.harTilgang shouldBeEqualTo true
+                }
+                it("Forbids access to veileder without SYFO-tilgang") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
+                    )
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
+                        println("response: ${response.content}")
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.harTilgang shouldBeEqualTo false
+                    }
                 }
             }
-            it("Forbids access to veileder without SYFO-tilgang") {
-                val validToken = generateJWT(
-                    audience = externalMockEnvironment.environment.azure.appClientId,
-                    issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                    navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
-                )
 
-                with(
-                    handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
-                        addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                        addHeader(NAV_CALL_ID_HEADER, "123")
+            describe("Enhet access") {
+                it("Allows access to veileder with correct enhet") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                    )
+                    val enhet = UserConstants.VEILEDER_ENHET
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhet") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.OK
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.harTilgang shouldBeEqualTo true
                     }
-                ) {
-                    response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                    println("response: ${response.content}")
-                    val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                    tilgang.harTilgang shouldBeEqualTo false
+                }
+                it("Forbids access to veileder without correct enhet") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                    )
+                    val enhetWithoutTilgang = UserConstants.VEILEDER_ENHET_NO_ACCESS
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhetWithoutTilgang") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
+                        println("response: ${response.content}")
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.harTilgang shouldBeEqualTo false
+                    }
                 }
             }
         }
