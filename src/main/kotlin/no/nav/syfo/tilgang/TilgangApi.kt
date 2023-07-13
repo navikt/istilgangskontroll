@@ -23,7 +23,7 @@ fun Route.registerTilgangApi(
                 throw IllegalArgumentException("Failed to check enhetstilgang for veileder. No NAV ident in token")
             }
 
-            val tilgang = tilgangService.hasTilgangTilSyfo(
+            val tilgang = tilgangService.hasTilgangToSyfo(
                 token = token,
                 callId = callId,
             )

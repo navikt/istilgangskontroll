@@ -27,7 +27,7 @@ class AxsysClient(
             token = token,
             callId = callId
         )?.accessToken
-            ?: throw RuntimeException("Failed to request list of Veiledere from Axsys: Failed to get token from AzureAD")
+            ?: throw RuntimeException("Failed to request list of Veiledere from Axsys: Failed to get token from AzureAD with callId=$callId")
 
         val navIdent = token.getNAVIdent()
         val enheter = try {

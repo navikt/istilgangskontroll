@@ -13,7 +13,7 @@ class TilgangService(
     val redisStore: RedisStore,
 ) {
 
-    suspend fun hasTilgangTilSyfo(token: Token, callId: String): Tilgang {
+    suspend fun hasTilgangToSyfo(token: Token, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)

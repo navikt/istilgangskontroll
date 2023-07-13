@@ -8,7 +8,7 @@ import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.testhelper.*
-import org.amshove.kluent.`should be equal to`
+import org.amshove.kluent.shouldBeEqualTo
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
@@ -50,7 +50,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
-                    tilgangService.hasTilgangTilSyfo(validToken, callId)
+                    tilgangService.hasTilgangToSyfo(validToken, callId)
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -69,7 +69,7 @@ class TilgangServiceSpek : Spek({
                 every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(harTilgang = true)
 
                 runBlocking {
-                    tilgangService.hasTilgangTilSyfo(validToken, callId)
+                    tilgangService.hasTilgangToSyfo(validToken, callId)
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -93,7 +93,7 @@ class TilgangServiceSpek : Spek({
                 runBlocking {
                     val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
 
-                    tilgang.harTilgang `should be equal to` true
+                    tilgang.harTilgang shouldBeEqualTo true
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -122,7 +122,7 @@ class TilgangServiceSpek : Spek({
                 runBlocking {
                     val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, wantedEnhet)
 
-                    tilgang.harTilgang `should be equal to` false
+                    tilgang.harTilgang shouldBeEqualTo false
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -145,7 +145,7 @@ class TilgangServiceSpek : Spek({
                 runBlocking {
                     val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
 
-                    tilgang.harTilgang `should be equal to` true
+                    tilgang.harTilgang shouldBeEqualTo true
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
