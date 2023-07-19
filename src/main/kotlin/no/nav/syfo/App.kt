@@ -14,7 +14,6 @@ import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.wellknown.getWellKnown
 import no.nav.syfo.tilgang.AdRoller
 import org.slf4j.LoggerFactory
-import redis.clients.jedis.*
 import java.util.concurrent.TimeUnit
 
 const val applicationPort = 8080
@@ -37,7 +36,7 @@ fun main() {
 
     val axsysClient = AxsysClient(
         azureAdClient = azureAdClient,
-        baseUrl = environment.clients.axsys.baseUrl,
+        axsysUrl = environment.clients.axsys.baseUrl,
         clientId = environment.clients.axsys.clientId,
     )
 

@@ -23,7 +23,7 @@ class TilgangService(
         }
 
         val tilgang = Tilgang(
-            harTilgang = graphApiClient.hasAccess(
+            erGodkjent = graphApiClient.hasAccess(
                 adRolle = adRoller.SYFO,
                 token = token,
                 callId = callId,
@@ -45,10 +45,9 @@ class TilgangService(
         if (cachedTilgang != null) {
             return cachedTilgang
         }
-
         val enheter = axsysClient.getEnheter(token = token, callId = callId)
         val tilgang = Tilgang(
-            harTilgang = enheter.map { it.enhetId }.contains(enhet.id)
+            erGodkjent = enheter.map { it.enhetId }.contains(enhet.id)
         )
         redisStore.setObject(
             key = cacheKey,

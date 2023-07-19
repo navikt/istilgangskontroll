@@ -15,11 +15,10 @@ import org.slf4j.LoggerFactory
 
 class AxsysClient(
     private val azureAdClient: AzureAdClient,
-    baseUrl: String,
+    private val axsysUrl: String,
     private val clientId: String,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
-    private val axsysEnhetUrl: String = "$baseUrl$AXSYS_ENHET_BASE_PATH"
 
     suspend fun getEnheter(token: Token, callId: String): List<AxsysEnhet> {
         val oboToken = azureAdClient.getOnBehalfOfToken(
@@ -31,14 +30,14 @@ class AxsysClient(
 
         val navIdent = token.getNAVIdent()
         val enheter = try {
-            val url = "$axsysEnhetUrl/api/v1/tilgang/$navIdent"
+            val url = "$axsysUrl/api/v1/tilgang/$navIdent"
 
             val enheter: List<AxsysEnhet> = httpClient.get(url) {
                 header(HttpHeaders.Authorization, bearerHeader(oboToken))
                 header(NAV_CALL_ID_HEADER, callId)
                 header(NAV_CONSUMER_ID_HEADER, NAV_CONSUMER_APP_ID)
                 accept(ContentType.Application.Json)
-            }.body()
+            }.body<AxsysTilgangerResponse>().enheter
             COUNT_CALL_AXSYS_TILGANGER_SUCCESS.increment()
             enheter
         } catch (e: ResponseException) {
@@ -55,8 +54,6 @@ class AxsysClient(
     }
 
     companion object {
-        const val AXSYS_ENHET_BASE_PATH = "/api/v1/enhet"
-
         private val log = LoggerFactory.getLogger(AxsysClient::class.java)
     }
 }

@@ -28,6 +28,20 @@ class TilgangServiceSpek : Spek({
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
 
+    fun verifyCacheSet(exactly: Int, key: String = "", harTilgang: Boolean = true) {
+        verify(exactly = exactly) {
+            if (exactly == 0) {
+                redisStore.setObject<Any>(any(), any(), any())
+            } else {
+                redisStore.setObject(
+                    key = key,
+                    value = Tilgang(erGodkjent = harTilgang),
+                    expireSeconds = TWELVE_HOURS_IN_SECONDS
+                )
+            }
+        }
+    }
+
     describe("sjekkTilgangTilTjenesten") {
         val validToken = Token(
             generateJWT(
@@ -41,8 +55,21 @@ class TilgangServiceSpek : Spek({
             clearMocks(graphApiClient, redisStore, axsysClient)
         }
 
-        describe("has access to SYFO") {
+        describe("check if veileder has access to SYFO") {
             val cacheKey = "tilgang-til-tjenesten-${UserConstants.VEILEDER_IDENT}"
+
+            it("return result from cache hit") {
+                val callId = "123"
+                every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
+
+                runBlocking {
+                    tilgangService.hasTilgangToSyfo(validToken, callId)
+                }
+
+                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
+                verifyCacheSet(exactly = 0)
+            }
 
             it("cache response from GraphApiClient on cache miss") {
                 val callId = "123"
@@ -55,31 +82,14 @@ class TilgangServiceSpek : Spek({
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
-                verify(exactly = 1) {
-                    redisStore.setObject(
-                        key = cacheKey,
-                        value = Tilgang(harTilgang = true),
-                        expireSeconds = TWELVE_HOURS_IN_SECONDS
-                    )
-                }
-            }
-
-            it("return result from cache hit") {
-                val callId = "123"
-                every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(harTilgang = true)
-
-                runBlocking {
-                    tilgangService.hasTilgangToSyfo(validToken, callId)
-                }
-
-                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
-                coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
-                verify(exactly = 0) { redisStore.setObject<Any>(any(), any(), any()) }
+                verifyCacheSet(exactly = 1, key = cacheKey)
             }
         }
 
-        describe("has access to enhet") {
-            it("return has access if enhet is in list from Axsys") {
+        describe("check if veileder has access to enhet") {
+            val cacheKeySyfo = "tilgang-til-tjenesten-${UserConstants.VEILEDER_IDENT}"
+
+            it("return has access if enhet is in veileders list from Axsys") {
                 val enhet = Enhet(UserConstants.VEILEDER_ENHET)
                 val veiledersEnhet = AxsysEnhet(
                     enhetId = enhet.id,
@@ -88,28 +98,23 @@ class TilgangServiceSpek : Spek({
                 val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
                 val callId = "123"
                 every { redisStore.getObject<Tilgang?>(any()) } returns null
-                coEvery { axsysClient.getEnheter(validToken, callId) } returns listOf(veiledersEnhet)
+                coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
                     val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
 
-                    tilgang.harTilgang shouldBeEqualTo true
+                    tilgang.erGodkjent shouldBeEqualTo true
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
-                verify(exactly = 1) {
-                    redisStore.setObject(
-                        key = cacheKey,
-                        value = Tilgang(harTilgang = true),
-                        expireSeconds = TWELVE_HOURS_IN_SECONDS
-                    )
-                }
+                verifyCacheSet(exactly = 1, key = cacheKey)
             }
 
-            it("return no access if enhet is not in list from Axsys") {
+            it("return no access if enhet is not in veileders list from Axsys") {
                 val wantedEnhet = Enhet(UserConstants.VEILEDER_ENHET)
-                val actualEnhet = Enhet(UserConstants.VEILEDER_ENHET_NO_ACCESS)
+                val actualEnhet = Enhet(UserConstants.VEILEDER_NO_ACCESS_ENHET)
                 val veiledersEnhet = AxsysEnhet(
                     enhetId = actualEnhet.id,
                     navn = "enhet",
@@ -122,35 +127,30 @@ class TilgangServiceSpek : Spek({
                 runBlocking {
                     val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, wantedEnhet)
 
-                    tilgang.harTilgang shouldBeEqualTo false
+                    tilgang.erGodkjent shouldBeEqualTo false
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
-                verify(exactly = 1) {
-                    redisStore.setObject(
-                        key = cacheKey,
-                        value = Tilgang(harTilgang = false),
-                        expireSeconds = TWELVE_HOURS_IN_SECONDS
-                    )
-                }
+                verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
             }
 
             it("return result from cache hit") {
                 val enhet = Enhet(UserConstants.VEILEDER_ENHET)
                 val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
                 val callId = "123"
-                every { redisStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(harTilgang = true)
+                every { redisStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
                     val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
 
-                    tilgang.harTilgang shouldBeEqualTo true
+                    tilgang.erGodkjent shouldBeEqualTo true
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
                 coVerify(exactly = 0) { axsysClient.getEnheter(any(), any()) }
-                verify(exactly = 0) { redisStore.setObject<Any>(any(), any(), any()) }
+                verifyCacheSet(exactly = 0)
             }
         }
     }
