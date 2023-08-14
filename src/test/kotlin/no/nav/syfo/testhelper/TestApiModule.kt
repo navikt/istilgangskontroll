@@ -30,7 +30,7 @@ fun Application.testApiModule(
 
     val axsysClient = AxsysClient(
         azureAdClient = azureAdClient,
-        baseUrl = externalMockEnvironment.environment.clients.axsys.baseUrl,
+        axsysUrl = externalMockEnvironment.environment.clients.axsys.baseUrl,
         clientId = externalMockEnvironment.environment.clients.axsys.clientId,
         httpClient = mockHttpClient,
     )

@@ -6,11 +6,16 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import no.nav.syfo.application.api.auth.JWT_CLAIM_NAVIDENT
 import no.nav.syfo.client.axsys.AxsysEnhet
+import no.nav.syfo.client.axsys.AxsysTilgangerResponse
 import no.nav.syfo.testhelper.UserConstants
 
-private val axsysEnhetResponse = AxsysEnhet(
+private val axsysEnhet = AxsysEnhet(
     enhetId = UserConstants.VEILEDER_ENHET,
     navn = "enhet",
+)
+
+private val axsysResponse = AxsysTilgangerResponse(
+    enheter = listOf(axsysEnhet)
 )
 
 fun MockRequestHandleScope.getAxsysResponse(request: HttpRequestData): HttpResponseData {
@@ -20,7 +25,7 @@ fun MockRequestHandleScope.getAxsysResponse(request: HttpRequestData): HttpRespo
     return when (veilederIdent) {
         UserConstants.VEILEDER_IDENT -> {
             respond(
-                content = mapper.writeValueAsString(listOf(axsysEnhetResponse)),
+                content = mapper.writeValueAsString(axsysResponse),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )

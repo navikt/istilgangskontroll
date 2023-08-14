@@ -17,6 +17,11 @@ class TilgangApiSpek : Spek({
         with(TestApplicationEngine()) {
             start()
             val externalMockEnvironment = ExternalMockEnvironment()
+            val VALID_TOKEN_BUT_NO_SYFO_TILGANG = generateJWT(
+                audience = externalMockEnvironment.environment.azure.appClientId,
+                issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
+            )
 
             application.testApiModule(
                 externalMockEnvironment = externalMockEnvironment,
@@ -38,26 +43,19 @@ class TilgangApiSpek : Spek({
                     ) {
                         response.status() shouldBeEqualTo HttpStatusCode.OK
                         val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.harTilgang shouldBeEqualTo true
+                        tilgang.erGodkjent shouldBeEqualTo true
                     }
                 }
                 it("Forbids access to veileder without SYFO-tilgang") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
-                    )
-
                     with(
                         handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(HttpHeaders.Authorization, bearerHeader(VALID_TOKEN_BUT_NO_SYFO_TILGANG))
                             addHeader(NAV_CALL_ID_HEADER, "123")
                         }
                     ) {
                         response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        println("response: ${response.content}")
                         val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.harTilgang shouldBeEqualTo false
+                        tilgang.erAvslatt shouldBeEqualTo true
                     }
                 }
             }
@@ -79,7 +77,7 @@ class TilgangApiSpek : Spek({
                     ) {
                         response.status() shouldBeEqualTo HttpStatusCode.OK
                         val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.harTilgang shouldBeEqualTo true
+                        tilgang.erGodkjent shouldBeEqualTo true
                     }
                 }
                 it("Forbids access to veileder without correct enhet") {
@@ -88,7 +86,7 @@ class TilgangApiSpek : Spek({
                         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
                         navIdent = UserConstants.VEILEDER_IDENT,
                     )
-                    val enhetWithoutTilgang = UserConstants.VEILEDER_ENHET_NO_ACCESS
+                    val enhetWithoutTilgang = UserConstants.VEILEDER_NO_ACCESS_ENHET
 
                     with(
                         handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhetWithoutTilgang") {
@@ -99,7 +97,22 @@ class TilgangApiSpek : Spek({
                         response.status() shouldBeEqualTo HttpStatusCode.Forbidden
                         println("response: ${response.content}")
                         val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.harTilgang shouldBeEqualTo false
+                        tilgang.erAvslatt shouldBeEqualTo true
+                    }
+                }
+
+                it("Forbid access to veileder who has tilgang to enhet but not syfo") {
+                    val enhet = UserConstants.VEILEDER_ENHET
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhet") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(VALID_TOKEN_BUT_NO_SYFO_TILGANG))
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.erAvslatt shouldBeEqualTo true
                     }
                 }
             }
