@@ -5,8 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
-import no.nav.syfo.util.getBearerHeader
-import no.nav.syfo.util.getCallId
+import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
 const val enhetNr = "enhetNr"
@@ -64,6 +63,33 @@ fun Route.registerTilgangApi(
                 )
             }
 
+            if (tilgang.erGodkjent) {
+                call.respond(tilgang)
+            } else {
+                call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = tilgang
+                )
+            }
+        }
+
+        get("/navident/person") {
+            val callId = call.getCallId()
+            val requestedPersonIdent = call.getPersonidentHeader()
+                ?: throw IllegalArgumentException("Did not find a PersonIdent in request headers")
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check enhetstilgang for veileder. No NAV ident in token")
+            }
+
+            val tilgang = tilgangService.hasTilgangToPerson(
+                token = token,
+                personident = requestedPersonIdent,
+                callId = callId,
+            )
+
+            // TODO: Add auditlog
             if (tilgang.erGodkjent) {
                 call.respond(tilgang)
             } else {
