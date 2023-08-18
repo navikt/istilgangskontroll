@@ -5,6 +5,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.util.pipeline.*
 import no.nav.syfo.application.api.auth.Token
+import no.nav.syfo.domain.Personident
 
 const val JWT_CLAIM_AZP = "azp"
 
@@ -21,3 +22,6 @@ fun ApplicationCall.getBearerHeader(): Token? =
 fun PipelineContext<out Unit, ApplicationCall>.getCallId(): String {
     return this.call.getCallId()
 }
+
+fun ApplicationCall.getPersonidentHeader(): Personident? =
+    this.request.headers[NAV_PERSONIDENT_HEADER]?.let { Personident(it) }
