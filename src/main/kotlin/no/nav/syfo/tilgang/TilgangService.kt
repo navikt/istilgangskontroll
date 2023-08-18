@@ -5,11 +5,13 @@ import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
 
 class TilgangService(
     val graphApiClient: GraphApiClient,
     val axsysClient: AxsysClient,
+    val skjermedePersonerPipClient: SkjermedePersonerPipClient,
     val adRoller: AdRoller,
     val redisStore: RedisStore,
 ) {
@@ -58,7 +60,25 @@ class TilgangService(
         return tilgang
     }
 
-    fun hasTilgangToPerson(token: Token, personident: Personident, callId: String): Tilgang {
+    private suspend fun isSkjermetAccessGodkjent(callId: String, personident: Personident, token: Token): Boolean {
+        val personIsSkjermet = skjermedePersonerPipClient.isSkjermet(
+            callId = callId,
+            personIdent = personident,
+            token = token,
+        )
+
+        return if (!personIsSkjermet) {
+            true
+        } else {
+            graphApiClient.hasAccess(
+                adRolle = adRoller.EGEN_ANSATT,
+                token = token,
+                callId = callId,
+            )
+        }
+    }
+
+    suspend fun hasTilgangToPerson(token: Token, personident: Personident, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -75,9 +95,12 @@ class TilgangService(
         //      - regional tilgang til enhet
         //  - Hvis kode6, sjekk tilgang
         //  - Hvis kode7, sjekk tilgang
-        //  - Hvis skjermet, sjekk tilgang
 
-        val tilgang = Tilgang(erGodkjent = false)
+        val tilgang = if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
+            Tilgang(erGodkjent = false)
+        } else {
+            Tilgang(erGodkjent = true)
+        }
 
         redisStore.setObject(
             key = cacheKey,

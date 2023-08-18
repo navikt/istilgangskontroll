@@ -11,6 +11,7 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.wellknown.getWellKnown
 import no.nav.syfo.tilgang.AdRoller
 import org.slf4j.LoggerFactory
@@ -40,6 +41,12 @@ fun main() {
         clientId = environment.clients.axsys.clientId,
     )
 
+    val skjermedePersonerPipClient = SkjermedePersonerPipClient(
+        azureAdClient = azureAdClient,
+        skjermedePersonerUrl = environment.clients.skjermedePersoner.baseUrl,
+        clientId = environment.clients.skjermedePersoner.clientId,
+    )
+
     val wellKnownInternalAzureAD = getWellKnown(
         wellKnownUrl = environment.azure.appWellKnownUrl,
     )
@@ -59,6 +66,7 @@ fun main() {
                 adRoller = adRoller,
                 redisStore = redisStore,
                 axsysClient = axsysClient,
+                skjermedePersonerPipClient = skjermedePersonerPipClient,
             )
         }
     }

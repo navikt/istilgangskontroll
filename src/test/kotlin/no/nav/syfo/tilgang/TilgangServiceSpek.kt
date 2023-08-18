@@ -7,6 +7,7 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.testhelper.*
 import org.amshove.kluent.shouldBeEqualTo
 import org.spekframework.spek2.Spek
@@ -15,6 +16,7 @@ import org.spekframework.spek2.style.specification.describe
 class TilgangServiceSpek : Spek({
     val graphApiClient = mockk<GraphApiClient>(relaxed = true)
     val axsysClient = mockk<AxsysClient>(relaxed = true)
+    val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
     val redisStore = mockk<RedisStore>(relaxed = true)
     val externalMockEnvironment = ExternalMockEnvironment()
     val adRoller = AdRoller(externalMockEnvironment.environment)
@@ -24,6 +26,7 @@ class TilgangServiceSpek : Spek({
         adRoller = adRoller,
         redisStore = redisStore,
         axsysClient = axsysClient,
+        skjermedePersonerPipClient = skjermedePersonerPipClient,
     )
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
@@ -42,7 +45,7 @@ class TilgangServiceSpek : Spek({
         }
     }
 
-    describe("sjekkTilgangTilTjenesten") {
+    describe("TilgangService") {
         val validToken = Token(
             generateJWT(
                 audience = externalMockEnvironment.environment.azure.appClientId,

@@ -73,6 +73,7 @@ fun Route.registerTilgangApi(
             }
         }
 
+        // TODO: Add auditlog
         get("/navident/person") {
             val callId = call.getCallId()
             val requestedPersonIdent = call.getPersonidentHeader()
@@ -89,15 +90,11 @@ fun Route.registerTilgangApi(
                 callId = callId,
             )
 
-            // TODO: Add auditlog
-            if (tilgang.erGodkjent) {
-                call.respond(tilgang)
-            } else {
-                call.respond(
-                    status = HttpStatusCode.Forbidden,
-                    message = tilgang
-                )
-            }
+            // TODO: Respond with correct tilgang when ready to be used
+            call.respond(
+                status = HttpStatusCode.Forbidden,
+                message = Tilgang(erGodkjent = false)
+            )
         }
     }
 }

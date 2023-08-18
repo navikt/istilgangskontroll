@@ -116,6 +116,28 @@ class TilgangApiSpek : Spek({
                     }
                 }
             }
+
+            describe("Person access") {
+                it("Forbids access to veileder because endpoint isn't ready") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                    )
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.erAvslatt shouldBeEqualTo true
+                    }
+                }
+            }
         }
     }
 })

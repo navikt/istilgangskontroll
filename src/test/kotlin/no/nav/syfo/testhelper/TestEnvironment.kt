@@ -34,8 +34,12 @@ fun testEnvironment() = Environment(
     clients = ClientsEnvironment(
         graphApiUrl = "graphApiClientUrl",
         axsys = ClientEnvironment(
-            baseUrl = "baseurl",
-            clientId = "clientId"
+            baseUrl = "axsysBaseurl",
+            clientId = "axsysClientId"
+        ),
+        skjermedePersoner = ClientEnvironment(
+            baseUrl = "skjermedePersonerBaseurl",
+            clientId = "skjermedePersonerClientId",
         )
     ),
 )

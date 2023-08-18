@@ -74,6 +74,7 @@ class GraphApiClient(
     ): Boolean {
         return groupList.map { it.id }.contains(adRolle.id)
     }
+
     companion object {
         const val GRAPHAPI_USER_GROUPS_PATH = "/me/memberOf"
         const val FILTER_QUERY = "\$filter="
