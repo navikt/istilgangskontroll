@@ -158,18 +158,12 @@ spec:
     - name: REDIS_HOST
       value: "istilgangskontroll-redis"
 
-    - name: OLD_ROLE_KODE6_ID
-      value: "87ea7c87-08a2-43bc-83d6-0bfeee92185d" # 0000-GA-GOSYS_KODE6
     - name: ROLE_KODE6_ID
       value: "5ef775f2-61f8-4283-bf3d-8d03f428aa14" # 0000-GA-Strengt_Fortrolig_Adresse
-    - name: OLD_ROLE_KODE7_ID
-      value: "69d4a70f-1c83-42a8-8fb8-2f5d54048647" # 0000-GA-GOSYS_KODE7
     - name: ROLE_KODE7_ID
       value: "ea930b6b-9397-44d9-b9e6-f4cf527a632a" # 0000-GA-Fortrolig_Adresse
     - name: ROLE_SYFO_ID
       value: "c8957e0a-909c-4b62-8e11-93aae6d295e6" # 0000-GA-SYFO-SENSITIV
-    - name: OLD_ROLE_SKJERMING_ID
-      value: "de44052d-b062-4497-89a2-0c85b935b808" # 0000-GA-GOSYS_UTVIDET
     - name: ROLE_SKJERMING_ID
       value: "dbe4ad45-320b-4e9a-aaa1-73cca4ee124d" # 0000-GA-Egne_ansatte
     - name: ROLE_NASJONAL_ID

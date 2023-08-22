@@ -11,20 +11,10 @@ class AdRolle(
 class AdRoller(
     val env: Environment
 ) {
-    val OLD_KODE6 = AdRolle(
-        name = "KODE6",
-        id = env.oldKode6Id,
-        rolle = "0000-GA-GOSYS_KODE6",
-    )
     val KODE6 = AdRolle(
         name = "KODE6",
         id = env.kode6Id,
         rolle = "0000-GA-Strengt_Fortrolig_Adresse",
-    )
-    val OLD_KODE7 = AdRolle(
-        name = "KODE7",
-        id = env.oldKode7Id,
-        rolle = "0000-GA-GOSYS_KODE7"
     )
     val KODE7 = AdRolle(
         name = "KODE7",
@@ -35,11 +25,6 @@ class AdRoller(
         name = "SYFO",
         id = env.syfoId,
         rolle = "0000-GA-SYFO-SENSITIV",
-    )
-    val OLD_EGEN_ANSATT = AdRolle(
-        name = "EGEN_ANSATT",
-        id = env.oldSkjermingId,
-        rolle = "0000-GA-GOSYS_UTVIDET",
     )
     val EGEN_ANSATT = AdRolle(
         name = "EGEN_ANSATT",
@@ -74,12 +59,9 @@ class AdRoller(
 
     fun toList(): List<AdRolle> {
         return listOf(
-            OLD_KODE6,
             KODE6,
-            OLD_KODE7,
             KODE7,
             SYFO,
-            OLD_EGEN_ANSATT,
             EGEN_ANSATT,
             NASJONAL,
             UTVIDBAR_TIL_NASJONAL,

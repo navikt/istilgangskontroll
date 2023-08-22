@@ -18,12 +18,9 @@ fun testEnvironment() = Environment(
         secret = "REDIS_PASSWORD",
     ),
 
-    oldKode6Id = "oldKode6Id",
     kode6Id = "kode6Id",
-    oldKode7Id = "oldKode7Id",
     kode7Id = "kode7Id",
     syfoId = "syfoId",
-    oldSkjermingId = "oldSkjermingId",
     skjermingId = "skjermingId",
     nasjonalId = "nasjonalId",
     utvidbarNasjonalId = "utvidbarNasjonalId",
