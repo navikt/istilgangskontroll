@@ -19,12 +19,9 @@ data class Environment(
         secret = getEnvVar("REDIS_PASSWORD"),
     ),
 
-    val oldKode6Id: String = getEnvVar("OLD_ROLE_KODE6_ID"),
     val kode6Id: String = getEnvVar("ROLE_KODE6_ID"),
-    val oldKode7Id: String = getEnvVar("OLD_ROLE_KODE7_ID"),
     val kode7Id: String = getEnvVar("ROLE_KODE7_ID"),
     val syfoId: String = getEnvVar("ROLE_SYFO_ID"),
-    val oldSkjermingId: String = getEnvVar("OLD_ROLE_SKJERMING_ID"),
     val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
     val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),
     val utvidbarNasjonalId: String = getEnvVar("ROLE_UTVIDBAR_NASJONAL_ID"),
