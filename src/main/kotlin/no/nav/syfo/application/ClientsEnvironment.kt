@@ -3,6 +3,7 @@ package no.nav.syfo.application
 data class ClientsEnvironment(
     val graphApiUrl: String,
     val axsys: ClientEnvironment,
+    val skjermedePersoner: ClientEnvironment,
 )
 
 data class ClientEnvironment(

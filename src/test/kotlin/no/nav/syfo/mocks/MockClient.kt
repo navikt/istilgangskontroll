@@ -23,6 +23,10 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getAxsysResponse(request)
                 }
 
+                requestUrl.startsWith("/${env.clients.skjermedePersoner.baseUrl}") -> {
+                    getSkjermedePersonerResponse(request)
+                }
+
                 else -> {
                     error("Unhandled ${request.url.encodedPath}")
                 }
