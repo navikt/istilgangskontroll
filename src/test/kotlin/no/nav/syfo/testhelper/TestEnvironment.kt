@@ -23,9 +23,7 @@ fun testEnvironment() = Environment(
     syfoId = "syfoId",
     skjermingId = "skjermingId",
     nasjonalId = "nasjonalId",
-    utvidbarNasjonalId = "utvidbarNasjonalId",
     regionalId = "regionalId",
-    utvidbarRegionalId = "utvidbarRegionalId",
     papirsykmeldingId = "papirsykmeldingId",
 
     clients = ClientsEnvironment(
