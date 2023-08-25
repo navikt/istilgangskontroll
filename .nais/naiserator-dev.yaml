@@ -168,11 +168,7 @@ spec:
       value: "dbe4ad45-320b-4e9a-aaa1-73cca4ee124d" # 0000-GA-Egne_ansatte
     - name: ROLE_NASJONAL_ID
       value: "924badcd-b936-44f4-b7bf-97c03de0893a" # 0000-GA-GOSYS_NASJONAL
-    - name: ROLE_UTVIDBAR_NASJONAL_ID
-      value: "2ffe3262-6c0e-44f3-94f0-34dfa5659a04" # 0000-GA-GOSYS_UTVIDBAR_TIL_NASJONAL
     - name: ROLE_REGIONAL_ID
       value: "d2987104-63b2-4110-83ac-20ff6afe24a2" # 0000-GA-GOSYS_REGIONAL
-    - name: ROLE_UTVIDBAR_REGIONAL_ID
-      value: "a5c2370e-6b3d-4c2c-9a5e-238008526574" # 0000-GA-GOSYS_UTVIDBAR_TIL_REGIONAL
     - name: ROLE_PAPIRSYKMELDING_ID
       value: "16aff429-1efc-402a-ae12-4000633d0063" # 0000-GA-papirsykmelding

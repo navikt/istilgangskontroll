@@ -36,20 +36,10 @@ class AdRoller(
         id = env.nasjonalId,
         rolle = "0000-GA-GOSYS_NASJONAL",
     )
-    val UTVIDBAR_TIL_NASJONAL = AdRolle(
-        name = "UTVIDBAR_TIL_NASJONAL",
-        id = env.utvidbarNasjonalId,
-        rolle = "0000-GA-GOSYS_UTVIDBAR_TIL_NASJONAL",
-    )
     val REGIONAL = AdRolle(
         name = "REGIONAL",
         id = env.regionalId,
         rolle = "0000-GA-GOSYS_REGIONAL",
-    )
-    val UTVIDBAR_TIL_REGIONAL = AdRolle(
-        name = "UTVIDBAR_TIL_REGIONAL",
-        id = env.utvidbarRegionalId,
-        rolle = "0000-GA-GOSYS_UTVIDBAR_TIL_REGIONAL",
     )
     val PAPIRSYKMELDING = AdRolle(
         name = "PAPIRSYKMELDING",
@@ -64,9 +54,7 @@ class AdRoller(
             SYFO,
             EGEN_ANSATT,
             NASJONAL,
-            UTVIDBAR_TIL_NASJONAL,
             REGIONAL,
-            UTVIDBAR_TIL_REGIONAL,
             PAPIRSYKMELDING,
         )
     }
