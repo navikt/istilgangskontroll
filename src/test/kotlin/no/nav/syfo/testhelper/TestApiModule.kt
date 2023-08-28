@@ -6,6 +6,7 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.tilgang.AdRoller
@@ -43,6 +44,13 @@ fun Application.testApiModule(
         httpClient = mockHttpClient,
     )
 
+    val pdlClient = PdlClient(
+        azureAdClient = azureAdClient,
+        baseUrl = externalMockEnvironment.environment.clients.skjermedePersoner.baseUrl,
+        clientId = externalMockEnvironment.environment.clients.skjermedePersoner.clientId,
+        httpClient = mockHttpClient,
+    )
+
     val redisStore = RedisStore(externalMockEnvironment.environment.redis)
 
     this.apiModule(
@@ -54,5 +62,6 @@ fun Application.testApiModule(
         redisStore = redisStore,
         axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
+        pdlClient = pdlClient,
     )
 }

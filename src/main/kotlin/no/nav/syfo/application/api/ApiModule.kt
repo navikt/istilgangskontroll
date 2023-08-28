@@ -10,6 +10,7 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.application.metric.registerMetricApi
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.wellknown.WellKnown
 import no.nav.syfo.tilgang.*
@@ -23,6 +24,7 @@ fun Application.apiModule(
     redisStore: RedisStore,
     axsysClient: AxsysClient,
     skjermedePersonerPipClient: SkjermedePersonerPipClient,
+    pdlClient: PdlClient,
 ) {
     installMetrics()
     installCallId()
@@ -42,6 +44,7 @@ fun Application.apiModule(
         graphApiClient = graphApiClient,
         axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
+        pdlClient = pdlClient,
         adRoller = adRoller,
         redisStore = redisStore,
     )

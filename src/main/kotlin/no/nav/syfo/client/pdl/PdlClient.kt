@@ -56,6 +56,7 @@ class PdlClient(
                         pdlResponse.data
                     }
                 }
+
                 else -> {
                     COUNT_CALL_PDL_PERSON_FAIL.increment()
                     log.error("Request with url: $baseUrl failed with reponse code ${response.status.value}")

@@ -11,6 +11,7 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.wellknown.getWellKnown
 import no.nav.syfo.tilgang.AdRoller
@@ -47,6 +48,12 @@ fun main() {
         clientId = environment.clients.skjermedePersoner.clientId,
     )
 
+    val pdlClient = PdlClient(
+        azureAdClient = azureAdClient,
+        baseUrl = environment.clients.pdl.baseUrl,
+        clientId = environment.clients.pdl.clientId,
+    )
+
     val wellKnownInternalAzureAD = getWellKnown(
         wellKnownUrl = environment.azure.appWellKnownUrl,
     )
@@ -67,6 +74,7 @@ fun main() {
                 redisStore = redisStore,
                 axsysClient = axsysClient,
                 skjermedePersonerPipClient = skjermedePersonerPipClient,
+                pdlClient = pdlClient,
             )
         }
     }
