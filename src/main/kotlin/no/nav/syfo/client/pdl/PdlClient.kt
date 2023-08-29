@@ -8,6 +8,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import net.logstash.logback.argument.StructuredArguments
+import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.domain.Personident
@@ -23,20 +24,23 @@ class PdlClient(
 
     suspend fun person(
         callId: String,
-        personIdentNumber: Personident,
+        personident: Personident,
+        token: Token,
     ): PdlHentPerson? {
         val request = PdlRequest(
             query = getPdlQuery("/pdl/hentPerson.graphql"),
-            variables = Variables(personIdentNumber.value),
+            variables = Variables(personident.value),
         )
-        val systemToken = azureAdClient.getSystemToken(
+        val oboToken = azureAdClient.getOnBehalfOfToken(
             scopeClientId = clientId,
-            callId = callId,
-        ) ?: throw RuntimeException("Failed to send request to PDL: No token was found")
+            token = token,
+            callId = callId
+        )?.accessToken
+            ?: throw RuntimeException("Failed to request person info from pdl: Failed to get token from AzureAD with callId=$callId")
         try {
             val response: HttpResponse = httpClient.post(baseUrl) {
                 contentType(ContentType.Application.Json)
-                header(HttpHeaders.Authorization, bearerHeader(systemToken.accessToken))
+                header(HttpHeaders.Authorization, bearerHeader(oboToken))
                 header(TEMA_HEADER, ALLE_TEMA_HEADERVERDI)
                 header(NAV_CALL_ID_HEADER, callId)
                 setBody(request)
