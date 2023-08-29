@@ -36,7 +36,11 @@ data class Environment(
         skjermedePersoner = ClientEnvironment(
             baseUrl = getEnvVar("SKJERMEDE_PERSONER_URL"),
             clientId = getEnvVar("SKJERMEDE_PERSONER_CLIENT_ID")
-        )
+        ),
+        pdl = ClientEnvironment(
+            baseUrl = getEnvVar("PDL_URL"),
+            clientId = getEnvVar("PDL_CLIENT_ID")
+        ),
     ),
 
 )

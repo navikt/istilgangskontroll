@@ -35,7 +35,11 @@ fun testEnvironment() = Environment(
         skjermedePersoner = ClientEnvironment(
             baseUrl = "skjermedePersonerBaseurl",
             clientId = "skjermedePersonerClientId",
-        )
+        ),
+        pdl = ClientEnvironment(
+            baseUrl = "pdlBaseurl",
+            clientId = "pdlClientId",
+        ),
     ),
 )
 

@@ -6,6 +6,7 @@ import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.testhelper.*
@@ -17,6 +18,7 @@ class TilgangServicePersonSpek : Spek({
     val graphApiClient = mockk<GraphApiClient>(relaxed = true)
     val axsysClient = mockk<AxsysClient>(relaxed = true)
     val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
+    val pdlClient = mockk<PdlClient>(relaxed = true)
     val redisStore = mockk<RedisStore>(relaxed = true)
     val externalMockEnvironment = ExternalMockEnvironment()
     val adRoller = AdRoller(externalMockEnvironment.environment)
@@ -27,6 +29,7 @@ class TilgangServicePersonSpek : Spek({
         redisStore = redisStore,
         axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
+        pdlClient = pdlClient,
     )
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
