@@ -5,7 +5,7 @@ import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.graphapi.GraphApiClient
-import no.nav.syfo.client.pdl.PdlClient
+import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
 
@@ -62,6 +62,34 @@ class TilgangService(
         return tilgang
     }
 
+    private suspend fun isKode6AccessAvslatt(token: Token, callId: String): Boolean {
+        return !graphApiClient.hasAccess(adRolle = adRoller.KODE6, token = token, callId = callId)
+    }
+
+    private suspend fun isKode7AccessAvslatt(token: Token, callId: String): Boolean {
+        return !graphApiClient.hasAccess(adRolle = adRoller.KODE7, token = token, callId = callId)
+    }
+
+    private suspend fun isAdressebeskyttelseAccessGodkjent(
+        callId: String,
+        personident: Personident,
+        token: Token
+    ): Boolean {
+        val person = pdlClient.person(
+            callId = callId,
+            personident = personident,
+            token = token,
+        )
+
+        return if (person.isKode6() && isKode6AccessAvslatt(token = token, callId = callId)) {
+            false
+        } else if (person.isKode7() && isKode7AccessAvslatt(token = token, callId = callId)) {
+            false
+        } else {
+            true
+        }
+    }
+
     private suspend fun isSkjermetAccessGodkjent(callId: String, personident: Personident, token: Token): Boolean {
         val personIsSkjermet = skjermedePersonerPipClient.isSkjermet(
             callId = callId,
@@ -95,14 +123,15 @@ class TilgangService(
         //      - Nasjonal tilgang
         //      - Lokal tilgang til enhet
         //      - regional tilgang til enhet
-        //  - Hvis kode6, sjekk tilgang
-        //  - Hvis kode7, sjekk tilgang
 
-        val tilgang = if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
-            Tilgang(erGodkjent = false)
+        val erGodkjent = if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
+            false
+        } else if (!isAdressebeskyttelseAccessGodkjent(callId = callId, personident = personident, token = token)) {
+            false
         } else {
-            Tilgang(erGodkjent = true)
+            true
         }
+        val tilgang = Tilgang(erGodkjent = erGodkjent)
 
         redisStore.setObject(
             key = cacheKey,

@@ -26,7 +26,7 @@ class PdlClient(
         callId: String,
         personident: Personident,
         token: Token,
-    ): PdlHentPerson? {
+    ): PdlHentPerson {
         val request = PdlRequest(
             query = getPdlQuery("/pdl/hentPerson.graphql"),
             variables = Variables(personident.value),
@@ -49,22 +49,13 @@ class PdlClient(
             when (response.status) {
                 HttpStatusCode.OK -> {
                     val pdlResponse = response.body<PdlPersonResponse>()
-                    return if (!pdlResponse.errors.isNullOrEmpty()) {
-                        COUNT_CALL_PDL_PERSON_FAIL.increment()
-                        pdlResponse.errors.forEach {
-                            log.error("Error while requesting person from PersonDataLosningen: ${it.errorMessage()}")
-                        }
-                        null
-                    } else {
-                        COUNT_CALL_PDL_PERSON_SUCCESS.increment()
-                        pdlResponse.data
-                    }
+                    return getPdlHentPerson(pdlResponse) ?: throw RuntimeException("Failed to get person info from PDL callId=$callId")
                 }
 
                 else -> {
                     COUNT_CALL_PDL_PERSON_FAIL.increment()
                     log.error("Request with url: $baseUrl failed with reponse code ${response.status.value}")
-                    return null
+                    throw RuntimeException("Request with url: $baseUrl failed with reponse code ${response.status.value}")
                 }
             }
         } catch (e: ClosedReceiveChannelException) {
@@ -79,6 +70,19 @@ class PdlClient(
                 callIdArgument(callId),
             )
             throw e
+        }
+    }
+
+    private fun getPdlHentPerson(pdlResponse: PdlPersonResponse): PdlHentPerson? {
+        return if (!pdlResponse.errors.isNullOrEmpty()) {
+            COUNT_CALL_PDL_PERSON_FAIL.increment()
+            pdlResponse.errors.forEach {
+                log.error("Error while requesting person from PersonDataLosningen: ${it.errorMessage()}")
+            }
+            null
+        } else {
+            COUNT_CALL_PDL_PERSON_SUCCESS.increment()
+            pdlResponse.data
         }
     }
 

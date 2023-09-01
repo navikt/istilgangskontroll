@@ -27,6 +27,10 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getSkjermedePersonerResponse(request)
                 }
 
+                requestUrl.startsWith("/${env.clients.pdl.baseUrl}") -> {
+                    getPdlResponse(request)
+                }
+
                 else -> {
                     error("Unhandled ${request.url.encodedPath}")
                 }
