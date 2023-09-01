@@ -46,8 +46,8 @@ fun Application.testApiModule(
 
     val pdlClient = PdlClient(
         azureAdClient = azureAdClient,
-        baseUrl = externalMockEnvironment.environment.clients.skjermedePersoner.baseUrl,
-        clientId = externalMockEnvironment.environment.clients.skjermedePersoner.clientId,
+        baseUrl = externalMockEnvironment.environment.clients.pdl.baseUrl,
+        clientId = externalMockEnvironment.environment.clients.pdl.clientId,
         httpClient = mockHttpClient,
     )
 
