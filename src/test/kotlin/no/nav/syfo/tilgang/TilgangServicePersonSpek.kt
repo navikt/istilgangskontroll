@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
+import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
@@ -19,6 +20,7 @@ class TilgangServicePersonSpek : Spek({
     val axsysClient = mockk<AxsysClient>(relaxed = true)
     val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
     val pdlClient = mockk<PdlClient>(relaxed = true)
+    val behandlendeEnhetClient = mockk<BehandlendeEnhetClient>(relaxed = true)
     val redisStore = mockk<RedisStore>(relaxed = true)
     val externalMockEnvironment = ExternalMockEnvironment()
     val adRoller = AdRoller(externalMockEnvironment.environment)
@@ -30,6 +32,7 @@ class TilgangServicePersonSpek : Spek({
         axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
+        behandlendeEnhetClient = behandlendeEnhetClient,
     )
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
