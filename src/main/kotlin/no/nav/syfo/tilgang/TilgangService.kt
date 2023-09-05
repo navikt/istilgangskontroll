@@ -20,6 +20,14 @@ class TilgangService(
     val redisStore: RedisStore,
 ) {
 
+    private suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
+        return graphApiClient.hasAccess(
+            adRolle = adRoller.SYFO,
+            token = token,
+            callId = callId,
+        )
+    }
+
     suspend fun hasTilgangToSyfo(token: Token, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
@@ -30,8 +38,7 @@ class TilgangService(
         }
 
         val tilgang = Tilgang(
-            erGodkjent = graphApiClient.hasAccess(
-                adRolle = adRoller.SYFO,
+            erGodkjent = hasAccessToSYFO(
                 token = token,
                 callId = callId,
             )
@@ -147,10 +154,9 @@ class TilgangService(
             return cachedTilgang
         }
 
-        // TODO:
-        //  - TilgangTilTjenesten
-
-        val erGodkjent = if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
+        val erGodkjent = if (!hasAccessToSYFO(callId = callId, token = token)) {
+            false
+        } else if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
             false
         } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
             false
