@@ -5,7 +5,9 @@ import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
+import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
+import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
@@ -62,6 +64,22 @@ class TilgangServicePersonSpek : Spek({
 
         afterEachTest {
             clearMocks(graphApiClient, redisStore, skjermedePersonerPipClient, pdlClient)
+        }
+
+        beforeEachTest {
+            coEvery {
+                behandlendeEnhetClient.getEnhet(
+                    any(),
+                    Personident(UserConstants.PERSONIDENT),
+                    any()
+                )
+            } returns BehandlendeEnhetDTO(UserConstants.VEILEDER_ENHET, "enhet")
+            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(
+                AxsysEnhet(
+                    UserConstants.VEILEDER_ENHET,
+                    "enhet"
+                )
+            )
         }
 
         describe("has access to person") {

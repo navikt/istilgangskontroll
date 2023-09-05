@@ -64,6 +64,34 @@ class TilgangService(
         return tilgang
     }
 
+    private suspend fun hasNasjonalAccess(token: Token, callId: String): Boolean {
+        return graphApiClient.hasAccess(adRolle = adRoller.NASJONAL, token = token, callId = callId)
+    }
+
+    private suspend fun isGeografiskAccessGodkjent(
+        callId: String,
+        personident: Personident,
+        token: Token
+    ): Boolean {
+        if (hasNasjonalAccess(token = token, callId = callId)) {
+            return true
+        }
+
+        val behandlendeEnhetDTO = behandlendeEnhetClient.getEnhet(
+            callId = callId,
+            personident = personident,
+            token = token,
+        )
+        val behandlendeEnhet = Enhet(behandlendeEnhetDTO.enhetId)
+
+        val veiledersEnheter = axsysClient.getEnheter(token = token, callId = callId)
+        val hasAccessToLokalEnhet = veiledersEnheter.map { it.enhetId }.contains(behandlendeEnhet.id)
+
+        return hasAccessToLokalEnhet
+
+        // TODO: Check regional access
+    }
+
     private suspend fun isKode6AccessAvslatt(token: Token, callId: String): Boolean {
         return !graphApiClient.hasAccess(adRolle = adRoller.KODE6, token = token, callId = callId)
     }
@@ -121,12 +149,10 @@ class TilgangService(
 
         // TODO:
         //  - TilgangTilTjenesten
-        //  - GeografiskTilgang (Skiller seg fra den andre enhetstilgangen, fordi man her sjekker nasjonal/regional)
-        //      - Nasjonal tilgang
-        //      - Lokal tilgang til enhet
-        //      - regional tilgang til enhet
 
-        val erGodkjent = if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
+        val erGodkjent = if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
+            false
+        } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
             false
         } else if (!isAdressebeskyttelseAccessGodkjent(callId = callId, personident = personident, token = token)) {
             false
