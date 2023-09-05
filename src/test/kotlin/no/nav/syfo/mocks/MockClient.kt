@@ -31,6 +31,10 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getPdlResponse(request)
                 }
 
+                requestUrl.startsWith("/${env.clients.behandlendeEnhet.baseUrl}") -> {
+                    getBehandlendeEnhetResponse(request)
+                }
+
                 else -> {
                     error("Unhandled ${request.url.encodedPath}")
                 }

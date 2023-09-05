@@ -26,7 +26,7 @@ class BehandlendeEnhetClient(
         callId: String,
         personident: Personident,
         token: Token,
-    ): BehandlendeEnhetDTO? {
+    ): BehandlendeEnhetDTO {
         val url = behandlendeEnhetUrl
         val oboToken = azureAdClient.getOnBehalfOfToken(
             scopeClientId = clientId,
@@ -41,7 +41,7 @@ class BehandlendeEnhetClient(
                 accept(ContentType.Application.Json)
             }
             if (response.status == HttpStatusCode.NoContent) {
-                return null
+                throw RuntimeException("Failed to get behandlende enhet: Didn't find any enheter for innbygger! callId=$callId")
             } else {
                 COUNT_CALL_BEHANDLENDEENHET_SUCCESS.increment()
                 response.body()

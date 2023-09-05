@@ -5,7 +5,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import no.nav.syfo.client.pdl.*
 
-val response = PdlPersonResponse(
+private val PdlResponse = PdlPersonResponse(
     errors = emptyList(),
     data = PdlHentPerson(
         hentPerson = PdlPerson(
@@ -20,7 +20,7 @@ val response = PdlPersonResponse(
 
 fun MockRequestHandleScope.getPdlResponse(request: HttpRequestData): HttpResponseData {
     return respond(
-        content = mapper.writeValueAsString(response),
+        content = mapper.writeValueAsString(PdlResponse),
         status = HttpStatusCode.OK,
         headers = headersOf(HttpHeaders.ContentType, "application/json")
     )
