@@ -63,10 +63,76 @@ class TilgangServicePersonSpek : Spek({
         )
 
         afterEachTest {
-            clearMocks(graphApiClient, axsysClient, redisStore, skjermedePersonerPipClient, pdlClient, behandlendeEnhetClient)
+            clearMocks(
+                graphApiClient,
+                axsysClient,
+                redisStore,
+                skjermedePersonerPipClient,
+                pdlClient,
+                behandlendeEnhetClient,
+            )
         }
 
         describe("has access to person") {
+            describe("has access to SYFO") {
+                val personident = Personident(UserConstants.PERSONIDENT)
+                val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+                val callId = "123"
+                val ugradertInnbygger = PdlHentPerson(
+                    hentPerson = PdlPerson(
+                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                    ),
+                )
+
+                beforeEachTest {
+                    coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
+                    coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns false
+                    coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
+                }
+
+                it("Return no access if veileder doesn't have SYFO access") {
+                    every { redisStore.getObject<Tilgang?>(cacheKey) } returns null
+                    coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns false
+
+                    runBlocking {
+                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+
+                        tilgang.erGodkjent shouldBeEqualTo false
+                    }
+
+                    verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                    coVerify(exactly = 1) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.SYFO,
+                            token = validToken,
+                            callId = callId,
+                        )
+                    }
+                    verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                }
+
+                it("Return access if veileder has SYFO access") {
+                    every { redisStore.getObject<Tilgang?>(cacheKey) } returns null
+                    coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+
+                    runBlocking {
+                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+
+                        tilgang.erGodkjent shouldBeEqualTo true
+                    }
+
+                    verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                    coVerify(exactly = 1) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.SYFO,
+                            token = validToken,
+                            callId = callId,
+                        )
+                    }
+                    verifyCacheSet(exactly = 1, key = cacheKey)
+                }
+            }
+
             describe("has geografisk access to person") {
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
@@ -78,6 +144,7 @@ class TilgangServicePersonSpek : Spek({
                 )
 
                 beforeEachTest {
+                    coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns false
                     coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
                 }
@@ -203,6 +270,7 @@ class TilgangServicePersonSpek : Spek({
                 )
 
                 beforeEachTest {
+                    coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
                     coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
                 }
@@ -272,6 +340,7 @@ class TilgangServicePersonSpek : Spek({
                 val callId = "123"
 
                 beforeEachTest {
+                    coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
                     coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns false
                 }
