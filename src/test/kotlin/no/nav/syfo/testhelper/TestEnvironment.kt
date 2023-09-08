@@ -44,6 +44,10 @@ fun testEnvironment() = Environment(
             baseUrl = "behandlendeEnhetBaseurl",
             clientId = "behandlendeEnhetClientId",
         ),
+        norg = ClientEnvironment(
+            baseUrl = "norgBaseurl",
+            clientId = "norgClientId",
+        ),
     ),
 )
 
