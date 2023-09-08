@@ -1,4 +1,5 @@
 package no.nav.syfo
+
 import com.typesafe.config.ConfigFactory
 import io.ktor.server.application.*
 import io.ktor.server.config.*
@@ -12,6 +13,7 @@ import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.wellknown.getWellKnown
@@ -61,6 +63,12 @@ fun main() {
         clientId = environment.clients.behandlendeEnhet.clientId,
     )
 
+    val norgClient = NorgClient(
+        azureAdClient = azureAdClient,
+        baseUrl = environment.clients.norg.baseUrl,
+        clientId = environment.clients.norg.clientId,
+    )
+
     val wellKnownInternalAzureAD = getWellKnown(
         wellKnownUrl = environment.azure.appWellKnownUrl,
     )
@@ -83,6 +91,7 @@ fun main() {
                 skjermedePersonerPipClient = skjermedePersonerPipClient,
                 pdlClient = pdlClient,
                 behandlendeEnhetClient = behandlendeEnhetClient,
+                norgClient = norgClient,
             )
         }
     }

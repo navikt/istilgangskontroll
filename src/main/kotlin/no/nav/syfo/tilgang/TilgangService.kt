@@ -6,6 +6,7 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
@@ -16,6 +17,7 @@ class TilgangService(
     val skjermedePersonerPipClient: SkjermedePersonerPipClient,
     val pdlClient: PdlClient,
     val behandlendeEnhetClient: BehandlendeEnhetClient,
+    val norgClient: NorgClient,
     val adRoller: AdRoller,
     val redisStore: RedisStore,
 ) {

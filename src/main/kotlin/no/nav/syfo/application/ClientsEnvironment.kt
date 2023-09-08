@@ -6,6 +6,7 @@ data class ClientsEnvironment(
     val skjermedePersoner: ClientEnvironment,
     val pdl: ClientEnvironment,
     val behandlendeEnhet: ClientEnvironment,
+    val norg: ClientEnvironment,
 )
 
 data class ClientEnvironment(
