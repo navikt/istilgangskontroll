@@ -77,6 +77,26 @@ class TilgangService(
         return graphApiClient.hasAccess(adRolle = adRoller.NASJONAL, token = token, callId = callId)
     }
 
+    private suspend fun hasRegionalAccess(token: Token, callId: String): Boolean {
+        return graphApiClient.hasAccess(adRolle = adRoller.REGIONAL, token = token, callId = callId)
+    }
+
+    private suspend fun veiledersOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
+        val overordnedeEnheter = enheter.map {
+            norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = it)
+                .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
+        }.flatten()
+
+        return overordnedeEnheter
+    }
+
+    private suspend fun innbyggersOverordnedeEnheter(enhet: Enhet, callId: String): List<Enhet> {
+        val overordnedeEnheter = norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = enhet)
+            .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
+
+        return overordnedeEnheter
+    }
+
     private suspend fun isGeografiskAccessGodkjent(
         callId: String,
         personident: Personident,
@@ -93,12 +113,21 @@ class TilgangService(
         )
         val behandlendeEnhet = Enhet(behandlendeEnhetDTO.enhetId)
 
-        val veiledersEnheter = axsysClient.getEnheter(token = token, callId = callId)
-        val hasAccessToLokalEnhet = veiledersEnheter.map { it.enhetId }.contains(behandlendeEnhet.id)
+        val veiledersEnheter = axsysClient.getEnheter(token = token, callId = callId).map { Enhet(it.enhetId) }
+        val hasAccessToLokalEnhet = veiledersEnheter.map { it.id }.contains(behandlendeEnhet.id)
 
-        return hasAccessToLokalEnhet
+        if (hasAccessToLokalEnhet) {
+            return true
+        }
 
-        // TODO: Check regional access
+        if (hasRegionalAccess(token = token, callId = callId)) {
+            val veiledersOverordnedeEnheter = veiledersOverordnedeEnheter(enheter = veiledersEnheter, callId = callId)
+            val innbyggersOverordnedeEnheter = innbyggersOverordnedeEnheter(enhet = behandlendeEnhet, callId = callId)
+
+            return innbyggersOverordnedeEnheter.any { it in veiledersOverordnedeEnheter }
+        }
+
+        return false
     }
 
     private suspend fun isKode6AccessAvslatt(token: Token, callId: String): Boolean {
