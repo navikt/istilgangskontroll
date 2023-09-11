@@ -5,7 +5,6 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.tilgang.Enhet
@@ -14,9 +13,7 @@ import no.nav.syfo.util.callIdArgument
 import org.slf4j.LoggerFactory.getLogger
 
 class NorgClient(
-    private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
-    private val clientId: String,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
 

@@ -61,9 +61,7 @@ fun Application.testApiModule(
     )
 
     val norgClient = NorgClient(
-        azureAdClient = azureAdClient,
-        baseUrl = externalMockEnvironment.environment.clients.norg.baseUrl,
-        clientId = externalMockEnvironment.environment.clients.norg.clientId,
+        baseUrl = externalMockEnvironment.environment.clients.norgUrl,
         httpClient = mockHttpClient,
     )
 

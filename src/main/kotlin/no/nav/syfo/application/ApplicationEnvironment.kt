@@ -45,10 +45,7 @@ data class Environment(
             baseUrl = getEnvVar("SYFOBEHANDLENDEENHET_URL"),
             clientId = getEnvVar("SYFOBEHANDLENDEENHET_CLIENT_ID")
         ),
-        norg = ClientEnvironment(
-            baseUrl = getEnvVar("NORG_URL"),
-            clientId = getEnvVar("NORG_CLIENT_ID")
-        ),
+        norgUrl = getEnvVar("NORG2_URL"),
     ),
 
 )

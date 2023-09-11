@@ -64,9 +64,7 @@ fun main() {
     )
 
     val norgClient = NorgClient(
-        azureAdClient = azureAdClient,
-        baseUrl = environment.clients.norg.baseUrl,
-        clientId = environment.clients.norg.clientId,
+        baseUrl = environment.clients.norgUrl,
     )
 
     val wellKnownInternalAzureAD = getWellKnown(
