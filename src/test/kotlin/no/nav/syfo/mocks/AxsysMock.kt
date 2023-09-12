@@ -9,13 +9,20 @@ import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.axsys.AxsysTilgangerResponse
 import no.nav.syfo.testhelper.UserConstants
 
-private val axsysEnhet = AxsysEnhet(
-    enhetId = UserConstants.VEILEDER_ENHET,
+private val axsysEnhetAccess = AxsysEnhet(
+    enhetId = UserConstants.ENHET_VEILEDER,
     navn = "enhet",
 )
+private val axsysAccessResponse = AxsysTilgangerResponse(
+    enheter = listOf(axsysEnhetAccess)
+)
 
-private val axsysResponse = AxsysTilgangerResponse(
-    enheter = listOf(axsysEnhet)
+private val axsysEnhetNoAccess = AxsysEnhet(
+    enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
+    navn = "enhet",
+)
+private val axsysNoAccessResponse = AxsysTilgangerResponse(
+    enheter = listOf(axsysEnhetNoAccess)
 )
 
 fun MockRequestHandleScope.getAxsysResponse(request: HttpRequestData): HttpResponseData {
@@ -25,7 +32,14 @@ fun MockRequestHandleScope.getAxsysResponse(request: HttpRequestData): HttpRespo
     return when (veilederIdent) {
         UserConstants.VEILEDER_IDENT -> {
             respond(
-                content = mapper.writeValueAsString(axsysResponse),
+                content = mapper.writeValueAsString(axsysAccessResponse),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        UserConstants.VEILEDER_IDENT_NO_ENHET_ACCESS -> {
+            respond(
+                content = mapper.writeValueAsString(axsysNoAccessResponse),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )

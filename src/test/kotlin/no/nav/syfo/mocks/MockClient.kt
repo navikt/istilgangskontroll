@@ -35,6 +35,10 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getBehandlendeEnhetResponse(request)
                 }
 
+                requestUrl.startsWith("/${env.clients.norgUrl}") -> {
+                    getNorgResponse(request)
+                }
+
                 else -> {
                     error("Unhandled ${request.url.encodedPath}")
                 }

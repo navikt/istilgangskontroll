@@ -19,14 +19,6 @@ fun MockRequestHandleScope.getGraphApiResponse(request: HttpRequestData): HttpRe
     val veilederIdent = JWT.decode(token).claims[JWT_CLAIM_NAVIDENT]?.asString()
 
     return when (veilederIdent) {
-        UserConstants.VEILEDER_IDENT -> {
-            respond(
-                content = mapper.writeValueAsString(responseWithSyfoAccess),
-                status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
-            )
-        }
-
         UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS -> {
             respond(
                 content = mapper.writeValueAsString(responseNoSyfoAccess),
@@ -35,6 +27,12 @@ fun MockRequestHandleScope.getGraphApiResponse(request: HttpRequestData): HttpRe
             )
         }
 
-        else -> respondBadRequest()
+        else -> {
+            respond(
+                content = mapper.writeValueAsString(responseWithSyfoAccess),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
     }
 }
