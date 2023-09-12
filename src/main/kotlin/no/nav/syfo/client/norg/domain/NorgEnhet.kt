@@ -3,7 +3,6 @@ package no.nav.syfo.client.norg.domain
 data class NorgEnhet(
     var aktiveringsdato: String?,
     var antallRessurser: String?,
-    var enhetId: String?,
     var enhetNr: String,
     var kanalstrategi: String?,
     var navn: String,

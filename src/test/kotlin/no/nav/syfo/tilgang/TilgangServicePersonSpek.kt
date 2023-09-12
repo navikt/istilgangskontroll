@@ -10,6 +10,7 @@ import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
+import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
@@ -73,6 +74,7 @@ class TilgangServicePersonSpek : Spek({
                 skjermedePersonerPipClient,
                 pdlClient,
                 behandlendeEnhetClient,
+                norgClient,
             )
         }
 
@@ -171,6 +173,13 @@ class TilgangServicePersonSpek : Spek({
                         )
                     }
                     coVerify(exactly = 0) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.REGIONAL,
+                            any(),
+                            any(),
+                        )
+                    }
+                    coVerify(exactly = 0) {
                         behandlendeEnhetClient.getEnhet(any(), personident, any())
                     }
                     coVerify(exactly = 0) {
@@ -179,7 +188,7 @@ class TilgangServicePersonSpek : Spek({
                     verifyCacheSet(exactly = 1, key = cacheKey)
                 }
 
-                it("Return no access if veileder doesn't have national access and not access to innbyggers enhet") {
+                it("Return no access if veileder doesn't have national or regional access and not access to innbyggers enhet") {
                     val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.VEILEDER_ENHET, navn = "enhet")
                     val veiledersEnhet = AxsysEnhet(
                         enhetId = UserConstants.VEILEDER_NO_ACCESS_ENHET,
@@ -205,6 +214,13 @@ class TilgangServicePersonSpek : Spek({
                         )
                     }
                     coVerify(exactly = 1) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.REGIONAL,
+                            token = validToken,
+                            callId = callId,
+                        )
+                    }
+                    coVerify(exactly = 1) {
                         behandlendeEnhetClient.getEnhet(
                             callId = callId,
                             personident = personident,
@@ -215,6 +231,12 @@ class TilgangServicePersonSpek : Spek({
                         axsysClient.getEnheter(
                             callId = callId,
                             token = validToken,
+                        )
+                    }
+                    coVerify(exactly = 0) {
+                        norgClient.getOverordnetEnhetListForNAVKontor(
+                            any(),
+                            any(),
                         )
                     }
                     verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
@@ -245,6 +267,13 @@ class TilgangServicePersonSpek : Spek({
                             callId = callId,
                         )
                     }
+                    coVerify(exactly = 0) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.REGIONAL,
+                            token = validToken,
+                            callId = callId,
+                        )
+                    }
                     coVerify(exactly = 1) {
                         behandlendeEnhetClient.getEnhet(
                             callId = callId,
@@ -256,6 +285,70 @@ class TilgangServicePersonSpek : Spek({
                         axsysClient.getEnheter(
                             callId = callId,
                             token = validToken,
+                        )
+                    }
+                    coVerify(exactly = 0) {
+                        norgClient.getOverordnetEnhetListForNAVKontor(
+                            any(),
+                            any(),
+                        )
+                    }
+                    verifyCacheSet(exactly = 1, key = cacheKey)
+                }
+
+                it("Return access if veileder doesn't have national or local access but has regional access") {
+                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.VEILEDER_ENHET, navn = "enhet")
+                    val veiledersEnhet = AxsysEnhet(
+                        enhetId = UserConstants.VEILEDER_NO_ACCESS_ENHET,
+                        navn = "enhet",
+                    )
+                    val overordnetEnhet = createNorgEnhet(UserConstants.OVERORDNET_ENHET)
+                    every { redisStore.getObject<Tilgang?>(any()) } returns null
+                    coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
+                    coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
+                    coEvery { behandlendeEnhetClient.getEnhet(any(), personident, any()) } returns innbyggerEnhet
+                    coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                    coEvery { norgClient.getOverordnetEnhetListForNAVKontor(any(), any()) } returns listOf(
+                        overordnetEnhet
+                    )
+
+                    runBlocking {
+                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+
+                        tilgang.erGodkjent shouldBeEqualTo true
+                    }
+
+                    verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                    coVerify(exactly = 1) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.NASJONAL,
+                            token = validToken,
+                            callId = callId,
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        behandlendeEnhetClient.getEnhet(
+                            callId = callId,
+                            personident = personident,
+                            token = validToken,
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        axsysClient.getEnheter(
+                            callId = callId,
+                            token = validToken,
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        norgClient.getOverordnetEnhetListForNAVKontor(
+                            callId = callId,
+                            enhet = Enhet(id = UserConstants.VEILEDER_ENHET)
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        norgClient.getOverordnetEnhetListForNAVKontor(
+                            callId = callId,
+                            enhet = Enhet(id = UserConstants.VEILEDER_NO_ACCESS_ENHET)
                         )
                     }
                     verifyCacheSet(exactly = 1, key = cacheKey)
@@ -573,3 +666,22 @@ class TilgangServicePersonSpek : Spek({
         }
     }
 })
+
+fun createNorgEnhet(enhetNr: String) = NorgEnhet(
+    enhetNr = enhetNr,
+    navn = "enhet",
+    status = "aktiv",
+    aktiveringsdato = null,
+    antallRessurser = null,
+    kanalstrategi = null,
+    nedleggelsesdato = null,
+    oppgavebehandler = null,
+    orgNivaa = null,
+    orgNrTilKommunaltNavKontor = null,
+    organisasjonsnummer = null,
+    sosialeTjenester = null,
+    type = null,
+    underAvviklingDato = null,
+    underEtableringDato = null,
+    versjon = null,
+)
