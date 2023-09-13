@@ -102,7 +102,7 @@ class TilgangServiceSpek : Spek({
             val cacheKeySyfo = "tilgang-til-tjenesten-${UserConstants.VEILEDER_IDENT}"
 
             it("return has access if enhet is in veileders list from Axsys") {
-                val enhet = Enhet(UserConstants.VEILEDER_ENHET)
+                val enhet = Enhet(UserConstants.ENHET_VEILEDER)
                 val veiledersEnhet = AxsysEnhet(
                     enhetId = enhet.id,
                     navn = "enhet",
@@ -125,8 +125,8 @@ class TilgangServiceSpek : Spek({
             }
 
             it("return no access if enhet is not in veileders list from Axsys") {
-                val wantedEnhet = Enhet(UserConstants.VEILEDER_ENHET)
-                val actualEnhet = Enhet(UserConstants.VEILEDER_NO_ACCESS_ENHET)
+                val wantedEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+                val actualEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
                 val veiledersEnhet = AxsysEnhet(
                     enhetId = actualEnhet.id,
                     navn = "enhet",
@@ -148,7 +148,7 @@ class TilgangServiceSpek : Spek({
             }
 
             it("return result from cache hit") {
-                val enhet = Enhet(UserConstants.VEILEDER_ENHET)
+                val enhet = Enhet(UserConstants.ENHET_VEILEDER)
                 val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
                 val callId = "123"
                 every { redisStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)

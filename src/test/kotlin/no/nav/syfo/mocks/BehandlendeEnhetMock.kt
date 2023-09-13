@@ -7,7 +7,7 @@ import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.testhelper.UserConstants
 
 private val behandlendeEnhetResponse = BehandlendeEnhetDTO(
-    enhetId = UserConstants.VEILEDER_ENHET,
+    enhetId = UserConstants.ENHET_VEILEDER,
     navn = "enhet",
 )
 

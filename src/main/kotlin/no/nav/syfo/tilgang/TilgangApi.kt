@@ -90,11 +90,14 @@ fun Route.registerTilgangApi(
                 callId = callId,
             )
 
-            // TODO: Respond with correct tilgang when ready to be used
-            call.respond(
-                status = HttpStatusCode.Forbidden,
-                message = Tilgang(erGodkjent = false)
-            )
+            if (tilgang.erGodkjent) {
+                call.respond(tilgang)
+            } else {
+                call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = tilgang
+                )
+            }
         }
     }
 }

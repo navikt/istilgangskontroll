@@ -189,9 +189,9 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("Return no access if veileder doesn't have national or regional access and not access to innbyggers enhet") {
-                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.VEILEDER_ENHET, navn = "enhet")
+                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.ENHET_VEILEDER, navn = "enhet")
                     val veiledersEnhet = AxsysEnhet(
-                        enhetId = UserConstants.VEILEDER_NO_ACCESS_ENHET,
+                        enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
                         navn = "enhet",
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
@@ -243,9 +243,9 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("Return access if veileder doesn't have national access but has access to innbyggers enhet") {
-                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.VEILEDER_ENHET, navn = "enhet")
+                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.ENHET_VEILEDER, navn = "enhet")
                     val veiledersEnhet = AxsysEnhet(
-                        enhetId = UserConstants.VEILEDER_ENHET,
+                        enhetId = UserConstants.ENHET_VEILEDER,
                         navn = "enhet",
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
@@ -297,12 +297,12 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("Return access if veileder doesn't have national or local access but has regional access") {
-                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.VEILEDER_ENHET, navn = "enhet")
+                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.ENHET_VEILEDER, navn = "enhet")
                     val veiledersEnhet = AxsysEnhet(
-                        enhetId = UserConstants.VEILEDER_NO_ACCESS_ENHET,
+                        enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
                         navn = "enhet",
                     )
-                    val overordnetEnhet = createNorgEnhet(UserConstants.OVERORDNET_ENHET)
+                    val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
                     coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
@@ -342,13 +342,13 @@ class TilgangServicePersonSpek : Spek({
                     coVerify(exactly = 1) {
                         norgClient.getOverordnetEnhetListForNAVKontor(
                             callId = callId,
-                            enhet = Enhet(id = UserConstants.VEILEDER_ENHET)
+                            enhet = Enhet(id = UserConstants.ENHET_VEILEDER)
                         )
                     }
                     coVerify(exactly = 1) {
                         norgClient.getOverordnetEnhetListForNAVKontor(
                             callId = callId,
-                            enhet = Enhet(id = UserConstants.VEILEDER_NO_ACCESS_ENHET)
+                            enhet = Enhet(id = UserConstants.ENHET_VEILEDER_NO_ACCESS)
                         )
                     }
                     verifyCacheSet(exactly = 1, key = cacheKey)
