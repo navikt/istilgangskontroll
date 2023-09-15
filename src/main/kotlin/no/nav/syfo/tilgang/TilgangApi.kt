@@ -4,7 +4,9 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
+import no.nav.syfo.audit.*
 import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
@@ -73,7 +75,6 @@ fun Route.registerTilgangApi(
             }
         }
 
-        // TODO: Add auditlog
         get("/navident/person") {
             val callId = call.getCallId()
             val requestedPersonIdent = call.getPersonidentHeader()
@@ -83,11 +84,23 @@ fun Route.registerTilgangApi(
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check enhetstilgang for veileder. No NAV ident in token")
             }
+            val veilederIdent = token.getNAVIdent()
+            val consumerClientId = call.getConsumerClientId() ?: ""
 
             val tilgang = tilgangService.hasTilgangToPerson(
                 token = token,
                 personident = requestedPersonIdent,
                 callId = callId,
+            )
+
+            auditLog(
+                CEF(
+                    suid = veilederIdent,
+                    duid = requestedPersonIdent.value,
+                    event = AuditLogEvent.Access,
+                    permit = tilgang.erGodkjent,
+                    appName = consumerClientId, // TODO: Get app name instead of client id
+                )
             )
 
             if (tilgang.erGodkjent) {

@@ -8,6 +8,7 @@ object Versions {
     const val kluent = "1.72"
     const val ktor = "2.3.1"
     const val logback = "1.4.7"
+    const val logbackSyslog4jVersion = "1.0.0"
     const val logstashEncoder = "7.3"
     const val micrometerRegistry = "1.11.0"
     const val mockk = "1.13.5"
@@ -44,6 +45,7 @@ dependencies {
     // Logging
     implementation("ch.qos.logback:logback-classic:${Versions.logback}")
     implementation("net.logstash.logback:logstash-logback-encoder:${Versions.logstashEncoder}")
+    implementation("com.papertrailapp:logback-syslog4j:${Versions.logbackSyslog4jVersion}")
 
     // Metrics and Prometheus
     implementation("io.ktor:ktor-server-metrics-micrometer:${Versions.ktor}")
