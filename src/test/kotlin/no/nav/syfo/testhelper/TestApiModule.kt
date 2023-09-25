@@ -20,6 +20,8 @@ fun Application.testApiModule(
 
     val mockHttpClient = getMockHttpClient(env = externalMockEnvironment.environment)
 
+    val redisStore = RedisStore(externalMockEnvironment.environment.redis)
+
     val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,
         httpClient = mockHttpClient,
@@ -50,6 +52,7 @@ fun Application.testApiModule(
         azureAdClient = azureAdClient,
         baseUrl = externalMockEnvironment.environment.clients.pdl.baseUrl,
         clientId = externalMockEnvironment.environment.clients.pdl.clientId,
+        redisStore = redisStore,
         httpClient = mockHttpClient,
     )
 
@@ -64,8 +67,6 @@ fun Application.testApiModule(
         baseUrl = externalMockEnvironment.environment.clients.norgUrl,
         httpClient = mockHttpClient,
     )
-
-    val redisStore = RedisStore(externalMockEnvironment.environment.redis)
 
     this.apiModule(
         applicationState = externalMockEnvironment.applicationState,

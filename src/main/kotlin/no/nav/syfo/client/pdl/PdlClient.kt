@@ -9,6 +9,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
+import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.domain.Personident
@@ -19,6 +20,7 @@ class PdlClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
     private val clientId: String,
+    private val redisStore: RedisStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
 
@@ -27,6 +29,23 @@ class PdlClient(
         personident: Personident,
         token: Token,
     ): PdlHentPerson {
+        val cacheKey = "$PDL_PERSON_CACHE_KEY-$personident"
+        val cachedPerson = getCachedPdlHentPerson(cacheKey)
+
+        return if (cachedPerson != null) {
+            cachedPerson
+        } else {
+            val pdlHentPerson = getPersonFromPdl(callId, personident, token)
+            redisStore.setObject(key = cacheKey, value = pdlHentPerson, expireSeconds = TWELVE_HOURS_IN_SECS)
+            pdlHentPerson
+        }
+    }
+
+    private suspend fun getCachedPdlHentPerson(cacheKey: String): PdlHentPerson? {
+        return redisStore.getObject(key = cacheKey)
+    }
+
+    private suspend fun getPersonFromPdl(callId: String, personident: Personident, token: Token): PdlHentPerson {
         val request = PdlRequest(
             query = getPdlQuery("/pdl/hentPerson.graphql"),
             variables = Variables(personident.value),
@@ -94,5 +113,8 @@ class PdlClient(
 
     companion object {
         private val log = LoggerFactory.getLogger(PdlClient::class.java)
+
+        const val PDL_PERSON_CACHE_KEY = "pdl-person"
+        const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
     }
 }
