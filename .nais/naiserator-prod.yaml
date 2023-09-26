@@ -51,6 +51,9 @@ spec:
         - application: isdialogmotekandidat
           namespace: teamsykefravr
           cluster: prod-gcp
+        - application: ishuskelapp
+          namespace: teamsykefravr
+          cluster: prod-gcp
         - application: isnarmesteleder
           namespace: teamsykefravr
           cluster: prod-gcp
