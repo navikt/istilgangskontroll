@@ -10,8 +10,8 @@ on:
 jobs:
   monitor:
     permissions:
+      actions: read
       contents: read
-      id-token: write
       security-events: write
     uses: navikt/isworkflows/.github/workflows/codeql.yml@master
     with:
