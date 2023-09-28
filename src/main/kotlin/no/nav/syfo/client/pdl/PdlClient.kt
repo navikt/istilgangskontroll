@@ -68,7 +68,8 @@ class PdlClient(
             when (response.status) {
                 HttpStatusCode.OK -> {
                     val pdlResponse = response.body<PdlPersonResponse>()
-                    return getPdlHentPerson(pdlResponse) ?: throw RuntimeException("Failed to get person info from PDL callId=$callId")
+                    return getPdlHentPerson(pdlResponse)
+                        ?: throw RuntimeException("Failed to get person info from PDL callId=$callId")
                 }
 
                 else -> {
