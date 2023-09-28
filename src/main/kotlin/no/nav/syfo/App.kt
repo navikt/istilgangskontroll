@@ -55,6 +55,7 @@ fun main() {
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.pdl.baseUrl,
         clientId = environment.clients.pdl.clientId,
+        redisStore = redisStore,
     )
 
     val behandlendeEnhetClient = BehandlendeEnhetClient(
