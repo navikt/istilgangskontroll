@@ -62,6 +62,7 @@ fun main() {
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.behandlendeEnhet.baseUrl,
         clientId = environment.clients.behandlendeEnhet.clientId,
+        redisStore = redisStore,
     )
 
     val norgClient = NorgClient(
