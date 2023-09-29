@@ -43,6 +43,7 @@ fun main() {
         azureAdClient = azureAdClient,
         axsysUrl = environment.clients.axsys.baseUrl,
         clientId = environment.clients.axsys.clientId,
+        redisStore = redisStore,
     )
 
     val skjermedePersonerPipClient = SkjermedePersonerPipClient(

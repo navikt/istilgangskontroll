@@ -38,6 +38,7 @@ fun Application.testApiModule(
         azureAdClient = azureAdClient,
         axsysUrl = externalMockEnvironment.environment.clients.axsys.baseUrl,
         clientId = externalMockEnvironment.environment.clients.axsys.clientId,
+        redisStore = redisStore,
         httpClient = mockHttpClient,
     )
 
