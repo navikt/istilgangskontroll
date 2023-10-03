@@ -46,6 +46,7 @@ fun Application.testApiModule(
         azureAdClient = azureAdClient,
         skjermedePersonerUrl = externalMockEnvironment.environment.clients.skjermedePersoner.baseUrl,
         clientId = externalMockEnvironment.environment.clients.skjermedePersoner.clientId,
+        redisStore = redisStore,
         httpClient = mockHttpClient,
     )
 

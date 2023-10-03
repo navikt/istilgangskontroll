@@ -49,6 +49,7 @@ fun main() {
     val skjermedePersonerPipClient = SkjermedePersonerPipClient(
         azureAdClient = azureAdClient,
         skjermedePersonerUrl = environment.clients.skjermedePersoner.baseUrl,
+        redisStore = redisStore,
         clientId = environment.clients.skjermedePersoner.clientId,
     )
 
