@@ -2,6 +2,7 @@ package no.nav.syfo.tilgang
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.getNAVIdent
@@ -111,6 +112,22 @@ fun Route.registerTilgangApi(
                     message = tilgang
                 )
             }
+        }
+
+        post("/system/preloadbrukere") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to preload cache: No Authorization header supplied, callId=$callId")
+
+            val personidenter = call.receive<List<String>>()
+
+            tilgangService.preloadCacheForPersonAccess(
+                token = token,
+                callId = callId,
+                personidenter = personidenter,
+            )
+
+            call.respond(HttpStatusCode.OK)
         }
     }
 }

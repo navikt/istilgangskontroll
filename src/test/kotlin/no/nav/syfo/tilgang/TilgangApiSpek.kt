@@ -218,6 +218,28 @@ class TilgangApiSpek : Spek({
                     }
                 }
             }
+
+            describe("preload cache") {
+                it("return OK after loading cache") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                    )
+                    val requestBody = listOf(UserConstants.PERSONIDENT)
+
+                    with(
+                        handleRequest(HttpMethod.Post, "$tilgangApiBasePath/system/preloadbrukere") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                            setBody(objectMapper.writeValueAsString(requestBody))
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.OK
+                    }
+                }
+            }
         }
     }
 })
