@@ -91,8 +91,8 @@ class TilgangServicePersonSpek : Spek({
 
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
-                    coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns false
-                    coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
                 }
 
                 it("Return no access if veileder doesn't have SYFO access") {
@@ -150,8 +150,8 @@ class TilgangServicePersonSpek : Spek({
 
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
-                    coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns false
-                    coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
                 }
 
                 it("Return access if veileder has nasjonal tilgang") {
@@ -180,7 +180,7 @@ class TilgangServicePersonSpek : Spek({
                         )
                     }
                     coVerify(exactly = 0) {
-                        behandlendeEnhetClient.getEnhet(any(), personident, any())
+                        behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
                     }
                     coVerify(exactly = 0) {
                         axsysClient.getEnheter(any(), any())
@@ -196,7 +196,7 @@ class TilgangServicePersonSpek : Spek({
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-                    coEvery { behandlendeEnhetClient.getEnhet(any(), personident, any()) } returns innbyggerEnhet
+                    coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns innbyggerEnhet
                     coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
 
                     runBlocking {
@@ -221,7 +221,7 @@ class TilgangServicePersonSpek : Spek({
                         )
                     }
                     coVerify(exactly = 1) {
-                        behandlendeEnhetClient.getEnhet(
+                        behandlendeEnhetClient.getEnhetWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -250,7 +250,7 @@ class TilgangServicePersonSpek : Spek({
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-                    coEvery { behandlendeEnhetClient.getEnhet(any(), personident, any()) } returns innbyggerEnhet
+                    coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns innbyggerEnhet
                     coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
 
                     runBlocking {
@@ -275,7 +275,7 @@ class TilgangServicePersonSpek : Spek({
                         )
                     }
                     coVerify(exactly = 1) {
-                        behandlendeEnhetClient.getEnhet(
+                        behandlendeEnhetClient.getEnhetWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -306,7 +306,7 @@ class TilgangServicePersonSpek : Spek({
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
                     coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
-                    coEvery { behandlendeEnhetClient.getEnhet(any(), personident, any()) } returns innbyggerEnhet
+                    coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns innbyggerEnhet
                     coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
                     coEvery { norgClient.getOverordnetEnhetListForNAVKontor(any(), any()) } returns listOf(
                         overordnetEnhet
@@ -327,7 +327,7 @@ class TilgangServicePersonSpek : Spek({
                         )
                     }
                     coVerify(exactly = 1) {
-                        behandlendeEnhetClient.getEnhet(
+                        behandlendeEnhetClient.getEnhetWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -368,12 +368,12 @@ class TilgangServicePersonSpek : Spek({
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
-                    coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
                 }
 
                 it("Return no access if person is skjermet and veileder doesn't have correct AdRolle") {
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns true
+                    coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
                     runBlocking {
@@ -384,7 +384,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        skjermedePersonerPipClient.isSkjermet(
+                        skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                             callId = callId,
                             personIdent = personident,
                             token = validToken
@@ -402,7 +402,7 @@ class TilgangServicePersonSpek : Spek({
 
                 it("return godkjent access if person is skjermet and veileder has correct AdRolle") {
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns true
+                    coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns true
 
                     runBlocking {
@@ -413,7 +413,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        skjermedePersonerPipClient.isSkjermet(
+                        skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                             callId = callId,
                             personIdent = personident,
                             token = validToken
@@ -438,7 +438,7 @@ class TilgangServicePersonSpek : Spek({
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
-                    coEvery { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) } returns false
+                    coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
                 }
 
                 it("Return no access if person is kode6 and veileder doesn't have correct AdRolle") {
@@ -448,7 +448,7 @@ class TilgangServicePersonSpek : Spek({
                         ),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.person(any(), personident, any()) } returns personWithKode6
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode6
                     coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
                     runBlocking {
@@ -459,7 +459,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.person(
+                        pdlClient.getPersonWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -489,7 +489,7 @@ class TilgangServicePersonSpek : Spek({
                         ),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.person(any(), personident, any()) } returns personWithKode7
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode7
                     coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns false
 
                     runBlocking {
@@ -500,7 +500,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.person(
+                        pdlClient.getPersonWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -530,7 +530,7 @@ class TilgangServicePersonSpek : Spek({
                         ),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.person(any(), personident, any()) } returns personWithKode6
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode6
                     coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns true
 
                     runBlocking {
@@ -541,7 +541,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.person(
+                        pdlClient.getPersonWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -571,7 +571,7 @@ class TilgangServicePersonSpek : Spek({
                         ),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.person(any(), personident, any()) } returns personWithKode7
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode7
                     coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns true
 
                     runBlocking {
@@ -582,7 +582,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.person(
+                        pdlClient.getPersonWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -612,7 +612,7 @@ class TilgangServicePersonSpek : Spek({
                         ),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.person(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
 
                     runBlocking {
                         val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
@@ -622,7 +622,7 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.person(
+                        pdlClient.getPersonWithOboToken(
                             callId = callId,
                             personident = personident,
                             token = validToken,
@@ -659,7 +659,7 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
-                coVerify(exactly = 0) { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) }
+                coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
                 coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
                 verifyCacheSet(exactly = 0)
             }

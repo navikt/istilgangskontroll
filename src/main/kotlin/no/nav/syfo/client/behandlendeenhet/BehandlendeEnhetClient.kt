@@ -23,12 +23,29 @@ class BehandlendeEnhetClient(
     private val redisStore: RedisStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
-    private val behandlendeEnhetUrl = "${baseUrl}$BEHANDLENDEENHET_PATH"
-
-    suspend fun getEnhet(
+    suspend fun getEnhetWithOboToken(
         callId: String,
         personident: Personident,
-        token: Token,
+        token: Token?,
+    ) = getEnhet(
+        callId = callId,
+        personident = personident,
+        token = token,
+    )
+
+    suspend fun getEnhetWithSystemToken(
+        callId: String,
+        personident: Personident,
+    ) = getEnhet(
+        callId = callId,
+        personident = personident,
+        token = null,
+    )
+
+    private suspend fun getEnhet(
+        callId: String,
+        personident: Personident,
+        token: Token?,
     ): BehandlendeEnhetDTO {
         val cacheKey = "$BEHANDLENDEENHET_CACHE_KEY-$personident"
         val cachedEnhet = getCachedBehandlendeEnhet(cacheKey)
@@ -36,7 +53,12 @@ class BehandlendeEnhetClient(
         return if (cachedEnhet != null) {
             cachedEnhet
         } else {
-            val behandlendeEnhet = getEnhetFromSyfobehandlendeenhet(callId, personident, token)
+            val behandlendeEnhet = getEnhetFromSyfobehandlendeenhet(
+                callId = callId,
+                personident = personident,
+                token = token,
+            )
+
             redisStore.setObject(
                 key = cacheKey,
                 value = behandlendeEnhet,
@@ -46,24 +68,34 @@ class BehandlendeEnhetClient(
         }
     }
 
-    private suspend fun getCachedBehandlendeEnhet(cacheKey: String): BehandlendeEnhetDTO? {
+    private fun getCachedBehandlendeEnhet(cacheKey: String): BehandlendeEnhetDTO? {
         return redisStore.getObject(key = cacheKey)
     }
 
     private suspend fun getEnhetFromSyfobehandlendeenhet(
         callId: String,
         personident: Personident,
-        token: Token,
+        token: Token?,
     ): BehandlendeEnhetDTO {
-        val url = behandlendeEnhetUrl
-        val oboToken = azureAdClient.getOnBehalfOfToken(
-            scopeClientId = clientId,
-            token = token,
-            callId = callId
-        )?.accessToken ?: throw RuntimeException("Failed to request access to Enhet: Failed to get OBO token")
+        val newToken = if (token == null) {
+            azureAdClient.getSystemToken(
+                scopeClientId = clientId,
+                callId = callId,
+            )
+        } else {
+            azureAdClient.getOnBehalfOfToken(
+                scopeClientId = clientId,
+                token = token,
+                callId = callId,
+            )
+        }?.accessToken
+            ?: throw RuntimeException("Failed to request enhet from syfobehandlendeenhet: Failed to get token from AzureAD with callId=$callId")
+
         return try {
+            val url = getBehandlendeenhetUrl(isSystemPath = token == null)
+
             val response: HttpResponse = httpClient.get(url) {
-                header(HttpHeaders.Authorization, bearerHeader(oboToken))
+                header(HttpHeaders.Authorization, bearerHeader(newToken))
                 header(NAV_CALL_ID_HEADER, callId)
                 header(NAV_PERSONIDENT_HEADER, personident.value)
                 accept(ContentType.Application.Json)
@@ -95,8 +127,16 @@ class BehandlendeEnhetClient(
         COUNT_CALL_BEHANDLENDEENHET_FAIL.increment()
     }
 
+    private fun getBehandlendeenhetUrl(isSystemPath: Boolean) =
+        if (isSystemPath) {
+            "$baseUrl$BEHANDLENDEENHET_SYSTEM_PATH"
+        } else {
+            "$baseUrl$BEHANDLENDEENHET_PATH"
+        }
+
     companion object {
         const val BEHANDLENDEENHET_PATH = "/api/internad/v2/personident"
+        const val BEHANDLENDEENHET_SYSTEM_PATH = "/api/system/v2/personident"
         private val log = LoggerFactory.getLogger(BehandlendeEnhetClient::class.java)
 
         const val BEHANDLENDEENHET_CACHE_KEY = "behandlendeenhet"

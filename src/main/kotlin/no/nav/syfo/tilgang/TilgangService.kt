@@ -107,7 +107,7 @@ class TilgangService(
             return true
         }
 
-        val behandlendeEnhetDTO = behandlendeEnhetClient.getEnhet(
+        val behandlendeEnhetDTO = behandlendeEnhetClient.getEnhetWithOboToken(
             callId = callId,
             personident = personident,
             token = token,
@@ -144,7 +144,7 @@ class TilgangService(
         personident: Personident,
         token: Token,
     ): Boolean {
-        val person = pdlClient.person(
+        val person = pdlClient.getPersonWithOboToken(
             callId = callId,
             personident = personident,
             token = token,
@@ -160,7 +160,7 @@ class TilgangService(
     }
 
     private suspend fun isSkjermetAccessGodkjent(callId: String, personident: Personident, token: Token): Boolean {
-        val personIsSkjermet = skjermedePersonerPipClient.isSkjermet(
+        val personIsSkjermet = skjermedePersonerPipClient.getIsSkjermetWithOboToken(
             callId = callId,
             personIdent = personident,
             token = token,
@@ -207,34 +207,30 @@ class TilgangService(
         return tilgang
     }
 
-    private suspend fun preloadPersonInfoCache(token: Token, callId: String, personident: Personident) {
+    private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
         try {
-            behandlendeEnhetClient.getEnhet(
+            behandlendeEnhetClient.getEnhetWithSystemToken(
                 callId = callId,
                 personident = personident,
-                token = token,
             )
 
-            skjermedePersonerPipClient.isSkjermet(
+            skjermedePersonerPipClient.getIsSkjermetWithSystemToken(
                 callId = callId,
                 personIdent = personident,
-                token = token,
             )
 
-            pdlClient.person(
+            pdlClient.getPersonWithSystemToken(
                 callId = callId,
                 personident = personident,
-                token = token,
             )
         } catch (e: Exception) {
             log.error("Failed to preload cache callId=$callId", e)
         }
     }
 
-    suspend fun preloadCacheForPersonAccess(token: Token, callId: String, personidenter: List<String>) {
+    suspend fun preloadCacheForPersonAccess(callId: String, personidenter: List<String>) {
         personidenter.map { Personident(it) }.forEach { personident ->
             preloadPersonInfoCache(
-                token = token,
                 callId = callId,
                 personident = personident,
             )

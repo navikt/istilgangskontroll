@@ -116,13 +116,9 @@ fun Route.registerTilgangApi(
 
         post("/system/preloadbrukere") {
             val callId = call.getCallId()
-            val token = call.getBearerHeader()
-                ?: throw IllegalArgumentException("Failed to preload cache: No Authorization header supplied, callId=$callId")
-
             val personidenter = call.receive<List<String>>()
 
             tilgangService.preloadCacheForPersonAccess(
-                token = token,
                 callId = callId,
                 personidenter = personidenter,
             )

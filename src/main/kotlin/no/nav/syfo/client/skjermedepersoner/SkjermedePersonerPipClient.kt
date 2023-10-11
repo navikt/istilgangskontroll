@@ -23,10 +23,29 @@ class SkjermedePersonerPipClient(
 ) {
     private val log = LoggerFactory.getLogger(SkjermedePersonerPipClient::class.java)
 
-    suspend fun isSkjermet(
+    suspend fun getIsSkjermetWithOboToken(
         callId: String,
         personIdent: Personident,
-        token: Token,
+        token: Token?,
+    ) = isSkjermet(
+        callId = callId,
+        personIdent = personIdent,
+        token = token,
+    )
+
+    suspend fun getIsSkjermetWithSystemToken(
+        callId: String,
+        personIdent: Personident,
+    ) = isSkjermet(
+        callId = callId,
+        personIdent = personIdent,
+        token = null,
+    )
+
+    private suspend fun isSkjermet(
+        callId: String,
+        personIdent: Personident,
+        token: Token?,
     ): Boolean {
         val cacheKey = "$SKJERMEDE_PERSONER_CACHE_KEY-$personIdent"
         val cachedSkjerming = getCachedSkjerming(cacheKey)
@@ -56,13 +75,20 @@ class SkjermedePersonerPipClient(
     private suspend fun getSkjermingFromSkjermedePersoner(
         callId: String,
         personIdent: Personident,
-        token: Token,
+        token: Token?,
     ): Boolean {
-        val oboToken = azureAdClient.getOnBehalfOfToken(
-            scopeClientId = clientId,
-            token = token,
-            callId = callId
-        )?.accessToken
+        val newToken = if (token == null) {
+            azureAdClient.getSystemToken(
+                scopeClientId = clientId,
+                callId = callId,
+            )
+        } else {
+            azureAdClient.getOnBehalfOfToken(
+                scopeClientId = clientId,
+                token = token,
+                callId = callId,
+            )
+        }?.accessToken
             ?: throw RuntimeException("Failed to request skjerming from SkjermedePersoner: Failed to get token from AzureAD with callId=$callId")
 
         val skjermet = try {
@@ -72,7 +98,7 @@ class SkjermedePersonerPipClient(
             val skjermet: Boolean = httpClient.post(url) {
                 contentType(ContentType.Application.Json)
                 setBody(body)
-                header(HttpHeaders.Authorization, bearerHeader(oboToken))
+                header(HttpHeaders.Authorization, bearerHeader(newToken))
                 header(NAV_CALL_ID_HEADER, callId)
                 header(NAV_CONSUMER_ID_HEADER, NAV_CONSUMER_APP_ID)
                 accept(ContentType.Application.Json)
