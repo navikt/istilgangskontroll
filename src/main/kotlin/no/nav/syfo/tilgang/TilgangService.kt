@@ -10,6 +10,7 @@ import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
+import org.slf4j.LoggerFactory
 
 class TilgangService(
     val graphApiClient: GraphApiClient,
@@ -100,7 +101,7 @@ class TilgangService(
     private suspend fun isGeografiskAccessGodkjent(
         callId: String,
         personident: Personident,
-        token: Token
+        token: Token,
     ): Boolean {
         if (hasNasjonalAccess(token = token, callId = callId)) {
             return true
@@ -141,7 +142,7 @@ class TilgangService(
     private suspend fun isAdressebeskyttelseAccessGodkjent(
         callId: String,
         personident: Personident,
-        token: Token
+        token: Token,
     ): Boolean {
         val person = pdlClient.person(
             callId = callId,
@@ -206,7 +207,43 @@ class TilgangService(
         return tilgang
     }
 
+    private suspend fun preloadPersonInfoCache(token: Token, callId: String, personident: Personident) {
+        try {
+            behandlendeEnhetClient.getEnhet(
+                callId = callId,
+                personident = personident,
+                token = token,
+            )
+
+            skjermedePersonerPipClient.isSkjermet(
+                callId = callId,
+                personIdent = personident,
+                token = token,
+            )
+
+            pdlClient.person(
+                callId = callId,
+                personident = personident,
+                token = token,
+            )
+        } catch (e: Exception) {
+            log.error("Failed to preload cache callId=$callId", e)
+        }
+    }
+
+    suspend fun preloadCacheForPersonAccess(token: Token, callId: String, personidenter: List<String>) {
+        personidenter.map { Personident(it) }.forEach { personident ->
+            preloadPersonInfoCache(
+                token = token,
+                callId = callId,
+                personident = personident,
+            )
+        }
+    }
+
     companion object {
+        private val log = LoggerFactory.getLogger(TilgangService::class.java)
+
         const val TILGANG_TIL_TJENESTEN_PREFIX = "tilgang-til-tjenesten-"
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"
         const val TILGANG_TIL_PERSON_PREFIX = "tilgang-til-person-"

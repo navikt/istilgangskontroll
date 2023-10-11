@@ -11,6 +11,7 @@ import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
+import no.nav.syfo.domain.Personident
 import no.nav.syfo.testhelper.*
 import org.amshove.kluent.shouldBeEqualTo
 import org.spekframework.spek2.Spek
@@ -64,7 +65,14 @@ class TilgangServiceSpek : Spek({
         )
 
         afterEachTest {
-            clearMocks(graphApiClient, redisStore, axsysClient)
+            clearMocks(
+                graphApiClient,
+                axsysClient,
+                skjermedePersonerPipClient,
+                pdlClient,
+                behandlendeEnhetClient,
+                redisStore,
+            )
         }
 
         describe("check if veileder has access to SYFO") {
@@ -163,6 +171,57 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
                 coVerify(exactly = 0) { axsysClient.getEnheter(any(), any()) }
                 verifyCacheSet(exactly = 0)
+            }
+        }
+
+        describe("preload cache for person access") {
+            it("gets data from behandledeEnhet, skjermedePersonerPip and pdl") {
+                val callId = "123"
+                val personident = Personident(UserConstants.PERSONIDENT)
+                val personidenter = listOf(UserConstants.PERSONIDENT)
+                coJustRun { behandlendeEnhetClient.getEnhet(any(), personident, any()) }
+                coJustRun { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) }
+                coJustRun { pdlClient.person(any(), personident, any()) }
+
+                runBlocking {
+                    tilgangService.preloadCacheForPersonAccess(
+                        token = validToken,
+                        callId = callId,
+                        personidenter = personidenter,
+                    )
+                }
+
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhet(callId, personident, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.isSkjermet(callId, personident, validToken) }
+                coVerify(exactly = 1) { pdlClient.person(callId, personident, validToken) }
+            }
+
+            it("gets data from behandledeEnhet, skjermedePersonerPip and pdl for each person in list") {
+                val callId = "123"
+                val personident1 = Personident(UserConstants.PERSONIDENT)
+                val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
+                val personidenter = listOf(UserConstants.PERSONIDENT, UserConstants.PERSONIDENT_GRADERT)
+                coJustRun { behandlendeEnhetClient.getEnhet(any(), personident1, any()) }
+                coJustRun { behandlendeEnhetClient.getEnhet(any(), personident2, any()) }
+                coJustRun { skjermedePersonerPipClient.isSkjermet(any(), personident1, any()) }
+                coJustRun { skjermedePersonerPipClient.isSkjermet(any(), personident2, any()) }
+                coJustRun { pdlClient.person(any(), personident1, any()) }
+                coJustRun { pdlClient.person(any(), personident2, any()) }
+
+                runBlocking {
+                    tilgangService.preloadCacheForPersonAccess(
+                        token = validToken,
+                        callId = callId,
+                        personidenter = personidenter,
+                    )
+                }
+
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhet(callId, personident1, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhet(callId, personident2, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.isSkjermet(callId, personident1, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.isSkjermet(callId, personident2, validToken) }
+                coVerify(exactly = 1) { pdlClient.person(callId, personident1, validToken) }
+                coVerify(exactly = 1) { pdlClient.person(callId, personident2, validToken) }
             }
         }
     }
