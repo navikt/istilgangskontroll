@@ -179,21 +179,20 @@ class TilgangServiceSpek : Spek({
                 val callId = "123"
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidenter = listOf(UserConstants.PERSONIDENT)
-                coJustRun { behandlendeEnhetClient.getEnhet(any(), personident, any()) }
-                coJustRun { skjermedePersonerPipClient.isSkjermet(any(), personident, any()) }
-                coJustRun { pdlClient.person(any(), personident, any()) }
+                coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident) }
+                coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident) }
+                coJustRun { pdlClient.getPersonWithSystemToken(any(), personident) }
 
                 runBlocking {
                     tilgangService.preloadCacheForPersonAccess(
-                        token = validToken,
                         callId = callId,
                         personidenter = personidenter,
                     )
                 }
 
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhet(callId, personident, validToken) }
-                coVerify(exactly = 1) { skjermedePersonerPipClient.isSkjermet(callId, personident, validToken) }
-                coVerify(exactly = 1) { pdlClient.person(callId, personident, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident) }
+                coVerify(exactly = 1) { pdlClient.getPersonWithSystemToken(callId, personident) }
             }
 
             it("gets data from behandledeEnhet, skjermedePersonerPip and pdl for each person in list") {
@@ -201,27 +200,26 @@ class TilgangServiceSpek : Spek({
                 val personident1 = Personident(UserConstants.PERSONIDENT)
                 val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
                 val personidenter = listOf(UserConstants.PERSONIDENT, UserConstants.PERSONIDENT_GRADERT)
-                coJustRun { behandlendeEnhetClient.getEnhet(any(), personident1, any()) }
-                coJustRun { behandlendeEnhetClient.getEnhet(any(), personident2, any()) }
-                coJustRun { skjermedePersonerPipClient.isSkjermet(any(), personident1, any()) }
-                coJustRun { skjermedePersonerPipClient.isSkjermet(any(), personident2, any()) }
-                coJustRun { pdlClient.person(any(), personident1, any()) }
-                coJustRun { pdlClient.person(any(), personident2, any()) }
+                coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident1) }
+                coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident2) }
+                coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident1) }
+                coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident2) }
+                coJustRun { pdlClient.getPersonWithSystemToken(any(), personident1) }
+                coJustRun { pdlClient.getPersonWithSystemToken(any(), personident2) }
 
                 runBlocking {
                     tilgangService.preloadCacheForPersonAccess(
-                        token = validToken,
                         callId = callId,
                         personidenter = personidenter,
                     )
                 }
 
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhet(callId, personident1, validToken) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhet(callId, personident2, validToken) }
-                coVerify(exactly = 1) { skjermedePersonerPipClient.isSkjermet(callId, personident1, validToken) }
-                coVerify(exactly = 1) { skjermedePersonerPipClient.isSkjermet(callId, personident2, validToken) }
-                coVerify(exactly = 1) { pdlClient.person(callId, personident1, validToken) }
-                coVerify(exactly = 1) { pdlClient.person(callId, personident2, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident1) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident2) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident1) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident2) }
+                coVerify(exactly = 1) { pdlClient.getPersonWithSystemToken(callId, personident1) }
+                coVerify(exactly = 1) { pdlClient.getPersonWithSystemToken(callId, personident2) }
             }
         }
     }

@@ -23,11 +23,29 @@ class PdlClient(
     private val redisStore: RedisStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
-
-    suspend fun person(
+    suspend fun getPersonWithOboToken(
         callId: String,
         personident: Personident,
-        token: Token,
+        token: Token?,
+    ) = person(
+        callId = callId,
+        personident = personident,
+        token = token,
+    )
+
+    suspend fun getPersonWithSystemToken(
+        callId: String,
+        personident: Personident,
+    ) = person(
+        callId = callId,
+        personident = personident,
+        token = null,
+    )
+
+    private suspend fun person(
+        callId: String,
+        personident: Personident,
+        token: Token?,
     ): PdlHentPerson {
         val cacheKey = "$PDL_PERSON_CACHE_KEY-$personident"
         val cachedPerson = getCachedPdlHentPerson(cacheKey)
@@ -41,25 +59,34 @@ class PdlClient(
         }
     }
 
-    private suspend fun getCachedPdlHentPerson(cacheKey: String): PdlHentPerson? {
+    private fun getCachedPdlHentPerson(cacheKey: String): PdlHentPerson? {
         return redisStore.getObject(key = cacheKey)
     }
 
-    private suspend fun getPersonFromPdl(callId: String, personident: Personident, token: Token): PdlHentPerson {
+    private suspend fun getPersonFromPdl(callId: String, personident: Personident, token: Token?): PdlHentPerson {
+        val newToken = if (token == null) {
+            azureAdClient.getSystemToken(
+                scopeClientId = clientId,
+                callId = callId,
+            )
+        } else {
+            azureAdClient.getOnBehalfOfToken(
+                scopeClientId = clientId,
+                token = token,
+                callId = callId,
+            )
+        }?.accessToken
+            ?: throw RuntimeException("Failed to request person info from pdl: Failed to get token from AzureAD with callId=$callId")
+
         val request = PdlRequest(
             query = getPdlQuery("/pdl/hentPerson.graphql"),
             variables = Variables(personident.value),
         )
-        val oboToken = azureAdClient.getOnBehalfOfToken(
-            scopeClientId = clientId,
-            token = token,
-            callId = callId
-        )?.accessToken
-            ?: throw RuntimeException("Failed to request person info from pdl: Failed to get token from AzureAD with callId=$callId")
+
         try {
             val response: HttpResponse = httpClient.post(baseUrl) {
                 contentType(ContentType.Application.Json)
-                header(HttpHeaders.Authorization, bearerHeader(oboToken))
+                header(HttpHeaders.Authorization, bearerHeader(newToken))
                 header(TEMA_HEADER, ALLE_TEMA_HEADERVERDI)
                 header(NAV_CALL_ID_HEADER, callId)
                 setBody(request)
