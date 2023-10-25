@@ -10,6 +10,7 @@ object UserConstants {
     const val ENHET_OVERORDNET = "1111"
 
     const val PERSONIDENT = "12345678901"
+    const val PERSONIDENT_OTHER_ENHET = "34567890112"
     const val PERSONIDENT_SKJERMET = "23417876510"
     const val PERSONIDENT_GRADERT = "11117876510"
 }

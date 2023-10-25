@@ -114,6 +114,24 @@ fun Route.registerTilgangApi(
             }
         }
 
+        post("/navident/brukere") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check enhetstilgang for veileder. No NAV ident in token")
+            }
+            val personidenter = call.receive<List<String>>()
+
+            val personidenterVeilederHasAccessTo = tilgangService.filterIdenterByVeilederAccess(
+                callId = callId,
+                token = token,
+                personidenter = personidenter,
+            )
+
+            call.respond(HttpStatusCode.OK, personidenterVeilederHasAccessTo)
+        }
+
         post("/system/preloadbrukere") {
             val callId = call.getCallId()
             val personidenter = call.receive<List<String>>()

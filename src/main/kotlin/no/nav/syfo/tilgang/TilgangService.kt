@@ -207,6 +207,16 @@ class TilgangService(
         return tilgang
     }
 
+    suspend fun filterIdenterByVeilederAccess(callId: String, token: Token, personidenter: List<String>): List<String> {
+        return personidenter.filter { personident ->
+            hasTilgangToPerson(
+                token = token,
+                personident = Personident(personident),
+                callId = callId,
+            ).erGodkjent
+        }
+    }
+
     private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
         try {
             behandlendeEnhetClient.getEnhetWithSystemToken(
