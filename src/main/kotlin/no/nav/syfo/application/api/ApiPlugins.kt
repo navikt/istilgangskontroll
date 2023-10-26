@@ -10,6 +10,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
+import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
 import no.nav.syfo.application.exception.ForbiddenAccessVeilederException
 import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.util.*
@@ -67,6 +68,9 @@ fun Application.installStatusPages() {
                     HttpStatusCode.BadRequest
                 }
                 is ForbiddenAccessVeilederException -> {
+                    HttpStatusCode.Forbidden
+                }
+                is ForbiddenAccessSystemConsumer -> {
                     HttpStatusCode.Forbidden
                 }
                 else -> {

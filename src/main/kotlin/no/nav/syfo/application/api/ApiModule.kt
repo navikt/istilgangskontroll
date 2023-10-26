@@ -63,6 +63,7 @@ fun Application.apiModule(
         authenticate(JwtIssuerType.INTERNAL_AZUREAD.name) {
             registerTilgangApi(
                 tilgangService = tilgangService,
+                preAuthorizedApps = environment.azure.preAuthorizedApps,
             )
         }
     }

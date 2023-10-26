@@ -220,16 +220,18 @@ class TilgangApiSpek : Spek({
             }
 
             describe("preload cache") {
+                val apiUrl = "$tilgangApiBasePath/system/preloadbrukere"
+                val requestBody = listOf(UserConstants.PERSONIDENT)
+
                 it("return OK after loading cache") {
                     val validToken = generateJWT(
                         audience = externalMockEnvironment.environment.azure.appClientId,
                         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
+                        azp = syfooversiktsrvClientId,
                     )
-                    val requestBody = listOf(UserConstants.PERSONIDENT)
 
                     with(
-                        handleRequest(HttpMethod.Post, "$tilgangApiBasePath/system/preloadbrukere") {
+                        handleRequest(HttpMethod.Post, apiUrl) {
                             addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
                             addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                             addHeader(NAV_CALL_ID_HEADER, "123")
@@ -237,6 +239,24 @@ class TilgangApiSpek : Spek({
                         }
                     ) {
                         response.status() shouldBeEqualTo HttpStatusCode.OK
+                    }
+                }
+                it("should return status Forbidden if wrong consumer azp") {
+                    val invalidToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        azp = "invalid-consumer-azp",
+                    )
+
+                    with(
+                        handleRequest(HttpMethod.Post, apiUrl) {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(invalidToken))
+                            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                            setBody(objectMapper.writeValueAsString(requestBody))
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
                     }
                 }
             }

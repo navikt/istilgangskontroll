@@ -1,5 +1,6 @@
 package no.nav.syfo.tilgang
 
+import com.auth0.jwt.JWT
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -7,14 +8,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
+import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
 import no.nav.syfo.audit.*
+import no.nav.syfo.client.azuread.PreAuthorizedApp
 import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
 const val enhetNr = "enhetNr"
+private val preloadApiAuthorizedApps = listOf("syfooversiktsrv")
 
 fun Route.registerTilgangApi(
     tilgangService: TilgangService,
+    preAuthorizedApps: List<PreAuthorizedApp>,
 ) {
     route(tilgangApiBasePath) {
         get("/navident/syfo") {
@@ -115,6 +120,17 @@ fun Route.registerTilgangApi(
         }
 
         post("/system/preloadbrukere") {
+            val token = this.call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to preload: No token supplied in request header")
+            val consumerClientIdAzp: String = JWT.decode(token.value).claims[JWT_CLAIM_AZP]?.asString()
+                ?: throw IllegalArgumentException("Claim AZP was not found in token")
+            val preloadApiAuthorizedClientIds = preAuthorizedApps
+                .filter { preloadApiAuthorizedApps.contains(it.getAppnavn()) }
+                .map { it.clientId }
+            if (!preloadApiAuthorizedClientIds.contains(consumerClientIdAzp)) {
+                throw ForbiddenAccessSystemConsumer(consumerClientIdAzp = consumerClientIdAzp)
+            }
+
             val callId = call.getCallId()
             val personidenter = call.receive<List<String>>()
 

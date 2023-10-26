@@ -1,14 +1,17 @@
 package no.nav.syfo.application
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.server.application.*
 import no.nav.syfo.cache.RedisEnvironment
 import no.nav.syfo.client.azuread.AzureEnvironment
+import no.nav.syfo.util.configuredJacksonMapper
 
 data class Environment(
 
     val azure: AzureEnvironment = AzureEnvironment(
         appClientId = getEnvVar("AZURE_APP_CLIENT_ID"),
         appClientSecret = getEnvVar("AZURE_APP_CLIENT_SECRET"),
+        preAuthorizedApps = configuredJacksonMapper().readValue(getEnvVar("AZURE_APP_PRE_AUTHORIZED_APPS")),
         appWellKnownUrl = getEnvVar("AZURE_APP_WELL_KNOWN_URL"),
         openidConfigTokenEndpoint = getEnvVar("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
     ),
