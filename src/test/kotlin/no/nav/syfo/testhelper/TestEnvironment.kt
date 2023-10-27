@@ -3,11 +3,13 @@ package no.nav.syfo.testhelper
 import no.nav.syfo.application.*
 import no.nav.syfo.cache.RedisEnvironment
 import no.nav.syfo.client.azuread.AzureEnvironment
+import no.nav.syfo.client.azuread.PreAuthorizedApp
 
 fun testEnvironment() = Environment(
     azure = AzureEnvironment(
         appClientId = "istilgangskontroll-client-id",
         appClientSecret = "istilgangskontroll-secret",
+        preAuthorizedApps = testAzureAppPreAuthorizedApps,
         appWellKnownUrl = "wellknown",
         openidConfigTokenEndpoint = "azureOpenIdTokenEndpoint",
     ),
@@ -51,4 +53,14 @@ fun testEnvironment() = Environment(
 fun testAppState() = ApplicationState(
     alive = true,
     ready = true,
+)
+
+private const val syfooversiktsrvApplicationName: String = "syfooversiktsrv"
+const val syfooversiktsrvClientId = "$syfooversiktsrvApplicationName-client-id"
+
+val testAzureAppPreAuthorizedApps = listOf(
+    PreAuthorizedApp(
+        name = "cluster:teamsykefravr:$syfooversiktsrvApplicationName",
+        clientId = syfooversiktsrvClientId,
+    ),
 )
