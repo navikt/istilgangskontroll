@@ -7,9 +7,10 @@ import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
+import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
-import no.nav.syfo.client.pdl.PdlClient
+import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.testhelper.*
@@ -171,6 +172,173 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
                 coVerify(exactly = 0) { axsysClient.getEnheter(any(), any()) }
                 verifyCacheSet(exactly = 0)
+            }
+        }
+
+        describe("filter list of personident based on veileders access") {
+            it("remove all identer if veileder is missing SYFO access") {
+                val callId = "123"
+                val personident1 = Personident(UserConstants.PERSONIDENT)
+                val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
+                val personidenter = listOf(personident1.value, personident2.value)
+                val cacheKey1 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident1"
+                val cacheKey2 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident2"
+                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns false
+
+                runBlocking {
+                    val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
+                        token = validToken,
+                        callId = callId,
+                        personidenter = personidenter,
+                    )
+
+                    filteredPersonidenter.size shouldBeEqualTo 0
+                }
+
+                coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+                coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident1, any()) }
+                coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident2, any()) }
+                coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident1, any()) }
+                coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident2, any()) }
+                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personident1, any()) }
+                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personident2, any()) }
+                verifyCacheSet(exactly = 1, key = cacheKey1, harTilgang = false)
+                verifyCacheSet(exactly = 1, key = cacheKey2, harTilgang = false)
+            }
+
+            it("remove skjermet innbygger when veileder is missing access") {
+                val callId = "123"
+                val behandlendeEnhet = BehandlendeEnhetDTO(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val veiledersEnhet = AxsysEnhet(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val ugradertInnbygger = PdlHentPerson(
+                    hentPerson = PdlPerson(
+                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                    ),
+                )
+                val personident = Personident(UserConstants.PERSONIDENT)
+                val personidentSkjermet = Personident(UserConstants.PERSONIDENT_GRADERT)
+                val personidenter = listOf(personident.value, personidentSkjermet.value)
+                val cacheKeyAccess = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+                val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
+                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns behandlendeEnhet
+                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentSkjermet, any()) } returns behandlendeEnhet
+                coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentSkjermet, any()) } returns true
+                coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
+
+                runBlocking {
+                    val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
+                        token = validToken,
+                        callId = callId,
+                        personidenter = personidenter,
+                    )
+
+                    filteredPersonidenter.size shouldBeEqualTo 1
+                    filteredPersonidenter[0] shouldBeEqualTo personident.value
+                }
+
+                coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personident, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentSkjermet, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personident, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentSkjermet, validToken) }
+                coVerify(exactly = 1) { pdlClient.getPersonWithOboToken(callId, personident, validToken) }
+                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personidentSkjermet, any()) }
+                verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
+                verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
+            }
+
+            it("remove innbyggere when veileder is missing correct access") {
+                val callId = "123"
+                val behandlendeEnhet = BehandlendeEnhetDTO(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val otherBehandlendeEnhet = BehandlendeEnhetDTO(
+                    enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
+                    navn = "enhet",
+                )
+                val veiledersEnhet = AxsysEnhet(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val ugradertInnbygger = PdlHentPerson(
+                    hentPerson = PdlPerson(
+                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                    ),
+                )
+                val kode6Innbygger = PdlHentPerson(
+                    hentPerson = PdlPerson(
+                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.STRENGT_FORTROLIG)),
+                    ),
+                )
+                val personident = Personident(UserConstants.PERSONIDENT)
+                val personidentOtherEnhet = Personident(UserConstants.PERSONIDENT_OTHER_ENHET)
+                val personidentSkjermet = Personident(UserConstants.PERSONIDENT_SKJERMET)
+                val personidentGradert = Personident(UserConstants.PERSONIDENT_GRADERT)
+                val personidenter = listOf(personident.value, personidentOtherEnhet.value, personidentSkjermet.value, personidentGradert.value)
+                val cacheKeyAccess = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+                val cacheKeyOtherEnhet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentOtherEnhet"
+                val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
+                val cacheKeyGradert = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentGradert"
+                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns behandlendeEnhet
+                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentSkjermet, any()) } returns behandlendeEnhet
+                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentOtherEnhet, any()) } returns otherBehandlendeEnhet
+                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentGradert, any()) } returns behandlendeEnhet
+                coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns false
+                coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentSkjermet, any()) } returns true
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentGradert, any()) } returns false
+                coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                coEvery { pdlClient.getPersonWithOboToken(any(), personidentGradert, any()) } returns kode6Innbygger
+                coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
+                coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
+
+                runBlocking {
+                    val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
+                        token = validToken,
+                        callId = callId,
+                        personidenter = personidenter,
+                    )
+
+                    filteredPersonidenter.size shouldBeEqualTo 1
+                    filteredPersonidenter[0] shouldBeEqualTo personident.value
+                }
+
+                coVerify(exactly = 4) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+                coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.REGIONAL, validToken, callId) }
+                coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, validToken, callId) }
+                coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.KODE6, validToken, callId) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personident, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentOtherEnhet, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentSkjermet, validToken) }
+                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentGradert, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personident, validToken) }
+                coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentOtherEnhet, any()) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentSkjermet, validToken) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentGradert, validToken) }
+                coVerify(exactly = 1) { pdlClient.getPersonWithOboToken(callId, personident, validToken) }
+                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personidentOtherEnhet, any()) }
+                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personidentSkjermet, any()) }
+                coVerify(exactly = 1) { pdlClient.getPersonWithOboToken(callId, personidentGradert, validToken) }
+                verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
+                verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
+                verifyCacheSet(exactly = 1, key = cacheKeyOtherEnhet, harTilgang = false)
+                verifyCacheSet(exactly = 1, key = cacheKeyGradert, harTilgang = false)
             }
         }
 
