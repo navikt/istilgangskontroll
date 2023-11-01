@@ -6,7 +6,7 @@ version = "0.0.1"
 object Versions {
     const val jacksonDataType = "2.15.2"
     const val kluent = "1.72"
-    const val ktor = "2.3.1"
+    const val ktor = "2.3.5"
     const val logback = "1.4.7"
     const val logbackSyslog4jVersion = "1.0.0"
     const val logstashEncoder = "7.3"
@@ -14,7 +14,7 @@ object Versions {
     const val mockk = "1.13.5"
     const val nimbusJoseJwt = "9.31"
     const val spek = "2.0.19"
-    const val jedis = "4.4.3"
+    const val jedis = "4.4.6"
     const val redisEmbedded = "0.7.3"
 }
 
