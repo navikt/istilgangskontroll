@@ -30,7 +30,7 @@ spec:
     cpuThresholdPercentage: 90
   prometheus:
     enabled: true
-    path: /internal/metrics/prometheus
+    path: /internal/metrics
   ingresses:
     - "https://istilgangskontroll.intern.nav.no"
   accessPolicy:
