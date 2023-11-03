@@ -84,7 +84,7 @@ class TilgangServiceSpek : Spek({
                 every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
-                    tilgangService.hasTilgangToSyfo(validToken, callId)
+                    tilgangService.checkTilgangToSyfo(validToken, callId)
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -98,7 +98,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
-                    tilgangService.hasTilgangToSyfo(validToken, callId)
+                    tilgangService.checkTilgangToSyfo(validToken, callId)
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -123,7 +123,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
+                    val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
 
                     tilgang.erGodkjent shouldBeEqualTo true
                 }
@@ -146,7 +146,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { axsysClient.getEnheter(validToken, callId) } returns listOf(veiledersEnhet)
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, wantedEnhet)
+                    val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, wantedEnhet)
 
                     tilgang.erGodkjent shouldBeEqualTo false
                 }
@@ -163,7 +163,7 @@ class TilgangServiceSpek : Spek({
                 every { redisStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
+                    val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
 
                     tilgang.erGodkjent shouldBeEqualTo true
                 }

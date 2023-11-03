@@ -30,7 +30,7 @@ fun Route.registerTilgangApi(
                 throw IllegalArgumentException("Failed to check enhetstilgang for veileder. No NAV ident in token")
             }
 
-            val tilgang = tilgangService.hasTilgangToSyfo(
+            val tilgang = tilgangService.checkTilgangToSyfo(
                 token = token,
                 callId = callId,
             )
@@ -56,7 +56,7 @@ fun Route.registerTilgangApi(
             val enhetNr = call.parameters[enhetNr] ?: throw IllegalArgumentException("No EnhetNr found in path param")
             val enhet = Enhet(enhetNr)
 
-            val syfoTilgang = tilgangService.hasTilgangToSyfo(
+            val syfoTilgang = tilgangService.checkTilgangToSyfo(
                 token = token,
                 callId = callId,
             )
@@ -64,7 +64,7 @@ fun Route.registerTilgangApi(
             val tilgang = if (syfoTilgang.erAvslatt) {
                 syfoTilgang
             } else {
-                tilgangService.hasTilgangToEnhet(
+                tilgangService.checkTilgangToEnhet(
                     token = token,
                     callId = callId,
                     enhet = enhet,
@@ -93,7 +93,7 @@ fun Route.registerTilgangApi(
             val veilederIdent = token.getNAVIdent()
             val consumerClientId = call.getConsumerClientId() ?: ""
 
-            val tilgang = tilgangService.hasTilgangToPerson(
+            val tilgang = tilgangService.checkTilgangToPerson(
                 token = token,
                 personident = requestedPersonIdent,
                 callId = callId,
