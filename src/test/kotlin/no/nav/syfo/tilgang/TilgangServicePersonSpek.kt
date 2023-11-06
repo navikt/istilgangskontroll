@@ -100,7 +100,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns false
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo false
                     }
@@ -121,7 +121,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -159,7 +159,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -200,7 +200,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo false
                     }
@@ -254,7 +254,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -313,7 +313,7 @@ class TilgangServicePersonSpek : Spek({
                     )
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -377,7 +377,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo false
                     }
@@ -406,7 +406,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns true
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -452,7 +452,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo false
                     }
@@ -493,7 +493,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns false
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo false
                     }
@@ -534,7 +534,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns true
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -575,7 +575,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns true
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -615,7 +615,7 @@ class TilgangServicePersonSpek : Spek({
                     coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
 
                     runBlocking {
-                        val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                         tilgang.erGodkjent shouldBeEqualTo true
                     }
@@ -653,7 +653,7 @@ class TilgangServicePersonSpek : Spek({
                 every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToPerson(validToken, personident, callId)
+                    val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId)
 
                     tilgang.erGodkjent shouldBeEqualTo true
                 }

@@ -31,7 +31,7 @@ class TilgangService(
         )
     }
 
-    suspend fun hasTilgangToSyfo(token: Token, callId: String): Tilgang {
+    suspend fun checkTilgangToSyfo(token: Token, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -54,7 +54,7 @@ class TilgangService(
         return tilgang
     }
 
-    suspend fun hasTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
+    suspend fun checkTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent-$enhet"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -177,7 +177,7 @@ class TilgangService(
         }
     }
 
-    suspend fun hasTilgangToPerson(token: Token, personident: Personident, callId: String): Tilgang {
+    suspend fun checkTilgangToPerson(token: Token, personident: Personident, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -209,7 +209,7 @@ class TilgangService(
 
     suspend fun filterIdenterByVeilederAccess(callId: String, token: Token, personidenter: List<String>): List<String> {
         return personidenter.filter { personident ->
-            hasTilgangToPerson(
+            checkTilgangToPerson(
                 token = token,
                 personident = Personident(personident),
                 callId = callId,
