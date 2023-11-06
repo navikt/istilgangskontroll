@@ -21,7 +21,7 @@ const val keyId = "localhost-signer"
 fun generateJWT(
     audience: String,
     issuer: String,
-    azp: String? = null,
+    azp: String? = syfomodiapersonClientId,
     navIdent: String? = null,
     subject: String? = null,
     expiry: LocalDateTime? = LocalDateTime.now().plusHours(1)

@@ -119,9 +119,7 @@ spec:
         - host: "pdl-api.prod-fss-pub.nais.io"
         - host: "audit.nais"
           ports:
-            - name: audit
-              port: 6514
-              protocol: TCP
+            - port: 6514
       rules:
         - application: istilgangskontroll-redis
         - application: syfobehandlendeenhet
