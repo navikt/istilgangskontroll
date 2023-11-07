@@ -1,5 +1,8 @@
 package no.nav.syfo.tilgang
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
@@ -7,7 +10,9 @@ import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
-import no.nav.syfo.client.pdl.*
+import no.nav.syfo.client.pdl.PdlClient
+import no.nav.syfo.client.pdl.isKode6
+import no.nav.syfo.client.pdl.isKode7
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
 import org.slf4j.LoggerFactory
@@ -217,34 +222,42 @@ class TilgangService(
         }
     }
 
-    private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
+    private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) = coroutineScope {
         try {
-            behandlendeEnhetClient.getEnhetWithSystemToken(
-                callId = callId,
-                personident = personident,
-            )
+            val behandlendeEnhetClient = async {
+                behandlendeEnhetClient.getEnhetWithSystemToken(
+                    callId = callId,
+                    personident = personident,
+                )
+            }
 
-            skjermedePersonerPipClient.getIsSkjermetWithSystemToken(
-                callId = callId,
-                personIdent = personident,
-            )
+            val isSkjermet = async {
+                skjermedePersonerPipClient.getIsSkjermetWithSystemToken(
+                    callId = callId,
+                    personIdent = personident,
+                )
+            }
 
-            pdlClient.getPersonWithSystemToken(
-                callId = callId,
-                personident = personident,
-            )
+            val person = async {
+                pdlClient.getPersonWithSystemToken(
+                    callId = callId,
+                    personident = personident,
+                )
+            }
+
+            listOf(behandlendeEnhetClient, isSkjermet, person).awaitAll()
         } catch (e: Exception) {
             log.error("Failed to preload cache callId=$callId", e)
         }
     }
 
-    suspend fun preloadCacheForPersonAccess(callId: String, personidenter: List<String>) {
-        personidenter.map { Personident(it) }.forEach { personident ->
-            preloadPersonInfoCache(
-                callId = callId,
-                personident = personident,
-            )
+    suspend fun preloadCacheForPersonAccess(callId: String, personidenter: List<String>) = coroutineScope {
+        val result = personidenter.map { personident ->
+            async {
+                preloadPersonInfoCache(callId = callId, personident = Personident(personident))
+            }
         }
+        result.awaitAll()
     }
 
     companion object {
