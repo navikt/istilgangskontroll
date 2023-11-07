@@ -1,6 +1,5 @@
 package no.nav.syfo.tilgang
 
-import com.auth0.jwt.JWT
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -92,6 +91,7 @@ fun Route.registerTilgangApi(
             }
             val veilederIdent = token.getNAVIdent()
             val consumerClientId = call.getConsumerClientId() ?: ""
+            val appName = preAuthorizedApps.find { it.clientId == consumerClientId }?.getAppnavn() ?: throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No consumer clientId was found")
 
             val tilgang = tilgangService.checkTilgangToPerson(
                 token = token,
@@ -105,7 +105,7 @@ fun Route.registerTilgangApi(
                     duid = requestedPersonIdent.value,
                     event = AuditLogEvent.Access,
                     permit = tilgang.erGodkjent,
-                    appName = consumerClientId, // TODO: Get app name instead of client id
+                    appName = appName,
                 )
             )
 
@@ -138,15 +138,12 @@ fun Route.registerTilgangApi(
         }
 
         post("/system/preloadbrukere") {
-            val token = this.call.getBearerHeader()
-                ?: throw IllegalArgumentException("Failed to preload: No token supplied in request header")
-            val consumerClientIdAzp: String = JWT.decode(token.value).claims[JWT_CLAIM_AZP]?.asString()
-                ?: throw IllegalArgumentException("Claim AZP was not found in token")
+            val consumerClientId = this.call.getConsumerClientId() ?: throw IllegalArgumentException("Failed to preload: Token or consumer clientId was not found")
             val preloadApiAuthorizedClientIds = preAuthorizedApps
                 .filter { preloadApiAuthorizedApps.contains(it.getAppnavn()) }
                 .map { it.clientId }
-            if (!preloadApiAuthorizedClientIds.contains(consumerClientIdAzp)) {
-                throw ForbiddenAccessSystemConsumer(consumerClientIdAzp = consumerClientIdAzp)
+            if (!preloadApiAuthorizedClientIds.contains(consumerClientId)) {
+                throw ForbiddenAccessSystemConsumer(consumerClientIdAzp = consumerClientId)
             }
 
             val callId = call.getCallId()

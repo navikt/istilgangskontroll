@@ -56,11 +56,17 @@ fun testAppState() = ApplicationState(
 )
 
 private const val syfooversiktsrvApplicationName: String = "syfooversiktsrv"
+private const val syfomodiapersonApplicationName: String = "syfomodiaperson"
 const val syfooversiktsrvClientId = "$syfooversiktsrvApplicationName-client-id"
+const val syfomodiapersonClientId = "$syfomodiapersonApplicationName-client-id"
 
 val testAzureAppPreAuthorizedApps = listOf(
     PreAuthorizedApp(
         name = "cluster:teamsykefravr:$syfooversiktsrvApplicationName",
         clientId = syfooversiktsrvClientId,
+    ),
+    PreAuthorizedApp(
+        name = "cluster:teamsykefravr:$syfomodiapersonApplicationName",
+        clientId = syfomodiapersonClientId,
     ),
 )
