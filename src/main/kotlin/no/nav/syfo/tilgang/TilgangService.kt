@@ -6,6 +6,9 @@ import kotlinx.coroutines.coroutineScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.audit.AuditLogEvent
+import no.nav.syfo.audit.CEF
+import no.nav.syfo.audit.auditLog
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
@@ -36,7 +39,7 @@ class TilgangService(
         )
     }
 
-    suspend fun hasTilgangToSyfo(token: Token, callId: String): Tilgang {
+    suspend fun checkTilgangToSyfo(token: Token, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -59,7 +62,7 @@ class TilgangService(
         return tilgang
     }
 
-    suspend fun hasTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
+    suspend fun checkTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent-$enhet"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
@@ -182,15 +185,32 @@ class TilgangService(
         }
     }
 
-    suspend fun hasTilgangToPerson(token: Token, personident: Personident, callId: String): Tilgang {
+    suspend fun checkTilgangToPerson(token: Token, personident: Personident, callId: String, appName: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
 
-        if (cachedTilgang != null) {
-            return cachedTilgang
-        }
+        val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
 
+        auditLog(
+            CEF(
+                suid = veilederIdent,
+                duid = personident.value,
+                event = AuditLogEvent.Access,
+                permit = tilgang.erGodkjent,
+                appName = appName,
+            )
+        )
+
+        return tilgang
+    }
+
+    private suspend fun checkTilgangToPersonAndCache(
+        callId: String,
+        token: Token,
+        personident: Personident,
+        cacheKey: String
+    ): Tilgang {
         val erGodkjent = if (!hasAccessToSYFO(callId = callId, token = token)) {
             false
         } else if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
@@ -209,15 +229,22 @@ class TilgangService(
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS
         )
+
         return tilgang
     }
 
-    suspend fun filterIdenterByVeilederAccess(callId: String, token: Token, personidenter: List<String>): List<String> {
+    suspend fun filterIdenterByVeilederAccess(
+        callId: String,
+        token: Token,
+        personidenter: List<String>,
+        appName: String
+    ): List<String> {
         return personidenter.filter { personident ->
-            hasTilgangToPerson(
+            checkTilgangToPerson(
                 token = token,
                 personident = Personident(personident),
                 callId = callId,
+                appName = appName,
             ).erGodkjent
         }
     }

@@ -84,7 +84,7 @@ class TilgangServiceSpek : Spek({
                 every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
-                    tilgangService.hasTilgangToSyfo(validToken, callId)
+                    tilgangService.checkTilgangToSyfo(validToken, callId)
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -98,7 +98,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
-                    tilgangService.hasTilgangToSyfo(validToken, callId)
+                    tilgangService.checkTilgangToSyfo(validToken, callId)
                 }
 
                 verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
@@ -123,7 +123,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
+                    val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
 
                     tilgang.erGodkjent shouldBeEqualTo true
                 }
@@ -146,7 +146,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { axsysClient.getEnheter(validToken, callId) } returns listOf(veiledersEnhet)
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, wantedEnhet)
+                    val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, wantedEnhet)
 
                     tilgang.erGodkjent shouldBeEqualTo false
                 }
@@ -163,7 +163,7 @@ class TilgangServiceSpek : Spek({
                 every { redisStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
-                    val tilgang = tilgangService.hasTilgangToEnhet(validToken, callId, enhet)
+                    val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
 
                     tilgang.erGodkjent shouldBeEqualTo true
                 }
@@ -178,6 +178,7 @@ class TilgangServiceSpek : Spek({
         describe("filter list of personident based on veileders access") {
             it("remove all identer if veileder is missing SYFO access") {
                 val callId = "123"
+                val appName = "anyApp"
                 val personident1 = Personident(UserConstants.PERSONIDENT)
                 val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
                 val personidenter = listOf(personident1.value, personident2.value)
@@ -188,9 +189,10 @@ class TilgangServiceSpek : Spek({
 
                 runBlocking {
                     val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
-                        token = validToken,
                         callId = callId,
+                        token = validToken,
                         personidenter = personidenter,
+                        appName = appName,
                     )
 
                     filteredPersonidenter.size shouldBeEqualTo 0
@@ -209,6 +211,7 @@ class TilgangServiceSpek : Spek({
 
             it("remove skjermet innbygger when veileder is missing access") {
                 val callId = "123"
+                val appName = "anyApp"
                 val behandlendeEnhet = BehandlendeEnhetDTO(
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
@@ -239,9 +242,10 @@ class TilgangServiceSpek : Spek({
 
                 runBlocking {
                     val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
-                        token = validToken,
                         callId = callId,
+                        token = validToken,
                         personidenter = personidenter,
+                        appName = appName,
                     )
 
                     filteredPersonidenter.size shouldBeEqualTo 1
@@ -261,6 +265,7 @@ class TilgangServiceSpek : Spek({
 
             it("remove innbyggere when veileder is missing correct access") {
                 val callId = "123"
+                val appName = "anyApp"
                 val behandlendeEnhet = BehandlendeEnhetDTO(
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
@@ -310,9 +315,10 @@ class TilgangServiceSpek : Spek({
 
                 runBlocking {
                     val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
-                        token = validToken,
                         callId = callId,
+                        token = validToken,
                         personidenter = personidenter,
+                        appName = appName,
                     )
 
                     filteredPersonidenter.size shouldBeEqualTo 1
