@@ -23,7 +23,7 @@ enum class Gradering {
 }
 
 fun PipPersondataResponse.isKode6(): Boolean {
-    val adressebeskyttelse = this.person?.adressebeskyttelse
+    val adressebeskyttelse = this.person.adressebeskyttelse
     return if (adressebeskyttelse.isNullOrEmpty()) {
         false
     } else {
@@ -34,7 +34,7 @@ fun PipPersondataResponse.isKode6(): Boolean {
 }
 
 fun PipPersondataResponse.isKode7(): Boolean {
-    val adressebeskyttelse = this.person?.adressebeskyttelse
+    val adressebeskyttelse = this.person.adressebeskyttelse
     return if (adressebeskyttelse.isNullOrEmpty()) {
         false
     } else {
