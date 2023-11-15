@@ -48,9 +48,34 @@ class NorgClient(
         }
     }
 
+    suspend fun getNAVKontorForGT(callId: String, geografiskTilknytning: GeografiskTilknytning): NorgEnhet {
+        try {
+            val response: NorgEnhet = httpClient.get(getNAVKontorForGTUrl()) {
+                header(NAV_CALL_ID_HEADER, callId)
+                accept(ContentType.Application.Json)
+            }.body()
+
+            COUNT_CALL_NAV_KONTOR_FOR_GT_SUCCESS.increment()
+            return response
+        } catch (e: ResponseException) {
+            // count fail
+            COUNT_CALL_NAV_KONTOR_FOR_GT_FAIL.increment()
+            log.error("Call to NORG2-NAVkontorForGT failed with status HTTP-${e.response.status} for GeografiskTilknytning $geografiskTilknytning")
+            throw e
+        }
+    }
+
     private fun getOverordnetEnheterForNAVKontorUrl(enhetNr: String): String {
         return "$baseUrl/norg2/api/v1/enhet/$enhetNr/overordnet?organiseringsType=$ORGANISERINGSTYPE"
     }
+
+    private fun getNAVKontorForGTUrl(): String {
+        return ""
+    }
+
+//    private fun getNAVKontorForGTUrl(geografiskTilknytning: GeografiskTilknytning): String {
+//        return "$norg2BaseUrl/norg2/api/v1/enhet/navkontor/${geografiskTilknytning.value}"
+//    }
 
     companion object {
         private val log = getLogger(NorgClient::class.java)
