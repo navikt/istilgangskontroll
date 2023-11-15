@@ -6,35 +6,44 @@ import io.ktor.http.*
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.testhelper.UserConstants
 
-private val PdlResponse = PdlPersonResponse(
-    errors = emptyList(),
-    data = PdlHentPerson(
-        hentPerson = PdlPerson(
-            adressebeskyttelse = listOf(
-                Adressebeskyttelse(
-                    gradering = Gradering.UGRADERT
-                )
+private val PdlResponse = PipPersondataResponse(
+    person = PipPerson(
+        adressebeskyttelse = listOf(
+            PipAdressebeskyttelse(
+                gradering = Gradering.UGRADERT
             )
-        )
-    )
+        ),
+        doedsfall = emptyList(),
+    ),
+    geografiskTilknytning = PipGeografiskTilknytning(
+        gtType = PdlGeografiskTilknytningType.KOMMUNE.name,
+        gtBydel = null,
+        gtKommune = "0301",
+        gtLand = null,
+    ),
+    identer = PipIdenter(emptyList()),
 )
 
-private val gradertPdlResponse = PdlPersonResponse(
-    errors = emptyList(),
-    data = PdlHentPerson(
-        hentPerson = PdlPerson(
-            adressebeskyttelse = listOf(
-                Adressebeskyttelse(
-                    gradering = Gradering.STRENGT_FORTROLIG
-                )
+private val gradertPdlResponse = PipPersondataResponse(
+    person = PipPerson(
+        adressebeskyttelse = listOf(
+            PipAdressebeskyttelse(
+                gradering = Gradering.STRENGT_FORTROLIG,
             )
-        )
-    )
+        ),
+        doedsfall = emptyList(),
+    ),
+    geografiskTilknytning = PipGeografiskTilknytning(
+        gtType = PdlGeografiskTilknytningType.KOMMUNE.name,
+        gtBydel = null,
+        gtKommune = "0301",
+        gtLand = null,
+    ),
+    identer = PipIdenter(emptyList()),
 )
 
-suspend fun MockRequestHandleScope.getPdlResponse(request: HttpRequestData): HttpResponseData {
-    val pdlRequest = request.receiveBody<PdlRequest>()
-    val personident = pdlRequest.variables.ident
+fun MockRequestHandleScope.getPdlResponse(request: HttpRequestData): HttpResponseData {
+    val personident = request.headers[PdlClient.IDENT_HEADER]
 
     return when (personident) {
         UserConstants.PERSONIDENT_GRADERT -> {

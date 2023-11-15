@@ -20,4 +20,22 @@ class ExternalMockEnvironment {
     val environment: Environment = testEnvironment()
 
     val wellKnownInternalAzureAD = wellKnownInternalAzureAD()
+
+    val redisServer = testRedisServer(redisConfig = environment.redis)
+
+    companion object {
+        private val singletonInstance: ExternalMockEnvironment by lazy {
+            ExternalMockEnvironment().also {
+                it.startExternalMocks()
+            }
+        }
+
+        fun getInstance(): ExternalMockEnvironment {
+            return singletonInstance
+        }
+    }
+}
+
+fun ExternalMockEnvironment.startExternalMocks() {
+    this.redisServer.start()
 }

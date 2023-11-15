@@ -116,7 +116,7 @@ spec:
         - host: "axsys.dev-fss-pub.nais.io"
         - host: "norg2.dev-fss-pub.nais.io"
         - host: "graph.microsoft.com"
-        - host: "pdl-api.dev-fss-pub.nais.io"
+        - host: "pdl-pip-api.dev-fss-pub.nais.io"
         - host: "audit.nais"
           ports:
             - port: 6514
@@ -145,9 +145,9 @@ spec:
     - name: NORG2_URL
       value: "https://norg2.dev-fss-pub.nais.io"
     - name: PDL_CLIENT_ID
-      value: "dev-fss.pdl.pdl-api"
+      value: "dev-fss.pdl.pdl-pip-api"
     - name: PDL_URL
-      value: "https://pdl-api.dev-fss-pub.nais.io/graphql"
+      value: "https://pdl-pip-api.dev-fss-pub.nais.io"
     - name: SYFOBEHANDLENDEENHET_CLIENT_ID
       value: "dev-gcp.teamsykefravr.syfobehandlendeenhet"
     - name: SYFOBEHANDLENDEENHET_URL

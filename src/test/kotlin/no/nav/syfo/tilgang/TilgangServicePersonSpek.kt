@@ -84,16 +84,23 @@ class TilgangServicePersonSpek : Spek({
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
                 val callId = "123"
-                val ugradertInnbygger = PdlHentPerson(
-                    hentPerson = PdlPerson(
-                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                val ugradertInnbygger = PipPersondataResponse(
+                    person = PipPerson(
+                        adressebeskyttelse = listOf(
+                            PipAdressebeskyttelse(
+                                gradering = Gradering.UGRADERT
+                            )
+                        ),
+                        doedsfall = emptyList(),
                     ),
+                    geografiskTilknytning = null,
+                    identer = PipIdenter(emptyList()),
                 )
 
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
                     coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
                 }
 
                 it("Return no access if veileder doesn't have SYFO access") {
@@ -143,16 +150,23 @@ class TilgangServicePersonSpek : Spek({
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
                 val callId = "123"
-                val ugradertInnbygger = PdlHentPerson(
-                    hentPerson = PdlPerson(
-                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                val ugradertInnbygger = PipPersondataResponse(
+                    person = PipPerson(
+                        adressebeskyttelse = listOf(
+                            PipAdressebeskyttelse(
+                                gradering = Gradering.UGRADERT
+                            )
+                        ),
+                        doedsfall = emptyList(),
                     ),
+                    geografiskTilknytning = null,
+                    identer = PipIdenter(emptyList()),
                 )
 
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
                 }
 
                 it("Return access if veileder has nasjonal tilgang") {
@@ -360,16 +374,23 @@ class TilgangServicePersonSpek : Spek({
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
                 val callId = "123"
-                val ugradertInnbygger = PdlHentPerson(
-                    hentPerson = PdlPerson(
-                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                val ugradertInnbygger = PipPersondataResponse(
+                    person = PipPerson(
+                        adressebeskyttelse = listOf(
+                            PipAdressebeskyttelse(
+                                gradering = Gradering.UGRADERT
+                            )
+                        ),
+                        doedsfall = emptyList(),
                     ),
+                    geografiskTilknytning = null,
+                    identer = PipIdenter(emptyList()),
                 )
 
                 beforeEachTest {
                     coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                     coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
                 }
 
                 it("Return no access if person is skjermet and veileder doesn't have correct AdRolle") {
@@ -443,13 +464,20 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("Return no access if person is kode6 and veileder doesn't have correct AdRolle") {
-                    val personWithKode6 = PdlHentPerson(
-                        hentPerson = PdlPerson(
-                            adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.STRENGT_FORTROLIG)),
+                    val personWithKode6 = PipPersondataResponse(
+                        person = PipPerson(
+                            adressebeskyttelse = listOf(
+                                PipAdressebeskyttelse(
+                                    gradering = Gradering.STRENGT_FORTROLIG,
+                                )
+                            ),
+                            doedsfall = emptyList(),
                         ),
+                        geografiskTilknytning = null,
+                        identer = PipIdenter(emptyList()),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode6
+                    coEvery { pdlClient.getPerson(any(), personident) } returns personWithKode6
                     coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
                     runBlocking {
@@ -460,10 +488,9 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.getPersonWithOboToken(
+                        pdlClient.getPerson(
                             callId = callId,
                             personident = personident,
-                            token = validToken,
                         )
                     }
                     coVerify(exactly = 1) {
@@ -484,13 +511,20 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("Return no access if person is kode7 and veileder doesn't have correct AdRolle") {
-                    val personWithKode7 = PdlHentPerson(
-                        hentPerson = PdlPerson(
-                            adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.FORTROLIG)),
+                    val personWithKode7 = PipPersondataResponse(
+                        person = PipPerson(
+                            adressebeskyttelse = listOf(
+                                PipAdressebeskyttelse(
+                                    gradering = Gradering.FORTROLIG,
+                                )
+                            ),
+                            doedsfall = emptyList(),
                         ),
+                        geografiskTilknytning = null,
+                        identer = PipIdenter(emptyList()),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode7
+                    coEvery { pdlClient.getPerson(any(), personident) } returns personWithKode7
                     coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns false
 
                     runBlocking {
@@ -501,10 +535,9 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.getPersonWithOboToken(
+                        pdlClient.getPerson(
                             callId = callId,
                             personident = personident,
-                            token = validToken,
                         )
                     }
                     coVerify(exactly = 0) {
@@ -525,13 +558,20 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("return godkjent access if person is kode6 and veileder has correct AdRolle") {
-                    val personWithKode6 = PdlHentPerson(
-                        hentPerson = PdlPerson(
-                            adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.STRENGT_FORTROLIG)),
+                    val personWithKode6 = PipPersondataResponse(
+                        person = PipPerson(
+                            adressebeskyttelse = listOf(
+                                PipAdressebeskyttelse(
+                                    gradering = Gradering.STRENGT_FORTROLIG,
+                                )
+                            ),
+                            doedsfall = emptyList(),
                         ),
+                        geografiskTilknytning = null,
+                        identer = PipIdenter(emptyList()),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode6
+                    coEvery { pdlClient.getPerson(any(), personident) } returns personWithKode6
                     coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns true
 
                     runBlocking {
@@ -542,10 +582,9 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.getPersonWithOboToken(
+                        pdlClient.getPerson(
                             callId = callId,
                             personident = personident,
-                            token = validToken,
                         )
                     }
                     coVerify(exactly = 1) {
@@ -566,13 +605,20 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("return godkjent access if person is kode7 and veileder has correct AdRolle") {
-                    val personWithKode7 = PdlHentPerson(
-                        hentPerson = PdlPerson(
-                            adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.FORTROLIG)),
+                    val personWithKode7 = PipPersondataResponse(
+                        person = PipPerson(
+                            adressebeskyttelse = listOf(
+                                PipAdressebeskyttelse(
+                                    gradering = Gradering.FORTROLIG,
+                                )
+                            ),
+                            doedsfall = emptyList(),
                         ),
+                        geografiskTilknytning = null,
+                        identer = PipIdenter(emptyList()),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns personWithKode7
+                    coEvery { pdlClient.getPerson(any(), personident) } returns personWithKode7
                     coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns true
 
                     runBlocking {
@@ -583,10 +629,9 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.getPersonWithOboToken(
+                        pdlClient.getPerson(
                             callId = callId,
                             personident = personident,
-                            token = validToken,
                         )
                     }
                     coVerify(exactly = 0) {
@@ -607,13 +652,20 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("return godkjent access if person doesn't have adressebeskyttelse") {
-                    val ugradertInnbygger = PdlHentPerson(
-                        hentPerson = PdlPerson(
-                            adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
+                    val ugradertInnbygger = PipPersondataResponse(
+                        person = PipPerson(
+                            adressebeskyttelse = listOf(
+                                PipAdressebeskyttelse(
+                                    gradering = Gradering.UGRADERT
+                                )
+                            ),
+                            doedsfall = emptyList(),
                         ),
+                        geografiskTilknytning = null,
+                        identer = PipIdenter(emptyList()),
                     )
                     every { redisStore.getObject<Tilgang?>(any()) } returns null
-                    coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                    coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
 
                     runBlocking {
                         val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
@@ -623,10 +675,9 @@ class TilgangServicePersonSpek : Spek({
 
                     verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
                     coVerify(exactly = 1) {
-                        pdlClient.getPersonWithOboToken(
+                        pdlClient.getPerson(
                             callId = callId,
                             personident = personident,
-                            token = validToken,
                         )
                     }
                     coVerify(exactly = 0) {
