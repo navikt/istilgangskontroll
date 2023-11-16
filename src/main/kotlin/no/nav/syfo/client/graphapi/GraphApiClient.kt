@@ -51,7 +51,7 @@ class GraphApiClient(
                 redisStore.setObject(
                     key = cacheKey,
                     value = it,
-                    expireSeconds = AxsysClient.TWELVE_HOURS_IN_SECS,
+                    expireSeconds = TWELVE_HOURS_IN_SECS,
                 )
             }
         }
@@ -105,5 +105,6 @@ class GraphApiClient(
         const val GRAPHAPI_USER_GROUPS_PATH = "/me/memberOf"
         const val FILTER_QUERY = "\$filter="
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
+        const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
     }
 }
