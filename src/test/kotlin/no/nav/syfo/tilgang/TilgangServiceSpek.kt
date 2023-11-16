@@ -203,8 +203,8 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident2, any()) }
                 coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident1, any()) }
                 coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident2, any()) }
-                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personident1, any()) }
-                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personident2, any()) }
+                coVerify(exactly = 0) { pdlClient.getPerson(any(), personident1) }
+                coVerify(exactly = 0) { pdlClient.getPerson(any(), personident2) }
                 verifyCacheSet(exactly = 1, key = cacheKey1, harTilgang = false)
                 verifyCacheSet(exactly = 1, key = cacheKey2, harTilgang = false)
             }
@@ -220,11 +220,7 @@ class TilgangServiceSpek : Spek({
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
                 )
-                val ugradertInnbygger = PdlHentPerson(
-                    hentPerson = PdlPerson(
-                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
-                    ),
-                )
+                val ugradertInnbygger = getUgradertInnbygger()
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidentSkjermet = Personident(UserConstants.PERSONIDENT_GRADERT)
                 val personidenter = listOf(personident.value, personidentSkjermet.value)
@@ -237,7 +233,7 @@ class TilgangServiceSpek : Spek({
                 coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentSkjermet, any()) } returns true
-                coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
+                coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
                 coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
                 runBlocking {
@@ -257,8 +253,8 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentSkjermet, validToken) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personident, validToken) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentSkjermet, validToken) }
-                coVerify(exactly = 1) { pdlClient.getPersonWithOboToken(callId, personident, validToken) }
-                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personidentSkjermet, any()) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident) }
+                coVerify(exactly = 0) { pdlClient.getPerson(any(), personidentSkjermet) }
                 verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
                 verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
             }
@@ -278,16 +274,8 @@ class TilgangServiceSpek : Spek({
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
                 )
-                val ugradertInnbygger = PdlHentPerson(
-                    hentPerson = PdlPerson(
-                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.UGRADERT)),
-                    ),
-                )
-                val kode6Innbygger = PdlHentPerson(
-                    hentPerson = PdlPerson(
-                        adressebeskyttelse = listOf(Adressebeskyttelse(Gradering.STRENGT_FORTROLIG)),
-                    ),
-                )
+                val ugradertInnbygger = getUgradertInnbygger()
+                val kode6Innbygger = getinnbyggerWithKode6()
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidentOtherEnhet = Personident(UserConstants.PERSONIDENT_OTHER_ENHET)
                 val personidentSkjermet = Personident(UserConstants.PERSONIDENT_SKJERMET)
@@ -308,8 +296,8 @@ class TilgangServiceSpek : Spek({
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentSkjermet, any()) } returns true
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentGradert, any()) } returns false
-                coEvery { pdlClient.getPersonWithOboToken(any(), personident, any()) } returns ugradertInnbygger
-                coEvery { pdlClient.getPersonWithOboToken(any(), personidentGradert, any()) } returns kode6Innbygger
+                coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
+                coEvery { pdlClient.getPerson(any(), personidentGradert) } returns kode6Innbygger
                 coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
                 coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
@@ -337,10 +325,10 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentOtherEnhet, any()) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentSkjermet, validToken) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentGradert, validToken) }
-                coVerify(exactly = 1) { pdlClient.getPersonWithOboToken(callId, personident, validToken) }
-                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personidentOtherEnhet, any()) }
-                coVerify(exactly = 0) { pdlClient.getPersonWithOboToken(any(), personidentSkjermet, any()) }
-                coVerify(exactly = 1) { pdlClient.getPersonWithOboToken(callId, personidentGradert, validToken) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident) }
+                coVerify(exactly = 0) { pdlClient.getPerson(any(), personidentOtherEnhet) }
+                coVerify(exactly = 0) { pdlClient.getPerson(any(), personidentSkjermet) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personidentGradert) }
                 verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
                 verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
                 verifyCacheSet(exactly = 1, key = cacheKeyOtherEnhet, harTilgang = false)
@@ -355,7 +343,7 @@ class TilgangServiceSpek : Spek({
                 val personidenter = listOf(UserConstants.PERSONIDENT)
                 coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident) }
                 coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident) }
-                coJustRun { pdlClient.getPersonWithSystemToken(any(), personident) }
+                coJustRun { pdlClient.getPerson(any(), personident) }
 
                 runBlocking {
                     tilgangService.preloadCacheForPersonAccess(
@@ -366,7 +354,7 @@ class TilgangServiceSpek : Spek({
 
                 coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident) }
-                coVerify(exactly = 1) { pdlClient.getPersonWithSystemToken(callId, personident) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident) }
             }
 
             it("gets data from behandledeEnhet, skjermedePersonerPip and pdl for each person in list") {
@@ -378,8 +366,8 @@ class TilgangServiceSpek : Spek({
                 coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident2) }
                 coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident1) }
                 coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident2) }
-                coJustRun { pdlClient.getPersonWithSystemToken(any(), personident1) }
-                coJustRun { pdlClient.getPersonWithSystemToken(any(), personident2) }
+                coJustRun { pdlClient.getPerson(any(), personident1) }
+                coJustRun { pdlClient.getPerson(any(), personident2) }
 
                 runBlocking {
                     tilgangService.preloadCacheForPersonAccess(
@@ -392,8 +380,8 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident2) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident1) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident2) }
-                coVerify(exactly = 1) { pdlClient.getPersonWithSystemToken(callId, personident1) }
-                coVerify(exactly = 1) { pdlClient.getPersonWithSystemToken(callId, personident2) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident1) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident2) }
             }
         }
     }

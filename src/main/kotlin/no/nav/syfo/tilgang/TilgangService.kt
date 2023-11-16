@@ -147,10 +147,9 @@ class TilgangService(
         personident: Personident,
         token: Token,
     ): Boolean {
-        val person = pdlClient.getPersonWithOboToken(
+        val person = pdlClient.getPerson(
             callId = callId,
             personident = personident,
-            token = token,
         )
 
         return if (person.isKode6() && isKode6AccessAvslatt(token = token, callId = callId)) {
@@ -256,7 +255,7 @@ class TilgangService(
                 personIdent = personident,
             )
 
-            pdlClient.getPersonWithSystemToken(
+            pdlClient.getPerson(
                 callId = callId,
                 personident = personident,
             )
