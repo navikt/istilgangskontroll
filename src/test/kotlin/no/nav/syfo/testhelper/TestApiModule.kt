@@ -33,6 +33,7 @@ fun Application.testApiModule(
         baseUrl = externalMockEnvironment.environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
         httpClient = mockHttpClient,
+        redisStore = redisStore,
     )
 
     val axsysClient = AxsysClient(
