@@ -220,18 +220,7 @@ class TilgangServiceSpek : Spek({
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
                 )
-                val ugradertInnbygger = PipPersondataResponse(
-                    person = PipPerson(
-                        adressebeskyttelse = listOf(
-                            PipAdressebeskyttelse(
-                                gradering = Gradering.UGRADERT
-                            )
-                        ),
-                        doedsfall = emptyList(),
-                    ),
-                    geografiskTilknytning = null,
-                    identer = PipIdenter(emptyList()),
-                )
+                val ugradertInnbygger = getUgradertInnbygger()
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidentSkjermet = Personident(UserConstants.PERSONIDENT_GRADERT)
                 val personidenter = listOf(personident.value, personidentSkjermet.value)
@@ -285,30 +274,8 @@ class TilgangServiceSpek : Spek({
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
                 )
-                val ugradertInnbygger = PipPersondataResponse(
-                    person = PipPerson(
-                        adressebeskyttelse = listOf(
-                            PipAdressebeskyttelse(
-                                gradering = Gradering.UGRADERT
-                            )
-                        ),
-                        doedsfall = emptyList(),
-                    ),
-                    geografiskTilknytning = null,
-                    identer = PipIdenter(emptyList()),
-                )
-                val kode6Innbygger = PipPersondataResponse(
-                    person = PipPerson(
-                        adressebeskyttelse = listOf(
-                            PipAdressebeskyttelse(
-                                gradering = Gradering.STRENGT_FORTROLIG
-                            )
-                        ),
-                        doedsfall = emptyList(),
-                    ),
-                    geografiskTilknytning = null,
-                    identer = PipIdenter(emptyList()),
-                )
+                val ugradertInnbygger = getUgradertInnbygger()
+                val kode6Innbygger = getinnbyggerWithKode6()
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidentOtherEnhet = Personident(UserConstants.PERSONIDENT_OTHER_ENHET)
                 val personidentSkjermet = Personident(UserConstants.PERSONIDENT_SKJERMET)
