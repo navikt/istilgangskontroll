@@ -40,6 +40,7 @@ fun main() {
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
+        redisStore = redisStore,
     )
 
     val axsysClient = AxsysClient(
