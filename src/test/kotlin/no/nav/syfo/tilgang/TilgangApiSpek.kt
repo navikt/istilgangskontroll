@@ -16,7 +16,7 @@ class TilgangApiSpek : Spek({
     describe("Check veiledertilganger") {
         with(TestApplicationEngine()) {
             start()
-            val externalMockEnvironment = ExternalMockEnvironment()
+            val externalMockEnvironment = ExternalMockEnvironment.getInstance()
             val VALID_TOKEN_BUT_NO_SYFO_TILGANG = generateJWT(
                 audience = externalMockEnvironment.environment.azure.appClientId,
                 issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
