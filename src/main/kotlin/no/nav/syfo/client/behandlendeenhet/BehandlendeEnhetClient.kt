@@ -11,7 +11,6 @@ import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
-import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.util.*
 import org.slf4j.LoggerFactory
@@ -62,7 +61,7 @@ class BehandlendeEnhetClient(
             redisStore.setObject(
                 key = cacheKey,
                 value = behandlendeEnhet,
-                expireSeconds = PdlClient.TWELVE_HOURS_IN_SECS
+                expireSeconds = TWELVE_HOURS_IN_SECS
             )
             behandlendeEnhet
         }
