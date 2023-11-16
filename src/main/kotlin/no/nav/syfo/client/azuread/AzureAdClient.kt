@@ -8,23 +8,58 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import no.nav.syfo.application.api.auth.Token
+import no.nav.syfo.application.api.auth.getNAVIdent
+import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.httpClientProxy
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 
 class AzureAdClient(
     private val azureEnvironment: AzureEnvironment,
+    private val redisStore: RedisStore,
     private val httpClient: HttpClient = httpClientProxy()
 ) {
-    suspend fun getOnBehalfOfToken(scopeClientId: String, token: Token, callId: String): AzureAdToken? = getAccessToken(
-        formParameters = buildParameters(token, "api://$scopeClientId/.default"),
-        callId = callId,
-    )?.toAzureAdToken()
+    suspend fun getOnBehalfOfToken(scopeClientId: String, token: Token, callId: String): AzureAdToken? =
+        getOnBehalfOfToken(
+            scopeClientId = scopeClientId,
+            token = token,
+            callId = callId,
+            formParameters = buildParameters(token, "api://$scopeClientId/.default"),
+        )
 
-    suspend fun getOnBehalfOfTokenForGraphApi(scopeClientId: String, token: Token, callId: String): AzureAdToken? = getAccessToken(
-        formParameters = buildParameters(token, "$scopeClientId/.default"),
-        callId = callId,
-    )?.toAzureAdToken()
+    suspend fun getOnBehalfOfTokenForGraphApi(scopeClientId: String, token: Token, callId: String): AzureAdToken? =
+        getOnBehalfOfToken(
+            scopeClientId = scopeClientId,
+            token = token,
+            callId = callId,
+            formParameters = buildParameters(token, "$scopeClientId/.default"),
+        )
+
+    private suspend fun getOnBehalfOfToken(
+        scopeClientId: String,
+        token: Token,
+        callId: String,
+        formParameters: Parameters,
+    ): AzureAdToken? {
+        val veilederIdent = token.getNAVIdent()
+        val cacheKey = "$CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX$scopeClientId-$veilederIdent"
+        val cachedOboToken: AzureAdToken? = redisStore.getObject(key = cacheKey)
+        return if (cachedOboToken?.isExpired() == false) {
+            cachedOboToken
+        } else {
+            val azureAdTokenResponse = getAccessToken(
+                formParameters = formParameters,
+                callId = callId,
+            )
+
+            azureAdTokenResponse?.toAzureAdToken()?.also { oboToken ->
+                redisStore.setObject(
+                    key = cacheKey,
+                    value = oboToken,
+                    expireSeconds = azureAdTokenResponse.expires_in,
+                )
+            }
+        }
+    }
 
     private fun buildParameters(token: Token, scope: String) = Parameters.build {
         append("client_id", azureEnvironment.appClientId)
@@ -38,9 +73,9 @@ class AzureAdClient(
 
     suspend fun getSystemToken(scopeClientId: String, callId: String): AzureAdToken? {
         val cacheKey = "$CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX$scopeClientId"
-        val cachedToken = cache.get(key = cacheKey)
-        return if (cachedToken?.isExpired() == false) {
-            cachedToken
+        val cachedSystemToken: AzureAdToken? = redisStore.getObject(key = cacheKey)
+        return if (cachedSystemToken?.isExpired() == false) {
+            cachedSystemToken
         } else {
             val azureAdTokenResponse = getAccessToken(
                 formParameters = Parameters.build {
@@ -51,10 +86,13 @@ class AzureAdClient(
                 },
                 callId = callId,
             )
-            azureAdTokenResponse?.let { token ->
-                token.toAzureAdToken().also {
-                    cache[cacheKey] = it
-                }
+
+            azureAdTokenResponse?.toAzureAdToken()?.also { oboToken ->
+                redisStore.setObject(
+                    key = cacheKey,
+                    value = oboToken,
+                    expireSeconds = azureAdTokenResponse.expires_in,
+                )
             }
         }
     }
@@ -86,7 +124,7 @@ class AzureAdClient(
 
     companion object {
         const val CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX = "azuread-token-system-"
-        private val cache = ConcurrentHashMap<String, AzureAdToken>()
+        const val CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX = "azuread-token-obo-"
         private val log = LoggerFactory.getLogger(AzureAdClient::class.java)
     }
 }

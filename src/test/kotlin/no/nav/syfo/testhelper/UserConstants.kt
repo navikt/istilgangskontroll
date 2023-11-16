@@ -4,6 +4,7 @@ object UserConstants {
     const val VEILEDER_IDENT = "Z999999"
     const val VEILEDER_IDENT_NO_SYFO_ACCESS = "Z00000_no_syfo_access"
     const val VEILEDER_IDENT_NO_ENHET_ACCESS = "Z00000_no_enhet_access"
+    const val VEILEDER_IDENT_NO_AZURE_AD_TOKEN = "Z00000_no_azure_ad_token"
 
     const val ENHET_VEILEDER = "1234"
     const val ENHET_VEILEDER_NO_ACCESS = "9999"

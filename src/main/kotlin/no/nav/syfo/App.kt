@@ -31,7 +31,10 @@ fun main() {
     val adRoller = AdRoller(env = environment)
 
     val redisStore = RedisStore(environment.redis)
-    val azureAdClient = AzureAdClient(azureEnvironment = environment.azure)
+    val azureAdClient = AzureAdClient(
+        azureEnvironment = environment.azure,
+        redisStore = redisStore,
+    )
 
     val graphApiClient = GraphApiClient(
         azureAdClient = azureAdClient,
