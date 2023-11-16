@@ -27,7 +27,7 @@ class PdlClient(
         personident: Personident,
     ): PipPersondataResponse {
         val cacheKey = "$PDL_PERSON_CACHE_KEY-$personident"
-        val cachedPerson = getPipPersondataResponse(cacheKey)
+        val cachedPerson = redisStore.getObject<PipPersondataResponse>(key = cacheKey)
 
         return if (cachedPerson != null) {
             cachedPerson
@@ -40,10 +40,6 @@ class PdlClient(
                 )
             }
         }
-    }
-
-    private fun getPipPersondataResponse(cacheKey: String): PipPersondataResponse? {
-        return redisStore.getObject(key = cacheKey)
     }
 
     private suspend fun getPersonFromPdl(callId: String, personident: Personident): PipPersondataResponse {
