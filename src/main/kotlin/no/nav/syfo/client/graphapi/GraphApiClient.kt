@@ -7,6 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
+import no.nav.syfo.application.api.auth.getNAVIdent
+import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.tilgang.AdRolle
@@ -19,6 +22,7 @@ class GraphApiClient(
     private val baseUrl: String,
     private val relevantSyfoRoller: List<AdRolle>,
     private val httpClient: HttpClient = httpClientProxy(),
+    private val redisStore: RedisStore,
 ) {
     suspend fun hasAccess(
         adRolle: AdRolle,
@@ -31,12 +35,29 @@ class GraphApiClient(
         )
 
         return isRoleInUserGroupList(
-            groupList = groupList.value,
+            groupList = groupList,
             adRolle = adRolle,
         )
     }
 
-    private suspend fun getRoleList(token: Token, callId: String): GraphApiUserGroupsResponse {
+    private suspend fun getRoleList(token: Token, callId: String): List<GraphApiGroup> {
+        val navIdent = token.getNAVIdent()
+        val cacheKey = "$GRAPHAPI_CACHE_KEY-$navIdent"
+        val cachedRoleList = getCachedRoleList(cacheKey)
+        return if (cachedRoleList != null) {
+            cachedRoleList
+        } else {
+            getRoleListFromGraphApi(token, callId).also {
+                redisStore.setObject(
+                    key = cacheKey,
+                    value = it,
+                    expireSeconds = AxsysClient.TWELVE_HOURS_IN_SECS,
+                )
+            }
+        }
+    }
+
+    private suspend fun getRoleListFromGraphApi(token: Token, callId: String): List<GraphApiGroup> {
         val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
             scopeClientId = baseUrl,
             token = token,
@@ -55,7 +76,7 @@ class GraphApiClient(
                 accept(ContentType.Application.Json)
             }.body()
             COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_SUCCESS.increment()
-            response
+            response.value
         } catch (e: ResponseException) {
             COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_FAIL.increment()
             log.error(
@@ -68,6 +89,10 @@ class GraphApiClient(
         }
     }
 
+    private fun getCachedRoleList(cacheKey: String): List<GraphApiGroup>? {
+        return redisStore.getListObject(key = cacheKey)
+    }
+
     private fun isRoleInUserGroupList(
         groupList: List<GraphApiGroup>,
         adRolle: AdRolle,
@@ -76,6 +101,7 @@ class GraphApiClient(
     }
 
     companion object {
+        const val GRAPHAPI_CACHE_KEY = "graphapi"
         const val GRAPHAPI_USER_GROUPS_PATH = "/me/memberOf"
         const val FILTER_QUERY = "\$filter="
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
