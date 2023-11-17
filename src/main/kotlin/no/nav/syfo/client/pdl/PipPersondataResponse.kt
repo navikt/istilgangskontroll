@@ -67,7 +67,7 @@ data class PipIdent(
 )
 
 data class PipGeografiskTilknytning(
-    val gtType: String,
+    val gtType: String?,
     val gtBydel: String?,
     val gtKommune: String?,
     val gtLand: String?,
@@ -81,8 +81,8 @@ enum class PdlGeografiskTilknytningType {
 }
 
 fun PipGeografiskTilknytning.geografiskTilknytning(): GeografiskTilknytning? {
-    this.let { gt ->
-        return when (gt.gtType) {
+    return this.let { gt ->
+        when (gt.gtType) {
             PdlGeografiskTilknytningType.BYDEL.name -> {
                 GeografiskTilknytning(
                     type = GeografiskTilknytningType.valueOf(PdlGeografiskTilknytningType.BYDEL.name),
@@ -101,13 +101,12 @@ fun PipGeografiskTilknytning.geografiskTilknytning(): GeografiskTilknytning? {
                     value = gt.gtLand,
                 )
             }
-            PdlGeografiskTilknytningType.UDEFINERT.name -> {
+            else -> {
                 GeografiskTilknytning(
                     type = GeografiskTilknytningType.valueOf(PdlGeografiskTilknytningType.UDEFINERT.name),
                     value = null,
                 )
             }
-            else -> null
         }
     }
 }
