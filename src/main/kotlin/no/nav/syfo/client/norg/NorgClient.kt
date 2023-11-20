@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.client.norg.domain.NorgEnhet
+import no.nav.syfo.client.pdl.GeografiskTilknytning
 import no.nav.syfo.tilgang.Enhet
 import no.nav.syfo.util.NAV_CALL_ID_HEADER
 import no.nav.syfo.util.callIdArgument
@@ -48,8 +49,28 @@ class NorgClient(
         }
     }
 
+    suspend fun getNAVKontorForGT(callId: String, geografiskTilknytning: GeografiskTilknytning): NorgEnhet {
+        try {
+            val response: NorgEnhet = httpClient.get(getNAVKontorForGTUrl(geografiskTilknytning)) {
+                header(NAV_CALL_ID_HEADER, callId)
+                accept(ContentType.Application.Json)
+            }.body()
+
+            COUNT_CALL_NAV_KONTOR_FOR_GT_SUCCESS.increment()
+            return response
+        } catch (e: ResponseException) {
+            COUNT_CALL_NAV_KONTOR_FOR_GT_FAIL.increment()
+            log.error("Call to NORG2-NAVkontorForGT failed with status HTTP-${e.response.status} for GeografiskTilknytning $geografiskTilknytning")
+            throw e
+        }
+    }
+
     private fun getOverordnetEnheterForNAVKontorUrl(enhetNr: String): String {
         return "$baseUrl/norg2/api/v1/enhet/$enhetNr/overordnet?organiseringsType=$ORGANISERINGSTYPE"
+    }
+
+    private fun getNAVKontorForGTUrl(geografiskTilknytning: GeografiskTilknytning): String {
+        return "$baseUrl/norg2/api/v1/enhet/navkontor/${geografiskTilknytning.value}"
     }
 
     companion object {
