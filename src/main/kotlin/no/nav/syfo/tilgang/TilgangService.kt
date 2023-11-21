@@ -3,9 +3,7 @@ package no.nav.syfo.tilgang
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
-import no.nav.syfo.audit.AuditLogEvent
-import no.nav.syfo.audit.CEF
-import no.nav.syfo.audit.auditLog
+import no.nav.syfo.audit.*
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
@@ -110,12 +108,24 @@ class TilgangService(
             return true
         }
 
-        val behandlendeEnhetDTO = behandlendeEnhetClient.getEnhetWithOboToken(
+        val geografiskTilknytning = pdlClient.getPerson(
             callId = callId,
             personident = personident,
+        ).geografiskTilknytning?.geografiskTilknytning()
+
+        if (geografiskTilknytning == null) {
+            log.warn("Didn't get GT for innbygger, unable to check geografisk access callId=$callId")
+            return false
+        }
+
+        val innbyggersEnhetNr = getInnbyggersEnhet(
+            callId = callId,
+            personident = personident,
+            geografiskTilknytning = geografiskTilknytning,
             token = token,
         )
-        val behandlendeEnhet = Enhet(behandlendeEnhetDTO.enhetId)
+
+        val behandlendeEnhet = Enhet(innbyggersEnhetNr)
 
         val veiledersEnheter = axsysClient.getEnheter(token = token, callId = callId).map { Enhet(it.enhetId) }
         val hasAccessToLokalEnhet = veiledersEnheter.map { it.id }.contains(behandlendeEnhet.id)
@@ -132,6 +142,26 @@ class TilgangService(
         }
 
         return false
+    }
+
+    private suspend fun getInnbyggersEnhet(
+        callId: String,
+        personident: Personident,
+        geografiskTilknytning: GeografiskTilknytning,
+        token: Token,
+    ): String {
+        return if (geografiskTilknytning.isUtlandOrWithoutGT()) {
+            behandlendeEnhetClient.getEnhetWithOboToken(
+                callId = callId,
+                personident = personident,
+                token = token,
+            ).enhetId
+        } else {
+            norgClient.getNAVKontorForGT(
+                callId = callId,
+                geografiskTilknytning = geografiskTilknytning,
+            ).enhetNr
+        }
     }
 
     private suspend fun isKode6AccessAvslatt(token: Token, callId: String): Boolean {
@@ -203,7 +233,7 @@ class TilgangService(
         callId: String,
         token: Token,
         personident: Personident,
-        cacheKey: String
+        cacheKey: String,
     ): Tilgang {
         val erGodkjent = if (!hasAccessToSYFO(callId = callId, token = token)) {
             false
@@ -231,7 +261,7 @@ class TilgangService(
         callId: String,
         token: Token,
         personidenter: List<String>,
-        appName: String
+        appName: String,
     ): List<String> {
         return personidenter.filter { personident ->
             checkTilgangToPerson(

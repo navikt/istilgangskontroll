@@ -72,6 +72,7 @@ class TilgangServiceSpek : Spek({
                 skjermedePersonerPipClient,
                 pdlClient,
                 behandlendeEnhetClient,
+                norgClient,
                 redisStore,
             )
         }
@@ -212,14 +213,11 @@ class TilgangServiceSpek : Spek({
             it("remove skjermet innbygger when veileder is missing access") {
                 val callId = "123"
                 val appName = "anyApp"
-                val behandlendeEnhet = BehandlendeEnhetDTO(
-                    enhetId = UserConstants.ENHET_VEILEDER,
-                    navn = "enhet",
-                )
                 val veiledersEnhet = AxsysEnhet(
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
                 )
+                val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
                 val ugradertInnbygger = getUgradertInnbygger()
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidentSkjermet = Personident(UserConstants.PERSONIDENT_GRADERT)
@@ -228,12 +226,12 @@ class TilgangServiceSpek : Spek({
                 val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
                 every { redisStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
-                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns behandlendeEnhet
-                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentSkjermet, any()) } returns behandlendeEnhet
+                coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
                 coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentSkjermet, any()) } returns true
                 coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
+                coEvery { pdlClient.getPerson(any(), personidentSkjermet) } returns ugradertInnbygger
                 coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
                 runBlocking {
@@ -249,12 +247,11 @@ class TilgangServiceSpek : Spek({
                 }
 
                 coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personident, validToken) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentSkjermet, validToken) }
+                coVerify(exactly = 2) { norgClient.getNAVKontorForGT(callId, GeografiskTilknytning(GeografiskTilknytningType.BYDEL, UserConstants.ENHET_VEILEDER_GT)) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personident, validToken) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentSkjermet, validToken) }
-                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident) }
-                coVerify(exactly = 0) { pdlClient.getPerson(any(), personidentSkjermet) }
+                coVerify(exactly = 2) { pdlClient.getPerson(callId, personident) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, personidentSkjermet) }
                 verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
                 verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
             }
@@ -274,8 +271,10 @@ class TilgangServiceSpek : Spek({
                     enhetId = UserConstants.ENHET_VEILEDER,
                     navn = "enhet",
                 )
+                val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
                 val ugradertInnbygger = getUgradertInnbygger()
                 val kode6Innbygger = getinnbyggerWithKode6()
+                val utlandGTInnbygger = getUgradertInnbyggerWithUtlandGT()
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidentOtherEnhet = Personident(UserConstants.PERSONIDENT_OTHER_ENHET)
                 val personidentSkjermet = Personident(UserConstants.PERSONIDENT_SKJERMET)
@@ -287,16 +286,16 @@ class TilgangServiceSpek : Spek({
                 val cacheKeyGradert = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentGradert"
                 every { redisStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
-                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) } returns behandlendeEnhet
-                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentSkjermet, any()) } returns behandlendeEnhet
+                coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
                 coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentOtherEnhet, any()) } returns otherBehandlendeEnhet
-                coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentGradert, any()) } returns behandlendeEnhet
                 coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns false
                 coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentSkjermet, any()) } returns true
                 coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentGradert, any()) } returns false
                 coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
+                coEvery { pdlClient.getPerson(any(), personidentSkjermet) } returns ugradertInnbygger
+                coEvery { pdlClient.getPerson(any(), personidentOtherEnhet) } returns utlandGTInnbygger
                 coEvery { pdlClient.getPerson(any(), personidentGradert) } returns kode6Innbygger
                 coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
                 coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
@@ -317,18 +316,16 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.REGIONAL, validToken, callId) }
                 coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, validToken, callId) }
                 coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.KODE6, validToken, callId) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personident, validToken) }
                 coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentOtherEnhet, validToken) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentSkjermet, validToken) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithOboToken(callId, personidentGradert, validToken) }
+                coVerify(exactly = 3) { norgClient.getNAVKontorForGT(callId, GeografiskTilknytning(GeografiskTilknytningType.BYDEL, UserConstants.ENHET_VEILEDER_GT)) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personident, validToken) }
                 coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personidentOtherEnhet, any()) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentSkjermet, validToken) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, personidentGradert, validToken) }
-                coVerify(exactly = 1) { pdlClient.getPerson(callId, personident) }
-                coVerify(exactly = 0) { pdlClient.getPerson(any(), personidentOtherEnhet) }
-                coVerify(exactly = 0) { pdlClient.getPerson(any(), personidentSkjermet) }
-                coVerify(exactly = 1) { pdlClient.getPerson(callId, personidentGradert) }
+                coVerify(exactly = 2) { pdlClient.getPerson(callId, personident) }
+                coVerify(exactly = 1) { pdlClient.getPerson(any(), personidentOtherEnhet) }
+                coVerify(exactly = 1) { pdlClient.getPerson(any(), personidentSkjermet) }
+                coVerify(exactly = 2) { pdlClient.getPerson(callId, personidentGradert) }
                 verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
                 verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
                 verifyCacheSet(exactly = 1, key = cacheKeyOtherEnhet, harTilgang = false)
