@@ -70,6 +70,7 @@ fun Application.testApiModule(
 
     val norgClient = NorgClient(
         baseUrl = externalMockEnvironment.environment.clients.norgUrl,
+        redisStore = redisStore,
         httpClient = mockHttpClient,
     )
 

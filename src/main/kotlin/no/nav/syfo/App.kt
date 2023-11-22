@@ -73,6 +73,7 @@ fun main() {
 
     val norgClient = NorgClient(
         baseUrl = environment.clients.norgUrl,
+        redisStore = redisStore,
     )
 
     val wellKnownInternalAzureAD = getWellKnown(
