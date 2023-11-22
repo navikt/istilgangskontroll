@@ -15,9 +15,9 @@ fun testEnvironment() = Environment(
     ),
 
     redis = RedisEnvironment(
-        host = "localhost",
-        port = 6599,
-        secret = "password",
+        host = "REDIS_HOST",
+        port = 6379,
+        secret = "REDIS_PASSWORD",
     ),
 
     kode6Id = "kode6Id",
