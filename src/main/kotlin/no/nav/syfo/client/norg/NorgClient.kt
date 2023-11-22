@@ -5,6 +5,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import no.nav.syfo.application.cache.RedisStore
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.GeografiskTilknytning
@@ -15,12 +16,36 @@ import org.slf4j.LoggerFactory.getLogger
 
 class NorgClient(
     private val baseUrl: String,
+    private val redisStore: RedisStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
 
     suspend fun getOverordnetEnhetListForNAVKontor(
         callId: String,
-        enhet: Enhet
+        enhet: Enhet,
+    ): List<NorgEnhet> {
+        val cacheKey = "$NORG_OVERORDNEDE_ENHETER_CACHE_KEY-$enhet"
+        val cachedEnheter = redisStore.getObject<List<NorgEnhet>>(key = cacheKey)
+
+        return if (cachedEnheter != null) {
+            cachedEnheter
+        } else {
+            getOverordnedeEnheter(
+                callId = callId,
+                enhet = enhet,
+            ).also {
+                redisStore.setObject(
+                    key = cacheKey,
+                    value = it,
+                    expireSeconds = TWELVE_HOURS_IN_SECS,
+                )
+            }
+        }
+    }
+
+    private suspend fun getOverordnedeEnheter(
+        callId: String,
+        enhet: Enhet,
     ): List<NorgEnhet> {
         val url = getOverordnetEnheterForNAVKontorUrl(enhet.id)
         try {
@@ -49,7 +74,30 @@ class NorgClient(
         }
     }
 
-    suspend fun getNAVKontorForGT(callId: String, geografiskTilknytning: GeografiskTilknytning): NorgEnhet {
+    suspend fun getNAVKontorForGT(
+        callId: String,
+        geografiskTilknytning: GeografiskTilknytning,
+    ): NorgEnhet {
+        val cacheKey = "$NORG_GEOGRAFISK_ENHET_CACHE_KEY-${geografiskTilknytning.value}"
+        val cachedEnhet = redisStore.getObject<NorgEnhet>(key = cacheKey)
+
+        return if (cachedEnhet != null) {
+            cachedEnhet
+        } else {
+            getGeografiskEnhet(
+                callId = callId,
+                geografiskTilknytning = geografiskTilknytning,
+            ).also {
+                redisStore.setObject(
+                    key = cacheKey,
+                    value = it,
+                    expireSeconds = TWELVE_HOURS_IN_SECS,
+                )
+            }
+        }
+    }
+
+    private suspend fun getGeografiskEnhet(callId: String, geografiskTilknytning: GeografiskTilknytning): NorgEnhet {
         try {
             val response: NorgEnhet = httpClient.get(getNAVKontorForGTUrl(geografiskTilknytning)) {
                 header(NAV_CALL_ID_HEADER, callId)
@@ -77,5 +125,10 @@ class NorgClient(
         private val log = getLogger(NorgClient::class.java)
 
         private const val ORGANISERINGSTYPE = "FYLKE"
+
+        const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
+        private const val NORG_CACHE_KEY = "norg"
+        const val NORG_OVERORDNEDE_ENHETER_CACHE_KEY = "$NORG_CACHE_KEY-overordnede-enheter"
+        const val NORG_GEOGRAFISK_ENHET_CACHE_KEY = "$NORG_CACHE_KEY-geografisk-enhet"
     }
 }
