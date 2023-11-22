@@ -275,11 +275,6 @@ class TilgangService(
 
     private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
         try {
-            behandlendeEnhetClient.getEnhetWithSystemToken(
-                callId = callId,
-                personident = personident,
-            )
-
             skjermedePersonerPipClient.getIsSkjermetWithSystemToken(
                 callId = callId,
                 personIdent = personident,
