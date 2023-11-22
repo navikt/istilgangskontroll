@@ -338,7 +338,6 @@ class TilgangServiceSpek : Spek({
                 val callId = "123"
                 val personident = Personident(UserConstants.PERSONIDENT)
                 val personidenter = listOf(UserConstants.PERSONIDENT)
-                coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident) }
                 coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident) }
                 coJustRun { pdlClient.getPerson(any(), personident) }
 
@@ -349,7 +348,6 @@ class TilgangServiceSpek : Spek({
                     )
                 }
 
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident) }
                 coVerify(exactly = 1) { pdlClient.getPerson(callId, personident) }
             }
@@ -359,8 +357,6 @@ class TilgangServiceSpek : Spek({
                 val personident1 = Personident(UserConstants.PERSONIDENT)
                 val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
                 val personidenter = listOf(UserConstants.PERSONIDENT, UserConstants.PERSONIDENT_GRADERT)
-                coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident1) }
-                coJustRun { behandlendeEnhetClient.getEnhetWithSystemToken(any(), personident2) }
                 coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident1) }
                 coJustRun { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(any(), personident2) }
                 coJustRun { pdlClient.getPerson(any(), personident1) }
@@ -373,8 +369,6 @@ class TilgangServiceSpek : Spek({
                     )
                 }
 
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident1) }
-                coVerify(exactly = 1) { behandlendeEnhetClient.getEnhetWithSystemToken(callId, personident2) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident1) }
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithSystemToken(callId, personident2) }
                 coVerify(exactly = 1) { pdlClient.getPerson(callId, personident1) }
