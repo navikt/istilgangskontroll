@@ -25,9 +25,9 @@ class NorgClient(
         enhet: Enhet,
     ): List<NorgEnhet> {
         val cacheKey = "$NORG_OVERORDNEDE_ENHETER_CACHE_KEY-$enhet"
-        val cachedEnheter = redisStore.getObject<List<NorgEnhet>>(key = cacheKey)
+        val cachedEnheter = redisStore.getListObject<NorgEnhet>(key = cacheKey)
 
-        return if (cachedEnheter != null) {
+        return if (!cachedEnheter.isNullOrEmpty()) {
             cachedEnheter
         } else {
             getOverordnedeEnheter(
