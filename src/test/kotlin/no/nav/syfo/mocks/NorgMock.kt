@@ -6,7 +6,7 @@ import io.ktor.http.*
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.testhelper.UserConstants
 
-private val norgEnhet = NorgEnhet(
+private val overordnetNorgEnhet = NorgEnhet(
     enhetNr = UserConstants.ENHET_OVERORDNET,
     navn = "enhet",
     status = "aktiv",
@@ -25,11 +25,23 @@ private val norgEnhet = NorgEnhet(
     versjon = null,
 )
 
-private val norgResponse = listOf(norgEnhet)
+private val overordnetNorgResponse = listOf(overordnetNorgEnhet)
 
-fun MockRequestHandleScope.getNorgResponse(request: HttpRequestData): HttpResponseData {
+fun MockRequestHandleScope.getNorgOverordnedeEnheterResponse(request: HttpRequestData): HttpResponseData {
     return respond(
-        content = mapper.writeValueAsString(norgResponse),
+        content = mapper.writeValueAsString(overordnetNorgResponse),
+        status = HttpStatusCode.OK,
+        headers = headersOf(HttpHeaders.ContentType, "application/json")
+    )
+}
+
+val geografiskNorgEnhet = overordnetNorgEnhet.copy(
+    enhetNr = UserConstants.ENHET_VEILEDER,
+)
+
+fun MockRequestHandleScope.getNorgGeografiskEnhetResponse(request: HttpRequestData): HttpResponseData {
+    return respond(
+        content = mapper.writeValueAsString(geografiskNorgEnhet),
         status = HttpStatusCode.OK,
         headers = headersOf(HttpHeaders.ContentType, "application/json")
     )

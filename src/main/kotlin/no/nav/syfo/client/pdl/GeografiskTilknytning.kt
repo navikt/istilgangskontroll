@@ -5,6 +5,8 @@ data class GeografiskTilknytning(
     val value: String?
 )
 
+fun GeografiskTilknytning.isUtlandOrWithoutGT() = type == GeografiskTilknytningType.UTLAND || value == null
+
 enum class GeografiskTilknytningType {
     BYDEL,
     KOMMUNE,

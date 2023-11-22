@@ -35,8 +35,12 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getBehandlendeEnhetResponse(request)
                 }
 
+                requestUrl.startsWith("/${env.clients.norgUrl}/norg2/api/v1/enhet/navkontor") -> {
+                    getNorgGeografiskEnhetResponse(request)
+                }
+
                 requestUrl.startsWith("/${env.clients.norgUrl}") -> {
-                    getNorgResponse(request)
+                    getNorgOverordnedeEnheterResponse(request)
                 }
 
                 else -> {

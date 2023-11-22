@@ -7,6 +7,7 @@ object UserConstants {
     const val VEILEDER_IDENT_NO_AZURE_AD_TOKEN = "Z00000_no_azure_ad_token"
 
     const val ENHET_VEILEDER = "1234"
+    const val ENHET_VEILEDER_GT = "01234"
     const val ENHET_VEILEDER_NO_ACCESS = "9999"
     const val ENHET_OVERORDNET = "1111"
 
