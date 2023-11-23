@@ -58,7 +58,10 @@ class PdlClient(
             }
 
             when (response.status) {
-                HttpStatusCode.OK -> response.body<PipPersondataResponse>()
+                HttpStatusCode.OK -> {
+                    COUNT_CALL_PDL_PERSON_SUCCESS.increment()
+                    response.body<PipPersondataResponse>()
+                }
                 else -> {
                     COUNT_CALL_PDL_PERSON_FAIL.increment()
                     log.error("Request with url: $baseUrl failed with reponse code ${response.status.value}")

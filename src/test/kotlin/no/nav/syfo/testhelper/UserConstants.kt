@@ -10,6 +10,7 @@ object UserConstants {
     const val ENHET_VEILEDER_GT = "01234"
     const val ENHET_VEILEDER_NO_ACCESS = "9999"
     const val ENHET_OVERORDNET = "1111"
+    const val ENHET_OVERORDNET_NOT_FOUND = "2222"
 
     const val PERSONIDENT = "12345678901"
     const val PERSONIDENT_OTHER_ENHET = "34567890112"

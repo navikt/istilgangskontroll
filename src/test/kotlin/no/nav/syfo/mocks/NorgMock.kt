@@ -28,11 +28,16 @@ private val overordnetNorgEnhet = NorgEnhet(
 private val overordnetNorgResponse = listOf(overordnetNorgEnhet)
 
 fun MockRequestHandleScope.getNorgOverordnedeEnheterResponse(request: HttpRequestData): HttpResponseData {
-    return respond(
-        content = mapper.writeValueAsString(overordnetNorgResponse),
-        status = HttpStatusCode.OK,
-        headers = headersOf(HttpHeaders.ContentType, "application/json")
-    )
+    val url = request.url.encodedPath
+    return if (url.contains(UserConstants.ENHET_OVERORDNET_NOT_FOUND)) {
+        respondError(status = HttpStatusCode.NotFound)
+    } else {
+        respond(
+            content = mapper.writeValueAsString(overordnetNorgResponse),
+            status = HttpStatusCode.OK,
+            headers = headersOf(HttpHeaders.ContentType, "application/json")
+        )
+    }
 }
 
 val geografiskNorgEnhet = overordnetNorgEnhet.copy(
