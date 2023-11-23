@@ -219,6 +219,48 @@ class TilgangApiSpek : Spek({
                 }
             }
 
+            describe("papirsykmelding access") {
+                it("approve access for veileder with correct AD group for 'normal' person") {
+                    val validToken = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                    )
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person/papirsykmelding") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
+                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.OK
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.erGodkjent shouldBeEqualTo true
+                    }
+                }
+
+                it("deny access for veileder without correct AD group for 'normal' person") {
+                    val validTokenWithoutPapirsykmeldingGroup = generateJWT(
+                        audience = externalMockEnvironment.environment.azure.appClientId,
+                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                        navIdent = UserConstants.VEILEDER_IDENT_NO_PAPIRSYKMELDING_ACCESS,
+                    )
+
+                    with(
+                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person/papirsykmelding") {
+                            addHeader(HttpHeaders.Authorization, bearerHeader(validTokenWithoutPapirsykmeldingGroup))
+                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                            addHeader(NAV_CALL_ID_HEADER, "123")
+                        }
+                    ) {
+                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
+                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
+                        tilgang.erGodkjent shouldBeEqualTo false
+                    }
+                }
+            }
+
             describe("preload cache") {
                 val apiUrl = "$tilgangApiBasePath/system/preloadbrukere"
                 val requestBody = listOf(UserConstants.PERSONIDENT)

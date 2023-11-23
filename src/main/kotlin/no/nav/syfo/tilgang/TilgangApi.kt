@@ -106,6 +106,34 @@ fun Route.registerTilgangApi(
             }
         }
 
+        get("/navident/person/papirsykmelding") {
+            val callId = call.getCallId()
+            val requestedPersonIdent = call.getPersonidentHeader()
+                ?: throw IllegalArgumentException("Did not find a PersonIdent in request headers, papirsykmelding")
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No Authorization header supplied, papirsykmelding")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check tilgang to person for veileder. No NAV ident in token, papirsykmelding")
+            }
+            val appName = call.getAppname(preAuthorizedApps) ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found, papirsykmelding")
+
+            val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(
+                token = token,
+                personident = requestedPersonIdent,
+                callId = callId,
+                appName = appName,
+            )
+
+            if (tilgang.erGodkjent) {
+                call.respond(tilgang)
+            } else {
+                call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = tilgang
+                )
+            }
+        }
+
         post("/navident/brukere") {
             val callId = call.getCallId()
             val token = call.getBearerHeader()
