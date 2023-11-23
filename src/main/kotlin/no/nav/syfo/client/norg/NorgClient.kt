@@ -11,7 +11,6 @@ import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.GeografiskTilknytning
 import no.nav.syfo.tilgang.Enhet
 import no.nav.syfo.util.NAV_CALL_ID_HEADER
-import no.nav.syfo.util.callIdArgument
 import org.slf4j.LoggerFactory.getLogger
 
 class NorgClient(
@@ -63,14 +62,16 @@ class NorgClient(
             COUNT_CALL_NORG_ENHET_SUCCESS.increment()
             return response
         } catch (e: ResponseException) {
-            COUNT_CALL_NORG_ENHET_FAIL.increment()
-            log.error(
-                "Call to NORG2 for overordnet enhet failed with status HTTP-{} for enhet {}. {}",
-                e.response.status,
-                enhet.id,
-                callIdArgument(callId)
-            )
-            throw e
+            val message = "Call to NORG2 for overordnet enhet failed with status HTTP-${e.response.status} for enhet $enhet, callId=$callId"
+            if (e.response.status == HttpStatusCode.NotFound) {
+                log.warn(message)
+                COUNT_CALL_NORG_ENHET_NOT_FOUND.increment()
+                return emptyList()
+            } else {
+                log.error(message)
+                COUNT_CALL_NORG_ENHET_FAIL.increment()
+                throw e
+            }
         }
     }
 

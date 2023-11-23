@@ -6,7 +6,6 @@ import no.nav.syfo.util.configuredJacksonMapper
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.*
 import redis.clients.jedis.exceptions.JedisConnectionException
-import kotlin.reflect.KClass
 
 class RedisStore(
     redisEnvironment: RedisEnvironment,
@@ -51,20 +50,6 @@ class RedisStore(
         } catch (e: JedisConnectionException) {
             log.warn("Got connection error when fetching from redis! Continuing without cached value", e)
             return null
-        }
-    }
-
-    fun <T : Any> getObjectList(
-        classType: KClass<T>,
-        keyList: List<String>,
-    ): List<T> {
-        return if (keyList.isEmpty()) {
-            emptyList()
-        } else {
-            get(keyList = keyList).map {
-                classType.java
-                objectMapper.readValue(it, classType.java)
-            }
         }
     }
 
