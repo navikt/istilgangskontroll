@@ -704,6 +704,52 @@ class TilgangServicePersonSpek : Spek({
                 verifyCacheSet(exactly = 0)
             }
         }
+        describe("check access to papirsykmelding person") {
+            it("gives cached persontilgang to veileder with Papirsykmelding AD group") {
+                val personident = Personident(UserConstants.PERSONIDENT)
+                val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+                val callId = "123"
+                every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
+                coEvery { graphApiClient.hasAccess(adRoller.PAPIRSYKMELDING, any(), any()) } returns true
+
+                runBlocking {
+                    val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(validToken, personident, callId, appName)
+
+                    tilgang.erGodkjent shouldBeEqualTo true
+                }
+
+                coVerify(exactly = 1) {
+                    graphApiClient.hasAccess(
+                        adRolle = adRoller.PAPIRSYKMELDING,
+                        token = validToken,
+                        callId = callId,
+                    )
+                }
+                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+            }
+
+            it("denies access for veileder without Papirsykmelding AD group") {
+                val personident = Personident(UserConstants.PERSONIDENT)
+                val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+                val callId = "123"
+                coEvery { graphApiClient.hasAccess(adRoller.PAPIRSYKMELDING, any(), any()) } returns false
+
+                runBlocking {
+                    val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(validToken, personident, callId, appName)
+
+                    tilgang.erGodkjent shouldBeEqualTo false
+                }
+
+                coVerify(exactly = 1) {
+                    graphApiClient.hasAccess(
+                        adRolle = adRoller.PAPIRSYKMELDING,
+                        token = validToken,
+                        callId = callId,
+                    )
+                }
+                verifyCacheSet(exactly = 0)
+            }
+        }
     }
 })
 

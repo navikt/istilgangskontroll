@@ -11,17 +11,18 @@ import no.nav.syfo.testhelper.UserConstants
 
 private val coffeAccess = GraphApiGroup(id = "123", displayName = "Coffe drinking", mailNickname = "XYZ_coffedrinking")
 private val syfoAccess = GraphApiGroup(id = "syfoId", displayName = "SYFO", mailNickname = "0000-GA-SYFO-SENSITIV")
-private val responseWithSyfoAccess = GraphApiUserGroupsResponse(value = listOf(coffeAccess, syfoAccess))
-private val responseNoSyfoAccess = GraphApiUserGroupsResponse(value = listOf(coffeAccess))
+private val papirsykmeldingAccess = GraphApiGroup(id = "papirsykmeldingId", displayName = "PAPIRSYKMELDING", mailNickname = "0000-GA-papirsykmelding")
+private val responseWithAccess = GraphApiUserGroupsResponse(value = listOf(coffeAccess, syfoAccess, papirsykmeldingAccess))
+private val responseNoAccess = GraphApiUserGroupsResponse(value = listOf(coffeAccess))
 
 fun MockRequestHandleScope.getGraphApiResponse(request: HttpRequestData): HttpResponseData {
     val token = request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")
     val veilederIdent = JWT.decode(token).claims[JWT_CLAIM_NAVIDENT]?.asString()
 
     return when (veilederIdent) {
-        UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS -> {
+        UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS, UserConstants.VEILEDER_IDENT_NO_PAPIRSYKMELDING_ACCESS -> {
             respond(
-                content = mapper.writeValueAsString(responseNoSyfoAccess),
+                content = mapper.writeValueAsString(responseNoAccess),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
@@ -29,7 +30,7 @@ fun MockRequestHandleScope.getGraphApiResponse(request: HttpRequestData): HttpRe
 
         else -> {
             respond(
-                content = mapper.writeValueAsString(responseWithSyfoAccess),
+                content = mapper.writeValueAsString(responseWithAccess),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )

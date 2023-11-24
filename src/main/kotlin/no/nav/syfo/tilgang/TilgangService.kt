@@ -209,6 +209,27 @@ class TilgangService(
         }
     }
 
+    suspend fun checkTilgangToPersonWithPapirsykmelding(token: Token, personident: Personident, callId: String, appName: String): Tilgang {
+        return if (hasAccessToPapirsykmelding(token = token, callId = callId)) {
+            checkTilgangToPerson(
+                token = token,
+                personident = personident,
+                callId = callId,
+                appName = appName,
+            )
+        } else {
+            Tilgang(erGodkjent = false)
+        }
+    }
+
+    private suspend fun hasAccessToPapirsykmelding(token: Token, callId: String): Boolean {
+        return graphApiClient.hasAccess(
+            adRolle = adRoller.PAPIRSYKMELDING,
+            token = token,
+            callId = callId,
+        )
+    }
+
     suspend fun checkTilgangToPerson(token: Token, personident: Personident, callId: String, appName: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
