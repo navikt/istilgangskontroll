@@ -1,5 +1,7 @@
 package no.nav.syfo.domain
 
+import org.slf4j.LoggerFactory
+
 @JvmInline
 value class Personident(val value: String) {
     private val elevenDigits: Regex
@@ -11,3 +13,17 @@ value class Personident(val value: String) {
         }
     }
 }
+
+fun List<String>.removeInvalidPersonidenter(): List<String> {
+    return this.filter {
+        try {
+            Personident(it)
+            true
+        } catch (e: IllegalArgumentException) {
+            log.error("Received invalid personident: $it")
+            false
+        }
+    }
+}
+
+private val log = LoggerFactory.getLogger(Personident::class.java)

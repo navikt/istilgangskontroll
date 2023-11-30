@@ -11,6 +11,7 @@ import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.domain.Personident
+import no.nav.syfo.domain.removeInvalidPersonidenter
 import org.slf4j.LoggerFactory
 
 class TilgangService(
@@ -284,7 +285,7 @@ class TilgangService(
         personidenter: List<String>,
         appName: String,
     ): List<String> {
-        return personidenter.filter { personident ->
+        return personidenter.removeInvalidPersonidenter().filter { personident ->
             checkTilgangToPerson(
                 token = token,
                 personident = Personident(personident),
