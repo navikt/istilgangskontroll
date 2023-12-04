@@ -331,6 +331,45 @@ class TilgangServiceSpek : Spek({
                 verifyCacheSet(exactly = 1, key = cacheKeyOtherEnhet, harTilgang = false)
                 verifyCacheSet(exactly = 1, key = cacheKeyGradert, harTilgang = false)
             }
+
+            it("Remove invalid personidenter") {
+                val callId = "123"
+                val appName = "anyApp"
+                val veiledersEnhet = AxsysEnhet(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
+                val ugradertInnbygger = getUgradertInnbygger()
+                val validPersonident = Personident(UserConstants.PERSONIDENT)
+                val invalidPersonident = "1234567890"
+                val personidenter = listOf(validPersonident.value, invalidPersonident)
+                val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
+                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+                coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
+                coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), validPersonident, any()) } returns false
+                coEvery { pdlClient.getPerson(any(), validPersonident) } returns ugradertInnbygger
+
+                runBlocking {
+                    val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
+                        callId = callId,
+                        token = validToken,
+                        personidenter = personidenter,
+                        appName = appName,
+                    )
+
+                    filteredPersonidenter.size shouldBeEqualTo 1
+                    filteredPersonidenter[0] shouldBeEqualTo validPersonident.value
+                }
+
+                coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+                coVerify(exactly = 1) { norgClient.getNAVKontorForGT(callId, GeografiskTilknytning(GeografiskTilknytningType.BYDEL, UserConstants.ENHET_VEILEDER_GT)) }
+                coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, validPersonident, validToken) }
+                coVerify(exactly = 2) { pdlClient.getPerson(callId, validPersonident) }
+                verifyCacheSet(exactly = 1, key = cacheKeyValidPersonident, harTilgang = true)
+            }
         }
 
         describe("preload cache for person access") {
