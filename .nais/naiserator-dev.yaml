@@ -93,6 +93,9 @@ spec:
         - application: syfooppfolgingsplanservice
           namespace: team-esyfo
           cluster: dev-fss
+        - application: lps-oppfolgingsplan-mottak
+          namespace: team-esyfo
+          cluster: dev-gcp
         - application: spinnsyn-backend
           namespace: flex
           cluster: dev-gcp
