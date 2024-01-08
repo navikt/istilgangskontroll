@@ -90,6 +90,9 @@ spec:
         - application: syfomotebehov
           namespace: team-esyfo
           cluster: dev-fss
+        - application: syfomotebehov
+          namespace: team-esyfo
+          cluster: dev-gcp
         - application: syfooppfolgingsplanservice
           namespace: team-esyfo
           cluster: dev-fss
