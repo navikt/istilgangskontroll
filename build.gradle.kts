@@ -4,18 +4,17 @@ group = "no.nav.syfo"
 version = "0.0.1"
 
 object Versions {
-    const val jacksonDataType = "2.15.2"
-    const val kluent = "1.72"
-    const val ktor = "2.3.5"
-    const val logback = "1.4.7"
+    const val jacksonDataType = "2.16.1"
+    const val kluent = "1.73"
+    const val ktor = "2.3.8"
+    const val logback = "1.4.14"
     const val logbackSyslog4jVersion = "1.0.0"
-    const val logstashEncoder = "7.3"
-    const val micrometerRegistry = "1.11.0"
-    const val mockk = "1.13.5"
-    const val nimbusJoseJwt = "9.31"
+    const val logstashEncoder = "7.4"
+    const val micrometerRegistry = "1.12.2"
+    const val mockk = "1.13.9"
+    const val nimbusJoseJwt = "9.37.3"
     const val spek = "2.0.19"
-    const val jedis = "4.4.6"
-    const val redisEmbedded = "0.7.3"
+    const val jedis = "5.1.2"
 }
 
 plugins {
@@ -53,7 +52,6 @@ dependencies {
 
     // Cache
     implementation("redis.clients:jedis:${Versions.jedis}")
-    testImplementation("it.ozimov:embedded-redis:${Versions.redisEmbedded}")
 
     // (De-)serialization
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${Versions.jacksonDataType}")
