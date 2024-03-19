@@ -210,7 +210,12 @@ class TilgangService(
         }
     }
 
-    suspend fun checkTilgangToPersonWithPapirsykmelding(token: Token, personident: Personident, callId: String, appName: String): Tilgang {
+    suspend fun checkTilgangToPersonWithPapirsykmelding(
+        token: Token,
+        personident: Personident,
+        callId: String,
+        appName: String,
+    ): Tilgang {
         return if (hasAccessToPapirsykmelding(token = token, callId = callId)) {
             checkTilgangToPerson(
                 token = token,
@@ -231,22 +236,30 @@ class TilgangService(
         )
     }
 
-    suspend fun checkTilgangToPerson(token: Token, personident: Personident, callId: String, appName: String): Tilgang {
+    suspend fun checkTilgangToPerson(
+        token: Token,
+        personident: Personident,
+        callId: String,
+        appName: String,
+        doAuditLog: Boolean = true,
+    ): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
         val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
 
         val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
 
-        auditLog(
-            CEF(
-                suid = veilederIdent,
-                duid = personident.value,
-                event = AuditLogEvent.Access,
-                permit = tilgang.erGodkjent,
-                appName = appName,
+        if (doAuditLog) {
+            auditLog(
+                CEF(
+                    suid = veilederIdent,
+                    duid = personident.value,
+                    event = AuditLogEvent.Access,
+                    permit = tilgang.erGodkjent,
+                    appName = appName,
+                )
             )
-        )
+        }
 
         return tilgang
     }
@@ -291,6 +304,7 @@ class TilgangService(
                 personident = Personident(personident),
                 callId = callId,
                 appName = appName,
+                doAuditLog = false,
             ).erGodkjent
         }
     }
