@@ -52,6 +52,7 @@ spec:
         - application: isdialogmotekandidat
           namespace: teamsykefravr
           cluster: prod-gcp
+        - application: isfrisktilarbeid
         - application: ishuskelapp
           namespace: teamsykefravr
           cluster: prod-gcp
