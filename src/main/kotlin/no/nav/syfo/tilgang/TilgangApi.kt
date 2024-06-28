@@ -87,14 +87,15 @@ fun Route.registerTilgangApi(
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check tilgang to person for veileder. No NAV ident in token")
             }
-            val appName = call.getAppname(preAuthorizedApps) ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found")
+            val appName = call.getAppname(preAuthorizedApps)
+                ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found")
 
             val tilgang = tilgangService.checkTilgangToPerson(
                 token = token,
                 personident = requestedPersonIdent,
                 callId = callId,
                 appName = appName,
-            )
+            ).await()
 
             if (tilgang.erGodkjent) {
                 call.respond(tilgang)
@@ -115,7 +116,8 @@ fun Route.registerTilgangApi(
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check tilgang to person for veileder. No NAV ident in token, papirsykmelding")
             }
-            val appName = call.getAppname(preAuthorizedApps) ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found, papirsykmelding")
+            val appName = call.getAppname(preAuthorizedApps)
+                ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found, papirsykmelding")
 
             val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(
                 token = token,
@@ -141,7 +143,8 @@ fun Route.registerTilgangApi(
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No NAV ident in token")
             }
-            val appName = call.getAppname(preAuthorizedApps) ?: throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No consumer clientId was found")
+            val appName = call.getAppname(preAuthorizedApps)
+                ?: throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No consumer clientId was found")
             val personidenter = call.receive<List<String>>()
 
             val personidenterVeilederHasAccessTo = tilgangService.filterIdenterByVeilederAccess(
@@ -155,7 +158,8 @@ fun Route.registerTilgangApi(
         }
 
         post("/system/preloadbrukere") {
-            val consumerClientId = this.call.getConsumerClientId() ?: throw IllegalArgumentException("Failed to preload: Token or consumer clientId was not found")
+            val consumerClientId = this.call.getConsumerClientId()
+                ?: throw IllegalArgumentException("Failed to preload: Token or consumer clientId was not found")
             val preloadApiAuthorizedClientIds = preAuthorizedApps
                 .filter { preloadApiAuthorizedApps.contains(it.getAppnavn()) }
                 .map { it.clientId }
