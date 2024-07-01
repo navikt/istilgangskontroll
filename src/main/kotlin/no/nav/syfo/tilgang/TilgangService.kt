@@ -1,5 +1,9 @@
 package no.nav.syfo.tilgang
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
@@ -222,7 +226,7 @@ class TilgangService(
                 personident = personident,
                 callId = callId,
                 appName = appName,
-            )
+            ).await()
         } else {
             Tilgang(erGodkjent = false)
         }
@@ -242,27 +246,26 @@ class TilgangService(
         callId: String,
         appName: String,
         doAuditLog: Boolean = true,
-    ): Tilgang {
-        val veilederIdent = token.getNAVIdent()
-        val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
-        val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+    ): Deferred<Tilgang> =
+        CoroutineScope(Dispatchers.IO).async {
+            val veilederIdent = token.getNAVIdent()
+            val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+            val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
 
-        val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
-
-        if (doAuditLog) {
-            auditLog(
-                CEF(
-                    suid = veilederIdent,
-                    duid = personident.value,
-                    event = AuditLogEvent.Access,
-                    permit = tilgang.erGodkjent,
-                    appName = appName,
+            val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+            if (doAuditLog) {
+                auditLog(
+                    CEF(
+                        suid = veilederIdent,
+                        duid = personident.value,
+                        event = AuditLogEvent.Access,
+                        permit = tilgang.erGodkjent,
+                        appName = appName,
+                    )
                 )
-            )
+            }
+            tilgang
         }
-
-        return tilgang
-    }
 
     private suspend fun checkTilgangToPersonAndCache(
         callId: String,
@@ -297,17 +300,23 @@ class TilgangService(
         token: Token,
         personidenter: List<String>,
         appName: String,
-    ): List<String> {
-        return personidenter.removeInvalidPersonidenter().filter { personident ->
-            checkTilgangToPerson(
+    ): List<String> =
+        personidenter.removeInvalidPersonidenter().map { personident ->
+            val tilgang = checkTilgangToPerson(
                 token = token,
                 personident = Personident(personident),
                 callId = callId,
                 appName = appName,
                 doAuditLog = false,
-            ).erGodkjent
+            )
+            Pair(personident, tilgang)
+        }.mapNotNull { (personident, tilgang) ->
+            if (tilgang.await().erGodkjent) {
+                personident
+            } else {
+                null
+            }
         }
-    }
 
     private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
         try {
