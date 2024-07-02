@@ -102,6 +102,8 @@ spec:
         - application: lps-oppfolgingsplan-mottak
           namespace: team-esyfo
           cluster: dev-gcp
+        - application: meroppfolging-backend
+          namespace: team-esyfo
         - application: spinnsyn-backend
           namespace: flex
           cluster: dev-gcp
