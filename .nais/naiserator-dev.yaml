@@ -122,6 +122,8 @@ spec:
         - application: syk-dig-backend
           namespace: teamsykmelding
           cluster: dev-gcp
+        - application: sykepengedager-informasjon
+          namespace: team-esyfo
     outbound:
       external:
         - host: "axsys.dev-fss-pub.nais.io"
