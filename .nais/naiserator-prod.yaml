@@ -37,56 +37,24 @@ spec:
     inbound:
       rules:
         - application: isaktivitetskrav
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: isarbeidsuforhet
         - application: isbehandlerdialog
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: isdialogmelding
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: isdialogmote
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: isdialogmotekandidat
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: isfrisktilarbeid
         - application: ishuskelapp
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: ismeroppfolging
         - application: isnarmesteleder
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: isoppfolgingstilfelle
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: ispengestopp
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: ispersonoppgave
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: fastlegerest
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: finnfastlege
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: syfobehandlendeenhet
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: syfomodiaperson
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: syfooversiktsrv
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: syfoperson
-          namespace: teamsykefravr
-          cluster: prod-gcp
         - application: esyfovarsel
           namespace: team-esyfo
           cluster: prod-gcp
@@ -103,6 +71,8 @@ spec:
           namespace: team-esyfo
           cluster: prod-gcp
         - application: meroppfolging-backend
+          namespace: team-esyfo
+        - application: oppfolgingsplan-backend
           namespace: team-esyfo
         - application: spinnsyn-backend
           namespace: flex
