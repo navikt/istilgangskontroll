@@ -97,7 +97,6 @@ spec:
     outbound:
       external:
         - host: "axsys.dev-fss-pub.nais.io"
-        - host: "norg2.dev-fss-pub.nais.io"
         - host: "graph.microsoft.com"
         - host: "pdl-pip-api.dev-fss-pub.nais.io"
         - host: "audit.nais"
@@ -108,6 +107,8 @@ spec:
         - application: syfobehandlendeenhet
         - application: skjermede-personer-pip
           namespace: nom
+        - application: norg2
+          namespace: org
   azure:
     application:
       allowAllUsers: true
@@ -130,7 +131,7 @@ spec:
     - name: GRAPHAPI_URL
       value: "https://graph.microsoft.com"
     - name: NORG2_URL
-      value: "https://norg2.dev-fss-pub.nais.io"
+      value: "http://norg2.org"
     - name: PDL_CLIENT_ID
       value: "dev-fss.pdl.pdl-pip-api"
     - name: PDL_URL
