@@ -24,7 +24,7 @@ tilgang til informasjon om en person sjekkes det om personen er diskresjonsmerke
 
 #### Requirements
 
-* JDK 17
+* JDK 21
 
 ### Build
 
