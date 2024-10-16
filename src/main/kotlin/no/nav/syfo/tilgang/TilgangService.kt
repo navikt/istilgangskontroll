@@ -247,7 +247,7 @@ class TilgangService(
         appName: String,
         doAuditLog: Boolean = true,
     ): Deferred<Tilgang> =
-        CoroutineScope(Dispatchers.IO).async {
+        CoroutineScope(Dispatchers.IO.limitedParallelism(20)).async {
             val veilederIdent = token.getNAVIdent()
             val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
             val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
