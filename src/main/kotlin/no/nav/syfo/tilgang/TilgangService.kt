@@ -240,6 +240,7 @@ class TilgangService(
         )
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     suspend fun checkTilgangToPerson(
         token: Token,
         personident: Personident,
