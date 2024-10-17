@@ -3,6 +3,7 @@ package no.nav.syfo.application.api
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.Dispatchers
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.auth.*
@@ -53,6 +54,7 @@ fun Application.apiModule(
         adRoller = adRoller,
         redisStore = redisStore,
         norgClient = norgClient,
+        dispatcher = Dispatchers.IO.limitedParallelism(20),
     )
 
     routing {

@@ -1,6 +1,7 @@
 package no.nav.syfo.tilgang
 
 import io.mockk.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.RedisStore
@@ -38,6 +39,7 @@ class TilgangServiceSpek : Spek({
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
+        dispatcher = Dispatchers.IO.limitedParallelism(20),
     )
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
