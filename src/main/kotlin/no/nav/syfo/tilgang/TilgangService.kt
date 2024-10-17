@@ -1,9 +1,6 @@
 package no.nav.syfo.tilgang
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.RedisStore
@@ -27,6 +24,7 @@ class TilgangService(
     val norgClient: NorgClient,
     val adRoller: AdRoller,
     val redisStore: RedisStore,
+    val dispatcher: CoroutineDispatcher,
 ) {
 
     private suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
@@ -248,7 +246,7 @@ class TilgangService(
         appName: String,
         doAuditLog: Boolean = true,
     ): Deferred<Tilgang> =
-        CoroutineScope(Dispatchers.IO.limitedParallelism(20)).async {
+        CoroutineScope(dispatcher).async {
             val veilederIdent = token.getNAVIdent()
             val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
             val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
