@@ -1,17 +1,17 @@
 group = "no.nav.syfo"
 version = "0.0.1"
 
-val jacksonDataType = "2.17.2"
+val jacksonDataType = "2.18.0"
 val kluent = "1.73"
 val ktor = "2.3.12"
 val logback = "1.5.8"
 val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "7.4"
-val micrometerRegistry = "1.12.8"
+val micrometerRegistry = "1.13.4"
 val mockk = "1.13.12"
 val nimbusJoseJwt = "9.41.1"
 val spek = "2.0.19"
-val jedis = "5.1.5"
+val jedis = "5.2.0"
 
 plugins {
     kotlin("jvm") version "2.0.20"
