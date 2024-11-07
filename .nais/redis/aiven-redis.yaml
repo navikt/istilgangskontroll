@@ -9,6 +9,7 @@ metadata:
 spec:
   plan: {{ plan } }
   project:  {{ project }}
+  redis_number_of_databases: 50
 ---
   apiVersion: aiven.io/v1alpha1
   kind: ServiceIntegration
