@@ -1,0 +1,24 @@
+apiVersion: aiven.io/v1alpha1
+kind: Redis
+metadata:
+  labels:
+    app: istilgangskontroll
+    team: teamsykefravr
+  name: redis-teamsykefravr-cache
+  namespace: teamsykefravr
+spec:
+  plan: {{ plan } }
+  project:  {{ project }}
+---
+  apiVersion: aiven.io/v1alpha1
+  kind: ServiceIntegration
+  metadata:
+    labels:
+      team: teamsykefravr
+    name: redis-teamsykefravr-cache
+    namespace: teamsykefravr
+  spec:
+    project: {{ project }}
+    integrationType: prometheus
+    destinationEndpointId: {{ prometheus }}
+    sourceServiceName: redis-teamsykefravr-cache
