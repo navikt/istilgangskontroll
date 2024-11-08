@@ -23,7 +23,7 @@ app'ene til teamsykefravr. Redis-instansen er delt opp i databaser der nummer 0
 brukes av istilgangskontroll. Fordelingen er som følger:  
 
 Application (git)                                                                             | Redis database                         
---------------------------------------------------------------------------------------------- | -------------------------------
+--------------------------------------------------------------------------------------------- | --------------
 [istilgangskontroll](https://github.com/navikt/istilgangskontroll)                            | 0
 [fastlegerest](https://github.com/navikt/fastlegerest)                                        | 1
 [finnfastlege](https://github.com/navikt/finnfastlege)                                        | 2
@@ -35,19 +35,20 @@ Application (git)                                                               
 [isdialogmotekandidat](https://github.com/navikt/isdialogmotekandidat)                        | 8
 [isfrisktilarbeid](https://github.com/navikt/isfrisktilarbeid)                                | 9
 [ishuskelapp](https://github.com/navikt/ishuskelapp)                                          | 10
-[ismeroppfolging](https://github.com/navikt/ismeroppfolging)                                  | 11
-[isnarmesteleder](https://github.com/navikt/isnarmesteleder)                                  | 12
-[isoppfolgingstilfelle](https://github.com/navikt/isoppfolgingstilfelle)                      | 13
-[ispengestopp](https://github.com/navikt/ispengestopp)                                        | 14
-[padm2](https://github.com/navikt/padm2)                                                      | 15
-[syfobehandlendeenhet](https://github.com/navikt/syfobehandlendeenhet)                        | 16
-[syfomodiaperson](https://github.com/navikt/syfomodiaperson)                                  | 17
-[syfomoteoversikt](https://github.com/navikt/syfomoteoversikt)                                | 18
-[syfooversikt](https://github.com/navikt/syfooversikt)                                        | 19
-[syfooversiktsrv](https://github.com/navikt/syfooversiktsrv)                                  | 20
-[syfopartnerinfo](https://github.com/navikt/syfopartnerinfo)                                  | 21
-[syfoperson](https://github.com/navikt/syfoperson)                                            | 22
-[syfoveileder](https://github.com/navikt/syfoveileder)                                        | 23
+[ismanglendemedvirkning](https://github.com/navikt/ismanglendemedvirkning)                    | 11
+[ismeroppfolging](https://github.com/navikt/ismeroppfolging)                                  | 12
+[isnarmesteleder](https://github.com/navikt/isnarmesteleder)                                  | 13
+[isoppfolgingstilfelle](https://github.com/navikt/isoppfolgingstilfelle)                      | 14
+[ispengestopp](https://github.com/navikt/ispengestopp)                                        | 15
+[padm2](https://github.com/navikt/padm2)                                                      | 16
+[syfobehandlendeenhet](https://github.com/navikt/syfobehandlendeenhet)                        | 17
+[syfomodiaperson](https://github.com/navikt/syfomodiaperson)                                  | 18
+[syfomoteoversikt](https://github.com/navikt/syfomoteoversikt)                                | 19
+[syfooversikt](https://github.com/navikt/syfooversikt)                                        | 20
+[syfooversiktsrv](https://github.com/navikt/syfooversiktsrv)                                  | 21
+[syfopartnerinfo](https://github.com/navikt/syfopartnerinfo)                                  | 22
+[syfoperson](https://github.com/navikt/syfoperson)                                            | 23
+[syfoveileder](https://github.com/navikt/syfoveileder)                                        | 24
 
 
 ##### Test Libraries:
