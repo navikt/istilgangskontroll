@@ -16,6 +16,40 @@ tilgang til informasjon om en person sjekkes det om personen er diskresjonsmerke
 * Ktor
 * Redis
 
+##### Aiven Redis Cache:
+
+istilgangskontroll har deklarasjonen av Redis-cache'n på Aiven som brukes av alle 
+app'ene til teamsykefravr. Redis-instansen er delt opp i databaser der nummer 0 
+brukes av istilgangskontroll. Fordelingen er som følger:  
+
+Application (git)                                                                             | Redis database                         
+--------------------------------------------------------------------------------------------- | -------------------------------
+[istilgangskontroll](https://github.com/navikt/istilgangskontroll)                            | 0
+[fastlegerest](https://github.com/navikt/fastlegerest)                                        | 1
+[finnfastlege](https://github.com/navikt/finnfastlege)                                        | 2
+[isaktivitetskrav](https://github.com/navikt/isaktivitetskrav)                                | 3
+[isarbeidsuforhet](https://github.com/navikt/isarbeidsuforhet)                                | 4
+[isbehandlerdialog](https://github.com/navikt/isbehandlerdialog)                              | 5
+[isdialogmelding](https://github.com/navikt/isdialogmelding)                                  | 6
+[isdialogmote](https://github.com/navikt/isdialogmote)                                        | 7
+[isdialogmotekandidat](https://github.com/navikt/isdialogmotekandidat)                        | 8
+[isfrisktilarbeid](https://github.com/navikt/isfrisktilarbeid)                                | 9
+[ishuskelapp](https://github.com/navikt/ishuskelapp)                                          | 10
+[ismeroppfolging](https://github.com/navikt/ismeroppfolging)                                  | 11
+[isnarmesteleder](https://github.com/navikt/isnarmesteleder)                                  | 12
+[isoppfolgingstilfelle](https://github.com/navikt/isoppfolgingstilfelle)                      | 13
+[ispengestopp](https://github.com/navikt/ispengestopp)                                        | 14
+[padm2](https://github.com/navikt/padm2)                                                      | 15
+[syfobehandlendeenhet](https://github.com/navikt/syfobehandlendeenhet)                        | 16
+[syfomodiaperson](https://github.com/navikt/syfomodiaperson)                                  | 17
+[syfomoteoversikt](https://github.com/navikt/syfomoteoversikt)                                | 18
+[syfooversikt](https://github.com/navikt/syfooversikt)                                        | 19
+[syfooversiktsrv](https://github.com/navikt/syfooversiktsrv)                                  | 20
+[syfopartnerinfo](https://github.com/navikt/syfopartnerinfo)                                  | 21
+[syfoperson](https://github.com/navikt/syfoperson)                                            | 22
+[syfoveileder](https://github.com/navikt/syfoveileder)                                        | 23
+
+
 ##### Test Libraries:
 
 * Kluent
