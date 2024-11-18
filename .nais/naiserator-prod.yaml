@@ -104,7 +104,6 @@ spec:
           ports:
             - port: 6514
       rules:
-        - application: istilgangskontroll-redis
         - application: syfobehandlendeenhet
         - application: skjermede-personer-pip
           namespace: nom
