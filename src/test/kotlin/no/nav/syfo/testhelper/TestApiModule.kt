@@ -12,6 +12,10 @@ import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.tilgang.AdRoller
+import redis.clients.jedis.DefaultJedisClientConfig
+import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.JedisPoolConfig
 
 fun Application.testApiModule(
     externalMockEnvironment: ExternalMockEnvironment,
@@ -20,7 +24,17 @@ fun Application.testApiModule(
 
     val mockHttpClient = getMockHttpClient(env = externalMockEnvironment.environment)
 
-    val redisStore = RedisStore(externalMockEnvironment.environment.redis)
+    val redisConfig = externalMockEnvironment.environment.redisConfig
+    val redisStore = RedisStore(
+        JedisPool(
+            JedisPoolConfig(),
+            HostAndPort(redisConfig.host, redisConfig.port),
+            DefaultJedisClientConfig.builder()
+                .ssl(redisConfig.ssl)
+                .password(redisConfig.redisPassword)
+                .build()
+        )
+    )
 
     val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,

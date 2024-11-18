@@ -1,9 +1,10 @@
 package no.nav.syfo.testhelper
 
 import no.nav.syfo.application.*
-import no.nav.syfo.cache.RedisEnvironment
+import no.nav.syfo.cache.RedisConfig
 import no.nav.syfo.client.azuread.AzureEnvironment
 import no.nav.syfo.client.azuread.PreAuthorizedApp
+import java.net.URI
 
 fun testEnvironment() = Environment(
     azure = AzureEnvironment(
@@ -14,10 +15,12 @@ fun testEnvironment() = Environment(
         openidConfigTokenEndpoint = "azureOpenIdTokenEndpoint",
     ),
 
-    redis = RedisEnvironment(
-        host = "REDIS_HOST",
-        port = 6379,
-        secret = "REDIS_PASSWORD",
+    redisConfig = RedisConfig(
+        redisUri = URI("http://localhost:6379"),
+        redisDB = 0,
+        redisUsername = "redisUser",
+        redisPassword = "redisPassword",
+        ssl = false,
     ),
 
     kode6Id = "kode6Id",

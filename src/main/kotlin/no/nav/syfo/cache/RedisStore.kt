@@ -1,24 +1,15 @@
 package no.nav.syfo.application.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import no.nav.syfo.cache.RedisEnvironment
 import no.nav.syfo.util.configuredJacksonMapper
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.*
 import redis.clients.jedis.exceptions.JedisConnectionException
 
 class RedisStore(
-    redisEnvironment: RedisEnvironment,
+    private val jedisPool: JedisPool,
 ) {
     val objectMapper: ObjectMapper = configuredJacksonMapper()
-
-    private val jedisPool: JedisPool = JedisPool(
-        JedisPoolConfig(),
-        redisEnvironment.host,
-        redisEnvironment.port,
-        Protocol.DEFAULT_TIMEOUT,
-        redisEnvironment.secret,
-    )
 
     inline fun <reified T> getObject(
         key: String,

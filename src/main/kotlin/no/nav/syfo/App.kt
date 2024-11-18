@@ -19,6 +19,10 @@ import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.wellknown.getWellKnown
 import no.nav.syfo.tilgang.AdRoller
 import org.slf4j.LoggerFactory
+import redis.clients.jedis.DefaultJedisClientConfig
+import redis.clients.jedis.HostAndPort
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.JedisPoolConfig
 import java.util.concurrent.TimeUnit
 
 const val applicationPort = 8080
@@ -29,8 +33,20 @@ fun main() {
     val environment = Environment()
 
     val adRoller = AdRoller(env = environment)
+    val redisConfig = environment.redisConfig
+    val redisStore = RedisStore(
+        JedisPool(
+            JedisPoolConfig(),
+            HostAndPort(redisConfig.host, redisConfig.port),
+            DefaultJedisClientConfig.builder()
+                .ssl(redisConfig.ssl)
+                .user(redisConfig.redisUsername)
+                .password(redisConfig.redisPassword)
+                .database(redisConfig.redisDB)
+                .build()
+        )
+    )
 
-    val redisStore = RedisStore(environment.redis)
     val azureAdClient = AzureAdClient(
         azureEnvironment = environment.azure,
         redisStore = redisStore,
