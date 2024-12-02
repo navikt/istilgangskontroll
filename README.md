@@ -22,7 +22,7 @@ istilgangskontroll har deklarasjonen av Redis-cache'n på Aiven som brukes av al
 app'ene til teamsykefravr. Redis-instansen er delt opp i databaser der nummer 0 
 brukes av istilgangskontroll. Fordelingen er som følger:  
 
-Application (git)                                                                             | Redis database                         
+git Application (git)                                                                             | Redis database                         
 --------------------------------------------------------------------------------------------- | --------------
 [istilgangskontroll](https://github.com/navikt/istilgangskontroll)                            | 0
 [fastlegerest](https://github.com/navikt/fastlegerest)                                        | 1
@@ -52,7 +52,7 @@ Application (git)                                                               
 
 Man kan aksessere Redis-cachene på Aiven fra kommandolinja ved behov (feks hvis man trenger å flushe en cache).
 
-For å gjøre dette trenger med en Redis-klient, man kan bruke den offisielle https://redis.io/docs/latest/develop/tools/cli/ 
+For å gjøre dette trenger man en Redis-klient, man kan bruke den offisielle https://redis.io/docs/latest/develop/tools/cli/ 
 men denne kan være krevende å installere på noen OS (feks Windows). Et godt alternativ er redli:
 https://github.com/IBM-Cloud/redli
 
