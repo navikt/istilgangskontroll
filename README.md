@@ -22,7 +22,7 @@ istilgangskontroll har deklarasjonen av Redis-cache'n på Aiven som brukes av al
 app'ene til teamsykefravr. Redis-instansen er delt opp i databaser der nummer 0 
 brukes av istilgangskontroll. Fordelingen er som følger:  
 
-git Application (git)                                                                             | Redis database                         
+Application (git)                                                                             | Redis database                         
 --------------------------------------------------------------------------------------------- | --------------
 [istilgangskontroll](https://github.com/navikt/istilgangskontroll)                            | 0
 [fastlegerest](https://github.com/navikt/fastlegerest)                                        | 1
