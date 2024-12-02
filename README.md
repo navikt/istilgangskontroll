@@ -61,7 +61,7 @@ Host, port, brukernavn og passord for å koble til Aiven Redis finner man i secr
 
 Feks for å flushe cachen til isnarmesteleder:
 ```
-$ redli -u rediss://default:xxx@<host>:<port>
+$ redli -u rediss://<user>:<pw>@<host>:<port>
 > ping
 PONG
 > select 13
