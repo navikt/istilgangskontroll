@@ -50,6 +50,32 @@ Application (git)                                                               
 [syfoperson](https://github.com/navikt/syfoperson)                                            | 23
 [syfoveileder](https://github.com/navikt/syfoveileder)                                        | 24
 
+Man kan aksessere Redis-cachene på Aiven fra kommandolinja ved behov (feks hvis man trenger å flushe en cache).
+
+For å gjøre dette trenger man en Redis-klient, man kan bruke den offisielle https://redis.io/docs/latest/develop/tools/cli/ 
+men denne kan være krevende å installere på noen OS (feks Windows). Et godt alternativ er redli:
+https://github.com/IBM-Cloud/redli
+
+Host, port, brukernavn og passord for å koble til Aiven Redis finner man i secret'en `redis-teamsykefravr-cache` 
+(som finnes både i dev-gcp og prod-gcp i vårt namespace). For å koble til Aiven Redis i **produksjon** må `aiven-prod`
+enables i naisdevice.
+
+Feks for å flushe cachen til isnarmesteleder:
+```
+$ redli -u rediss://<user>:<pw>@<host>:<port>
+> ping
+PONG
+> select 13
+OK
+> dbsize
+(integer) 9
+> flushdb
+OK
+> dbsize
+(integer) 0
+```
+
+NB! Flushing av cache (særlig `istilgangskontroll` sin) kan skape tregheter/timeouts i produksjon og bør bare gjøres ved behov.
 
 ##### Test Libraries:
 
