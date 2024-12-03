@@ -57,7 +57,8 @@ men denne kan være krevende å installere på noen OS (feks Windows). Et godt a
 https://github.com/IBM-Cloud/redli
 
 Host, port, brukernavn og passord for å koble til Aiven Redis finner man i secret'en `redis-teamsykefravr-cache` 
-(som finnes både i dev-gcp og prod-gcp i vårt namespace).
+(som finnes både i dev-gcp og prod-gcp i vårt namespace). For å koble til Aiven Redis i **produksjon** må `aiven-prod`
+enables i naisdevice.
 
 Feks for å flushe cachen til isnarmesteleder:
 ```
