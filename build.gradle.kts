@@ -1,22 +1,22 @@
 group = "no.nav.syfo"
 version = "0.0.1"
 
-val jacksonDataType = "2.17.2"
+val jacksonDataType = "2.18.0"
 val kluent = "1.73"
-val ktor = "2.3.12"
-val logback = "1.5.8"
+val ktor = "3.0.2"
+val logback = "1.5.12"
 val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "7.4"
 val micrometerRegistry = "1.12.8"
 val mockk = "1.13.12"
-val nimbusJoseJwt = "9.41.1"
+val nimbusJoseJwt = "9.47"
 val spek = "2.0.19"
 val jedis = "5.1.5"
 
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.0.21"
     id("com.gradleup.shadow") version "8.3.2"
-    id("org.jlleitschuh.gradle.ktlint") version "11.4.1"
+    id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
 }
 
 repositories {
@@ -53,7 +53,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonDataType")
 
     // Tests
-    testImplementation("io.ktor:ktor-server-tests:$ktor")
+    testImplementation("io.ktor:ktor-server-test-host:$ktor")
     testImplementation("io.mockk:mockk:$mockk")
     testImplementation("io.ktor:ktor-client-mock:$ktor")
     testImplementation("com.nimbusds:nimbus-jose-jwt:$nimbusJoseJwt")

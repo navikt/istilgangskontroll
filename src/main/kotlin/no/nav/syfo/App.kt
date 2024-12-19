@@ -96,13 +96,23 @@ fun main() {
         wellKnownUrl = environment.azure.appWellKnownUrl,
     )
 
-    val applicationEngineEnvironment = applicationEngineEnvironment {
+    val applicationEnvironment = applicationEnvironment {
         log = logger
         config = HoconApplicationConfig(ConfigFactory.load())
-        connector {
-            port = applicationPort
-        }
-        module {
+    }
+
+    val server = embeddedServer(
+        Netty,
+        environment = applicationEnvironment,
+        configure = {
+            connector {
+                port = applicationPort
+            }
+            connectionGroupSize = 8
+            workerGroupSize = 8
+            callGroupSize = 16
+        },
+        module = {
             apiModule(
                 applicationState = applicationState,
                 environment = environment,
@@ -116,22 +126,12 @@ fun main() {
                 behandlendeEnhetClient = behandlendeEnhetClient,
                 norgClient = norgClient,
             )
+            monitor.subscribe(ApplicationStarted) {
+                applicationState.ready = true
+                logger.info("Application is ready, running Java VM ${Runtime.version()}")
+            }
         }
-    }
-
-    applicationEngineEnvironment.monitor.subscribe(ApplicationStarted) {
-        applicationState.ready = true
-        logger.info("Application is ready, running Java VM ${Runtime.version()}")
-    }
-
-    val server = embeddedServer(
-        factory = Netty,
-        environment = applicationEngineEnvironment,
-    ) {
-        connectionGroupSize = 8
-        workerGroupSize = 8
-        callGroupSize = 16
-    }
+    )
 
     Runtime.getRuntime().addShutdownHook(
         Thread {

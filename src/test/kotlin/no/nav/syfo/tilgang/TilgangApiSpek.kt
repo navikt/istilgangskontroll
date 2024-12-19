@@ -1,8 +1,12 @@
 package no.nav.syfo.tilgang
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.routing.*
 import io.ktor.server.testing.*
 import no.nav.syfo.testhelper.*
 import no.nav.syfo.util.*
@@ -11,295 +15,265 @@ import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
 class TilgangApiSpek : Spek({
-
-    val objectMapper: ObjectMapper = configuredJacksonMapper()
     describe("Check veiledertilganger") {
-        with(TestApplicationEngine()) {
-            start()
-            val externalMockEnvironment = ExternalMockEnvironment()
-            val VALID_TOKEN_BUT_NO_SYFO_TILGANG = generateJWT(
+        val externalMockEnvironment = ExternalMockEnvironment()
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        val validTokenNoSyfotilgang = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
+        )
+        val validTokenNoEnhetAccess = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT_NO_ENHET_ACCESS,
+        )
+        val validTokenWithoutPapirsykmeldingGroup = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT_NO_PAPIRSYKMELDING_ACCESS,
+        )
+
+        val enhet = UserConstants.ENHET_VEILEDER
+        val enhetWithoutTilgang = UserConstants.ENHET_VEILEDER_NO_ACCESS
+
+        fun ApplicationTestBuilder.setupApi(): HttpClient {
+            application {
+                routing {
+                    application.testApiModule(
+                        externalMockEnvironment = externalMockEnvironment,
+                    )
+                }
+            }
+            val client = createClient {
+                install(ContentNegotiation) {
+                    jackson { configure() }
+                }
+            }
+            return client
+        }
+
+        describe("SYFO access") {
+            it("Allows access to veileder with SYFO-tilgang") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/syfo") {
+                        bearerAuth(validToken)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.OK
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erGodkjent shouldBeEqualTo true
+                }
+            }
+            it("Forbids access to veileder without SYFO-tilgang") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/syfo") {
+                        bearerAuth(validTokenNoSyfotilgang)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+        }
+
+        describe("Enhet access") {
+            it("Allows access to veileder with correct enhet") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/enhet/$enhet") {
+                        bearerAuth(validToken)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.OK
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erGodkjent shouldBeEqualTo true
+                }
+            }
+            it("Forbids access to veileder without correct enhet") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/enhet/$enhetWithoutTilgang") {
+                        bearerAuth(validToken)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+
+            it("Forbid access to veileder who has tilgang to enhet but not syfo") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/enhet/$enhet") {
+                        bearerAuth(validTokenNoSyfotilgang)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+        }
+
+        describe("Person access") {
+            it("Allows access to person with SYFO access, correct local enhet, and no special permissions needed") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person") {
+                        bearerAuth(validToken)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.OK
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erGodkjent shouldBeEqualTo true
+                }
+            }
+
+            it("Forbid access to person if no SYFO access") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person") {
+                        bearerAuth(validTokenNoSyfotilgang)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+
+            it("Forbid access to person if no geografisk access") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person") {
+                        bearerAuth(validTokenNoEnhetAccess)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+
+            it("Forbid access to person if no access to skjermet person") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person") {
+                        bearerAuth(validTokenNoEnhetAccess)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_SKJERMET)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+
+            it("Forbid access to person if no access to adressebeskyttet person") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person") {
+                        bearerAuth(validTokenNoEnhetAccess)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erAvslatt shouldBeEqualTo true
+                }
+            }
+        }
+
+        describe("papirsykmelding access") {
+            it("approve access for veileder with correct AD group for 'normal' person") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person/papirsykmelding") {
+                        bearerAuth(validToken)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.OK
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erGodkjent shouldBeEqualTo true
+                }
+            }
+
+            it("deny access for veileder without correct AD group for 'normal' person") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.get("$tilgangApiBasePath/navident/person/papirsykmelding") {
+                        bearerAuth(validTokenWithoutPapirsykmeldingGroup)
+                        header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                        header(NAV_CALL_ID_HEADER, "123")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
+                    val tilgang = response.body<Tilgang>()
+                    tilgang.erGodkjent shouldBeEqualTo false
+                }
+            }
+        }
+
+        describe("preload cache") {
+            val apiUrl = "$tilgangApiBasePath/system/preloadbrukere"
+            val requestBody = listOf(UserConstants.PERSONIDENT)
+            val validSystemToken = generateJWT(
                 audience = externalMockEnvironment.environment.azure.appClientId,
                 issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
+                azp = syfooversiktsrvClientId,
             )
 
-            application.testApiModule(
-                externalMockEnvironment = externalMockEnvironment,
-            )
-
-            describe("SYFO access") {
-                it("Allows access to veileder with SYFO-tilgang") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.OK
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erGodkjent shouldBeEqualTo true
+            it("return OK after loading cache") {
+                testApplication {
+                    val client = setupApi()
+                    val response = client.post(apiUrl) {
+                        bearerAuth(validSystemToken)
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        header(NAV_CALL_ID_HEADER, "123")
+                        setBody(requestBody)
                     }
-                }
-                it("Forbids access to veileder without SYFO-tilgang") {
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/syfo") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(VALID_TOKEN_BUT_NO_SYFO_TILGANG))
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
+                    response.status shouldBeEqualTo HttpStatusCode.OK
                 }
             }
-
-            describe("Enhet access") {
-                it("Allows access to veileder with correct enhet") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-                    val enhet = UserConstants.ENHET_VEILEDER
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhet") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.OK
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erGodkjent shouldBeEqualTo true
+            it("should return status Forbidden if wrong consumer azp") {
+                val invalidSystemToken = generateJWT(
+                    audience = externalMockEnvironment.environment.azure.appClientId,
+                    issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+                    azp = "invalid-consumer-azp",
+                )
+                testApplication {
+                    val client = setupApi()
+                    val response = client.post(apiUrl) {
+                        bearerAuth(invalidSystemToken)
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        header(NAV_CALL_ID_HEADER, "123")
+                        setBody(requestBody)
                     }
-                }
-                it("Forbids access to veileder without correct enhet") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-                    val enhetWithoutTilgang = UserConstants.ENHET_VEILEDER_NO_ACCESS
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhetWithoutTilgang") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        println("response: ${response.content}")
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
-                }
-
-                it("Forbid access to veileder who has tilgang to enhet but not syfo") {
-                    val enhet = UserConstants.ENHET_VEILEDER
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/enhet/$enhet") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(VALID_TOKEN_BUT_NO_SYFO_TILGANG))
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
-                }
-            }
-
-            describe("Person access") {
-                it("Allows access to person with SYFO access, correct local enhet, and no special permissions needed") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.OK
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erGodkjent shouldBeEqualTo true
-                    }
-                }
-
-                it("Forbid access to person if no SYFO access") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
-                }
-
-                it("Forbid access to person if no geografisk access") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT_NO_ENHET_ACCESS,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
-                }
-
-                it("Forbid access to person if no access to skjermet person") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_SKJERMET)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
-                }
-
-                it("Forbid access to person if no access to adressebeskyttet person") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erAvslatt shouldBeEqualTo true
-                    }
-                }
-            }
-
-            describe("papirsykmelding access") {
-                it("approve access for veileder with correct AD group for 'normal' person") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person/papirsykmelding") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.OK
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erGodkjent shouldBeEqualTo true
-                    }
-                }
-
-                it("deny access for veileder without correct AD group for 'normal' person") {
-                    val validTokenWithoutPapirsykmeldingGroup = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        navIdent = UserConstants.VEILEDER_IDENT_NO_PAPIRSYKMELDING_ACCESS,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Get, "$tilgangApiBasePath/navident/person/papirsykmelding") {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validTokenWithoutPapirsykmeldingGroup))
-                            addHeader(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                        val tilgang = objectMapper.readValue<Tilgang>(response.content!!)
-                        tilgang.erGodkjent shouldBeEqualTo false
-                    }
-                }
-            }
-
-            describe("preload cache") {
-                val apiUrl = "$tilgangApiBasePath/system/preloadbrukere"
-                val requestBody = listOf(UserConstants.PERSONIDENT)
-
-                it("return OK after loading cache") {
-                    val validToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        azp = syfooversiktsrvClientId,
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Post, apiUrl) {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(validToken))
-                            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                            setBody(objectMapper.writeValueAsString(requestBody))
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.OK
-                    }
-                }
-                it("should return status Forbidden if wrong consumer azp") {
-                    val invalidToken = generateJWT(
-                        audience = externalMockEnvironment.environment.azure.appClientId,
-                        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                        azp = "invalid-consumer-azp",
-                    )
-
-                    with(
-                        handleRequest(HttpMethod.Post, apiUrl) {
-                            addHeader(HttpHeaders.Authorization, bearerHeader(invalidToken))
-                            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                            addHeader(NAV_CALL_ID_HEADER, "123")
-                            setBody(objectMapper.writeValueAsString(requestBody))
-                        }
-                    ) {
-                        response.status() shouldBeEqualTo HttpStatusCode.Forbidden
-                    }
+                    response.status shouldBeEqualTo HttpStatusCode.Forbidden
                 }
             }
         }
