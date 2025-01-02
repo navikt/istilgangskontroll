@@ -372,6 +372,42 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 2) { pdlClient.getPerson(callId, validPersonident) }
                 verifyCacheSet(exactly = 1, key = cacheKeyValidPersonident, harTilgang = true)
             }
+
+            it("Remove personidenter with missing enhet") {
+                val callId = "123"
+                val appName = "anyApp"
+                val veiledersEnhet = AxsysEnhet(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val ugradertInnbygger = getUgradertInnbygger()
+                val validPersonident = Personident(UserConstants.PERSONIDENT)
+                val personidenter = listOf(validPersonident.value)
+                val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
+                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+                coEvery { norgClient.getNAVKontorForGT(any(), any()) } throws RuntimeException("Feil")
+                coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), validPersonident, any()) } returns false
+                coEvery { pdlClient.getPerson(any(), validPersonident) } returns ugradertInnbygger
+
+                runBlocking {
+                    val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
+                        callId = callId,
+                        token = validToken,
+                        personidenter = personidenter,
+                        appName = appName,
+                    )
+
+                    filteredPersonidenter.size shouldBeEqualTo 0
+                }
+
+                coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+                coVerify(exactly = 1) { norgClient.getNAVKontorForGT(callId, GeografiskTilknytning(GeografiskTilknytningType.BYDEL, UserConstants.ENHET_VEILEDER_GT)) }
+                coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, validPersonident, validToken) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, validPersonident) }
+                verifyCacheSet(exactly = 1, key = cacheKeyValidPersonident, harTilgang = false)
+            }
         }
 
         describe("preload cache for person access") {

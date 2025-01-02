@@ -121,12 +121,17 @@ class TilgangService(
             return false
         }
 
-        val innbyggersEnhetNr = getInnbyggersEnhet(
-            callId = callId,
-            personident = personident,
-            geografiskTilknytning = geografiskTilknytning,
-            token = token,
-        )
+        val innbyggersEnhetNr = try {
+            getInnbyggersEnhet(
+                callId = callId,
+                personident = personident,
+                geografiskTilknytning = geografiskTilknytning,
+                token = token,
+            )
+        } catch (exc: Exception) {
+            log.warn("Didn't get enhet for innbygger, unable to check geografisk access callId=$callId")
+            return false
+        }
 
         val behandlendeEnhet = Enhet(innbyggersEnhetNr)
 
