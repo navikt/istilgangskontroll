@@ -47,6 +47,7 @@ spec:
         - application: ismanglendemedvirkning
         - application: ismeroppfolging
         - application: isnarmesteleder
+        - application: isoppfolgingsplan
         - application: isoppfolgingstilfelle
         - application: ispengestopp
         - application: ispersonoppgave
