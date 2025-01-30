@@ -86,13 +86,15 @@ class TilgangService(
         return graphApiClient.hasAccess(adRolle = adRoller.REGIONAL, token = token, callId = callId)
     }
 
-    private suspend fun veiledersOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
+    private suspend fun veiledersEnheterOgOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
+        val veiledersEnheter = enheter.toMutableList()
         val overordnedeEnheter = enheter.map {
             norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = it)
                 .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
         }.flatten()
+        veiledersEnheter.addAll(overordnedeEnheter)
 
-        return overordnedeEnheter
+        return veiledersEnheter
     }
 
     private suspend fun innbyggersOverordnedeEnheter(enhet: Enhet, callId: String): List<Enhet> {
@@ -143,10 +145,10 @@ class TilgangService(
         }
 
         if (hasRegionalAccess(token = token, callId = callId)) {
-            val veiledersOverordnedeEnheter = veiledersOverordnedeEnheter(enheter = veiledersEnheter, callId = callId)
+            val veiledersEnheterOgOverordnedeEnheter = veiledersEnheterOgOverordnedeEnheter(enheter = veiledersEnheter, callId = callId)
             val innbyggersOverordnedeEnheter = innbyggersOverordnedeEnheter(enhet = behandlendeEnhet, callId = callId)
 
-            return innbyggersOverordnedeEnheter.any { it in veiledersOverordnedeEnheter }
+            return innbyggersOverordnedeEnheter.any { it in veiledersEnheterOgOverordnedeEnheter }
         }
 
         return false
@@ -243,7 +245,6 @@ class TilgangService(
         )
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     suspend fun checkTilgangToPerson(
         token: Token,
         personident: Personident,
