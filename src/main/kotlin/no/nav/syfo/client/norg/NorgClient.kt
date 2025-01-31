@@ -62,12 +62,11 @@ class NorgClient(
             COUNT_CALL_NORG_ENHET_SUCCESS.increment()
             return response
         } catch (e: ResponseException) {
-            val message = "Call to NORG2 for overordnet enhet failed with status HTTP-${e.response.status} for enhet $enhet, callId=$callId"
             if (e.response.status == HttpStatusCode.NotFound) {
-                log.warn(message)
                 COUNT_CALL_NORG_ENHET_NOT_FOUND.increment()
                 return emptyList()
             } else {
+                val message = "Call to NORG2 for overordnet enhet failed with status HTTP-${e.response.status} for enhet $enhet, callId=$callId"
                 log.error(message)
                 COUNT_CALL_NORG_ENHET_FAIL.increment()
                 throw e

@@ -418,6 +418,67 @@ class TilgangServicePersonSpek : Spek({
                     }
                     verifyCacheSet(exactly = 1, key = cacheKey)
                 }
+                it("Return access if veileder doesn't have national or local access but has regional access and belongs to fylkeskontor") {
+                    val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_INNBYGGER)
+                    val veiledersEnhet = AxsysEnhet(
+                        enhetId = UserConstants.ENHET_OVERORDNET,
+                        navn = "fylkesenhet",
+                    )
+                    val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
+                    every { redisStore.getObject<Tilgang?>(any()) } returns null
+                    coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
+                    coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
+                    coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                    coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
+                    coEvery { norgClient.getOverordnetEnhetListForNAVKontor(any(), Enhet(UserConstants.ENHET_INNBYGGER)) } returns
+                        listOf(overordnetEnhet)
+
+                    runBlocking {
+                        val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+
+                        tilgang.erGodkjent shouldBeEqualTo true
+                    }
+
+                    verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                    coVerify(exactly = 1) {
+                        graphApiClient.hasAccess(
+                            adRolle = adRoller.NASJONAL,
+                            token = validToken,
+                            callId = callId,
+                        )
+                    }
+                    coVerify(exactly = 0) {
+                        behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
+                    }
+                    coVerify(exactly = 1) {
+                        axsysClient.getEnheter(
+                            callId = callId,
+                            token = validToken,
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        norgClient.getOverordnetEnhetListForNAVKontor(
+                            callId = callId,
+                            enhet = Enhet(id = UserConstants.ENHET_INNBYGGER)
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        norgClient.getNAVKontorForGT(
+                            callId = callId,
+                            geografiskTilknytning = GeografiskTilknytning(
+                                GeografiskTilknytningType.BYDEL,
+                                UserConstants.ENHET_VEILEDER_GT
+                            )
+                        )
+                    }
+                    coVerify(exactly = 1) {
+                        norgClient.getOverordnetEnhetListForNAVKontor(
+                            callId = callId,
+                            enhet = Enhet(id = UserConstants.ENHET_OVERORDNET)
+                        )
+                    }
+                    verifyCacheSet(exactly = 1, key = cacheKey)
+                }
             }
 
             describe("has access to skjermede personer") {
