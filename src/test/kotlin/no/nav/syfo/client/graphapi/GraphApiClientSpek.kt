@@ -6,7 +6,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.testhelper.ExternalMockEnvironment
@@ -20,14 +20,14 @@ import java.util.*
 
 class GraphApiClientSpek : Spek({
     val externalMockEnvironment = ExternalMockEnvironment()
-    val redisStore = mockk<RedisStore>(relaxed = true)
+    val valkeyStore = mockk<ValkeyStore>(relaxed = true)
     val mockHttpClient = getMockHttpClient(env = externalMockEnvironment.environment)
 
     val adRoller = AdRoller(env = externalMockEnvironment.environment)
 
     val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
@@ -36,11 +36,11 @@ class GraphApiClientSpek : Spek({
         baseUrl = externalMockEnvironment.environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
         httpClient = mockHttpClient,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     describe("GraphApiClient") {
-        beforeEachTest { clearMocks(redisStore) }
+        beforeEachTest { clearMocks(valkeyStore) }
         describe("SYFO access") {
             it("Returns syfo access and stores in cache") {
                 val validToken = generateJWT(
@@ -50,10 +50,10 @@ class GraphApiClientSpek : Spek({
                 )
                 val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT}"
                 every {
-                    redisStore.getListObject<GraphApiGroup>(cacheKey)
+                    valkeyStore.getListObject<GraphApiGroup>(cacheKey)
                 } returns null
                 every {
-                    redisStore.get(any<String>())
+                    valkeyStore.get(any<String>())
                 } returns null
 
                 val hasAccess = runBlocking {
@@ -64,9 +64,9 @@ class GraphApiClientSpek : Spek({
                     )
                 }
                 hasAccess shouldBeEqualTo true
-                verify(exactly = 1) { redisStore.get(key = eq(cacheKey)) }
+                verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
                 verify(exactly = 1) {
-                    redisStore.setObject<List<GraphApiGroup>>(
+                    valkeyStore.setObject<List<GraphApiGroup>>(
                         key = eq(cacheKey),
                         value = any(),
                         expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
@@ -81,10 +81,10 @@ class GraphApiClientSpek : Spek({
                 )
                 val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS}"
                 every {
-                    redisStore.getListObject<GraphApiGroup>(cacheKey)
+                    valkeyStore.getListObject<GraphApiGroup>(cacheKey)
                 } returns null
                 every {
-                    redisStore.get(any<String>())
+                    valkeyStore.get(any<String>())
                 } returns null
 
                 val hasAccess = runBlocking {
@@ -95,9 +95,9 @@ class GraphApiClientSpek : Spek({
                     )
                 }
                 hasAccess shouldBeEqualTo false
-                verify(exactly = 1) { redisStore.get(key = eq(cacheKey)) }
+                verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
                 verify(exactly = 1) {
-                    redisStore.setObject<List<GraphApiGroup>>(
+                    valkeyStore.setObject<List<GraphApiGroup>>(
                         key = eq(cacheKey),
                         value = any(),
                         expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),

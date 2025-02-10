@@ -2,7 +2,7 @@ package no.nav.syfo.testhelper
 
 import io.ktor.server.application.*
 import no.nav.syfo.application.api.apiModule
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
@@ -24,21 +24,21 @@ fun Application.testApiModule(
 
     val mockHttpClient = getMockHttpClient(env = externalMockEnvironment.environment)
 
-    val redisConfig = externalMockEnvironment.environment.redisConfig
-    val redisStore = RedisStore(
+    val valkeyConfig = externalMockEnvironment.environment.valkeyConfig
+    val valkeyStore = ValkeyStore(
         JedisPool(
             JedisPoolConfig(),
-            HostAndPort(redisConfig.host, redisConfig.port),
+            HostAndPort(valkeyConfig.host, valkeyConfig.port),
             DefaultJedisClientConfig.builder()
-                .ssl(redisConfig.ssl)
-                .password(redisConfig.redisPassword)
+                .ssl(valkeyConfig.ssl)
+                .password(valkeyConfig.valkeyPassword)
                 .build()
         )
     )
 
     val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
@@ -47,14 +47,14 @@ fun Application.testApiModule(
         baseUrl = externalMockEnvironment.environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
         httpClient = mockHttpClient,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val axsysClient = AxsysClient(
         azureAdClient = azureAdClient,
         axsysUrl = externalMockEnvironment.environment.clients.axsys.baseUrl,
         clientId = externalMockEnvironment.environment.clients.axsys.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
@@ -62,7 +62,7 @@ fun Application.testApiModule(
         azureAdClient = azureAdClient,
         skjermedePersonerUrl = externalMockEnvironment.environment.clients.skjermedePersoner.baseUrl,
         clientId = externalMockEnvironment.environment.clients.skjermedePersoner.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
@@ -70,7 +70,7 @@ fun Application.testApiModule(
         azureAdClient = azureAdClient,
         baseUrl = externalMockEnvironment.environment.clients.pdl.baseUrl,
         clientId = externalMockEnvironment.environment.clients.pdl.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
@@ -78,13 +78,13 @@ fun Application.testApiModule(
         azureAdClient = azureAdClient,
         baseUrl = externalMockEnvironment.environment.clients.behandlendeEnhet.baseUrl,
         clientId = externalMockEnvironment.environment.clients.behandlendeEnhet.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
     val norgClient = NorgClient(
         baseUrl = externalMockEnvironment.environment.clients.norgUrl,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = mockHttpClient,
     )
 
@@ -94,7 +94,7 @@ fun Application.testApiModule(
         graphApiClient = graphApiClient,
         wellKnownInternalAzureAD = externalMockEnvironment.wellKnownInternalAzureAD,
         adRoller = adRoller,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,

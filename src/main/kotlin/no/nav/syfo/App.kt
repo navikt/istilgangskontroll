@@ -8,7 +8,7 @@ import io.ktor.server.netty.*
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.apiModule
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
@@ -33,43 +33,43 @@ fun main() {
     val environment = Environment()
 
     val adRoller = AdRoller(env = environment)
-    val redisConfig = environment.redisConfig
-    val redisStore = RedisStore(
+    val valkeyConfig = environment.valkeyConfig
+    val valkeyStore = ValkeyStore(
         JedisPool(
             JedisPoolConfig(),
-            HostAndPort(redisConfig.host, redisConfig.port),
+            HostAndPort(valkeyConfig.host, valkeyConfig.port),
             DefaultJedisClientConfig.builder()
-                .ssl(redisConfig.ssl)
-                .user(redisConfig.redisUsername)
-                .password(redisConfig.redisPassword)
-                .database(redisConfig.redisDB)
+                .ssl(valkeyConfig.ssl)
+                .user(valkeyConfig.valkeyUsername)
+                .password(valkeyConfig.valkeyPassword)
+                .database(valkeyConfig.valkeyDB)
                 .build()
         )
     )
 
     val azureAdClient = AzureAdClient(
         azureEnvironment = environment.azure,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val graphApiClient = GraphApiClient(
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val axsysClient = AxsysClient(
         azureAdClient = azureAdClient,
         axsysUrl = environment.clients.axsys.baseUrl,
         clientId = environment.clients.axsys.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val skjermedePersonerPipClient = SkjermedePersonerPipClient(
         azureAdClient = azureAdClient,
         skjermedePersonerUrl = environment.clients.skjermedePersoner.baseUrl,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         clientId = environment.clients.skjermedePersoner.clientId,
     )
 
@@ -77,19 +77,19 @@ fun main() {
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.pdl.baseUrl,
         clientId = environment.clients.pdl.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val behandlendeEnhetClient = BehandlendeEnhetClient(
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.behandlendeEnhet.baseUrl,
         clientId = environment.clients.behandlendeEnhet.clientId,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val norgClient = NorgClient(
         baseUrl = environment.clients.norgUrl,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
     )
 
     val wellKnownInternalAzureAD = getWellKnown(
@@ -119,7 +119,7 @@ fun main() {
                 graphApiClient = graphApiClient,
                 wellKnownInternalAzureAD = wellKnownInternalAzureAD,
                 adRoller = adRoller,
-                redisStore = redisStore,
+                valkeyStore = valkeyStore,
                 axsysClient = axsysClient,
                 skjermedePersonerPipClient = skjermedePersonerPipClient,
                 pdlClient = pdlClient,

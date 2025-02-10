@@ -3,7 +3,7 @@ package no.nav.syfo.tilgang
 import kotlinx.coroutines.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.audit.*
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
@@ -23,7 +23,7 @@ class TilgangService(
     val behandlendeEnhetClient: BehandlendeEnhetClient,
     val norgClient: NorgClient,
     val adRoller: AdRoller,
-    val redisStore: RedisStore,
+    val valkeyStore: ValkeyStore,
     val dispatcher: CoroutineDispatcher,
 ) {
 
@@ -38,7 +38,7 @@ class TilgangService(
     suspend fun checkTilgangToSyfo(token: Token, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
-        val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+        val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
         if (cachedTilgang != null) {
             return cachedTilgang
@@ -50,7 +50,7 @@ class TilgangService(
                 callId = callId,
             )
         )
-        redisStore.setObject(
+        valkeyStore.setObject(
             key = cacheKey,
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS
@@ -61,7 +61,7 @@ class TilgangService(
     suspend fun checkTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent-$enhet"
-        val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+        val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
         if (cachedTilgang != null) {
             return cachedTilgang
@@ -70,7 +70,7 @@ class TilgangService(
         val tilgang = Tilgang(
             erGodkjent = enheter.map { it.enhetId }.contains(enhet.id)
         )
-        redisStore.setObject(
+        valkeyStore.setObject(
             key = cacheKey,
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS
@@ -255,7 +255,7 @@ class TilgangService(
         CoroutineScope(dispatcher).async {
             val veilederIdent = token.getNAVIdent()
             val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
-            val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+            val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
             val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
             if (doAuditLog) {
@@ -291,7 +291,7 @@ class TilgangService(
         }
         val tilgang = Tilgang(erGodkjent = erGodkjent)
 
-        redisStore.setObject(
+        valkeyStore.setObject(
             key = cacheKey,
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS

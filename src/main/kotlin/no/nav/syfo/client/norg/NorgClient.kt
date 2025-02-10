@@ -5,7 +5,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.GeografiskTilknytning
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory.getLogger
 
 class NorgClient(
     private val baseUrl: String,
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
 
@@ -24,7 +24,7 @@ class NorgClient(
         enhet: Enhet,
     ): List<NorgEnhet> {
         val cacheKey = "$NORG_OVERORDNEDE_ENHETER_CACHE_KEY-$enhet"
-        val cachedEnheter = redisStore.getListObject<NorgEnhet>(key = cacheKey)
+        val cachedEnheter = valkeyStore.getListObject<NorgEnhet>(key = cacheKey)
 
         return if (!cachedEnheter.isNullOrEmpty()) {
             cachedEnheter
@@ -33,7 +33,7 @@ class NorgClient(
                 callId = callId,
                 enhet = enhet,
             ).also {
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = cacheKey,
                     value = it,
                     expireSeconds = TWELVE_HOURS_IN_SECS,
@@ -79,7 +79,7 @@ class NorgClient(
         geografiskTilknytning: GeografiskTilknytning,
     ): NorgEnhet {
         val cacheKey = "$NORG_GEOGRAFISK_ENHET_CACHE_KEY-${geografiskTilknytning.value}"
-        val cachedEnhet = redisStore.getObject<NorgEnhet>(key = cacheKey)
+        val cachedEnhet = valkeyStore.getObject<NorgEnhet>(key = cacheKey)
 
         return if (cachedEnhet != null) {
             cachedEnhet
@@ -88,7 +88,7 @@ class NorgClient(
                 callId = callId,
                 geografiskTilknytning = geografiskTilknytning,
             ).also {
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = cacheKey,
                     value = it,
                     expireSeconds = TWELVE_HOURS_IN_SECS,

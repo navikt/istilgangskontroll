@@ -8,7 +8,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.domain.Personident
@@ -19,7 +19,7 @@ class BehandlendeEnhetClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
     private val clientId: String,
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
     suspend fun getEnhetWithOboToken(
@@ -58,7 +58,7 @@ class BehandlendeEnhetClient(
                 token = token,
             )
 
-            redisStore.setObject(
+            valkeyStore.setObject(
                 key = cacheKey,
                 value = behandlendeEnhet,
                 expireSeconds = TWELVE_HOURS_IN_SECS
@@ -68,7 +68,7 @@ class BehandlendeEnhetClient(
     }
 
     private fun getCachedBehandlendeEnhet(cacheKey: String): BehandlendeEnhetDTO? {
-        return redisStore.getObject(key = cacheKey)
+        return valkeyStore.getObject(key = cacheKey)
     }
 
     private suspend fun getEnhetFromSyfobehandlendeenhet(

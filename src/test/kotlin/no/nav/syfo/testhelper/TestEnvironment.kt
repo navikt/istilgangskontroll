@@ -1,7 +1,7 @@
 package no.nav.syfo.testhelper
 
 import no.nav.syfo.application.*
-import no.nav.syfo.cache.RedisConfig
+import no.nav.syfo.cache.ValkeyConfig
 import no.nav.syfo.client.azuread.AzureEnvironment
 import no.nav.syfo.client.azuread.PreAuthorizedApp
 import java.net.URI
@@ -15,11 +15,11 @@ fun testEnvironment() = Environment(
         openidConfigTokenEndpoint = "azureOpenIdTokenEndpoint",
     ),
 
-    redisConfig = RedisConfig(
-        redisUri = URI("http://localhost:6379"),
-        redisDB = 0,
-        redisUsername = "redisUser",
-        redisPassword = "redisPassword",
+    valkeyConfig = ValkeyConfig(
+        valkeyUri = URI("http://localhost:6379"),
+        valkeyDB = 0,
+        valkeyUsername = "valkeyUser",
+        valkeyPassword = "valkeyPassword",
         ssl = false,
     ),
 
