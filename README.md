@@ -14,15 +14,17 @@ tilgang til informasjon om en person sjekkes det om personen er diskresjonsmerke
 * Kafka
 * Kotlin
 * Ktor
-* Redis
+* Valkey
 
-##### Aiven Redis Cache:
+##### Aiven Valkey Cache:
 
-istilgangskontroll har deklarasjonen av Redis-cache'n på Aiven som brukes av alle 
-app'ene til teamsykefravr. Redis-instansen er delt opp i databaser der nummer 0 
+istilgangskontroll har deklarasjonen av Valkey-cache'n på Aiven som brukes av alle 
+app'ene til teamsykefravr. Valkey er en fork av Redis og funksjonelt veldig lik. 
+
+Valkey-instansen er delt opp i databaser der nummer 0 
 brukes av istilgangskontroll. Fordelingen er som følger:  
 
-Application (git)                                                                             | Redis database                         
+Application (git)                                                                             | Valkey database                         
 --------------------------------------------------------------------------------------------- | --------------
 [istilgangskontroll](https://github.com/navikt/istilgangskontroll)                            | 0
 [fastlegerest](https://github.com/navikt/fastlegerest)                                        | 1
@@ -50,13 +52,13 @@ Application (git)                                                               
 [syfoperson](https://github.com/navikt/syfoperson)                                            | 23
 [syfoveileder](https://github.com/navikt/syfoveileder)                                        | 24
 
-Man kan aksessere Redis-cachene på Aiven fra kommandolinja ved behov (feks hvis man trenger å flushe en cache).
+Man kan aksessere Valkey-cachene på Aiven fra kommandolinja ved behov (feks hvis man trenger å flushe en cache).
 
-For å gjøre dette trenger man en Redis-klient, man kan bruke den offisielle https://redis.io/docs/latest/develop/tools/cli/ 
+For å gjøre dette trenger man en Redis-klient (de fungerer også mot Valkey), man kan bruke den offisielle https://redis.io/docs/latest/develop/tools/cli/ 
 men denne kan være krevende å installere på noen OS (feks Windows). Et godt alternativ er redli:
 https://github.com/IBM-Cloud/redli
 
-Host, port, brukernavn og passord for å koble til Aiven Redis finner man i secret'en `redis-teamsykefravr-cache` 
+Host, port, brukernavn og passord for å koble til Aiven Valkey finner man i secret'en `valkey-teamsykefravr-cache` 
 (som finnes både i dev-gcp og prod-gcp i vårt namespace). For å koble til Aiven Redis i **produksjon** må `aiven-prod`
 enables i naisdevice.
 

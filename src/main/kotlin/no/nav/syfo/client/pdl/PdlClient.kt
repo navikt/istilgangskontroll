@@ -8,7 +8,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import net.logstash.logback.argument.StructuredArguments
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.domain.Personident
@@ -19,7 +19,7 @@ class PdlClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
     private val clientId: String,
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
     suspend fun getPerson(
@@ -27,13 +27,13 @@ class PdlClient(
         personident: Personident,
     ): PipPersondataResponse {
         val cacheKey = "$PDL_PERSON_CACHE_KEY-$personident"
-        val cachedPerson = redisStore.getObject<PipPersondataResponse>(key = cacheKey)
+        val cachedPerson = valkeyStore.getObject<PipPersondataResponse>(key = cacheKey)
 
         return if (cachedPerson != null) {
             cachedPerson
         } else {
             getPersonFromPdl(callId, personident).also {
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = cacheKey,
                     value = it,
                     expireSeconds = TWELVE_HOURS_IN_SECS,

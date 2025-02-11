@@ -7,7 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.domain.Personident
@@ -18,7 +18,7 @@ class SkjermedePersonerPipClient(
     private val azureAdClient: AzureAdClient,
     private val skjermedePersonerUrl: String,
     private val clientId: String,
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
     private val log = LoggerFactory.getLogger(SkjermedePersonerPipClient::class.java)
@@ -59,7 +59,7 @@ class SkjermedePersonerPipClient(
                 token = token,
             )
 
-            redisStore.setObject(
+            valkeyStore.setObject(
                 key = cacheKey,
                 value = enheter,
                 expireSeconds = TWELVE_HOURS_IN_SECS,
@@ -69,7 +69,7 @@ class SkjermedePersonerPipClient(
     }
 
     private fun getCachedSkjerming(cacheKey: String): Boolean? {
-        return redisStore.getObject(key = cacheKey)
+        return valkeyStore.getObject(key = cacheKey)
     }
 
     private suspend fun getSkjermingFromSkjermedePersoner(

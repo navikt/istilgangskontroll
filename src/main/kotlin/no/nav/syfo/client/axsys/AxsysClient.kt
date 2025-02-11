@@ -8,7 +8,7 @@ import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.util.*
@@ -18,7 +18,7 @@ class AxsysClient(
     private val azureAdClient: AzureAdClient,
     private val axsysUrl: String,
     private val clientId: String,
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
 
@@ -31,7 +31,7 @@ class AxsysClient(
             cachedEnheter
         } else {
             val enheter = getEnheterFromAxsys(token = token, callId = callId)
-            redisStore.setObject(
+            valkeyStore.setObject(
                 key = cacheKey,
                 value = enheter,
                 expireSeconds = TWELVE_HOURS_IN_SECS
@@ -41,7 +41,7 @@ class AxsysClient(
     }
 
     private fun getCachedEnheter(cacheKey: String): List<AxsysEnhet>? {
-        return redisStore.getListObject(key = cacheKey)
+        return valkeyStore.getListObject(key = cacheKey)
     }
 
     private suspend fun getEnheterFromAxsys(

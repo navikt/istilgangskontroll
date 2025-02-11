@@ -3,7 +3,7 @@ package no.nav.syfo.client.norg
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.testhelper.ExternalMockEnvironment
@@ -17,17 +17,17 @@ import java.util.UUID
 
 class NorgClientSpek : Spek({
     val externalMockEnvironment = ExternalMockEnvironment()
-    val redisStore = mockk<RedisStore>(relaxed = true)
+    val valkeyStore = mockk<ValkeyStore>(relaxed = true)
     val norgClient = NorgClient(
         baseUrl = externalMockEnvironment.environment.clients.norgUrl,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         httpClient = getMockHttpClient(env = externalMockEnvironment.environment),
     )
 
     describe("NorgClient") {
         describe("getOverordnetEnhetListForNAVKontor") {
             every {
-                redisStore.getListObject<NorgEnhet>(any())
+                valkeyStore.getListObject<NorgEnhet>(any())
             } returns null
 
             it("returns overordnetNorgEnhet list if 200 OK from NORG") {
