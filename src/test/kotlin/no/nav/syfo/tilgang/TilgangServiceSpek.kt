@@ -1,9 +1,10 @@
 package no.nav.syfo.tilgang
 
 import io.mockk.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
@@ -25,19 +26,20 @@ class TilgangServiceSpek : Spek({
     val pdlClient = mockk<PdlClient>(relaxed = true)
     val behandlendeEnhetClient = mockk<BehandlendeEnhetClient>(relaxed = true)
     val norgClient = mockk<NorgClient>(relaxed = true)
-    val redisStore = mockk<RedisStore>(relaxed = true)
+    val valkeyStore = mockk<ValkeyStore>(relaxed = true)
     val externalMockEnvironment = ExternalMockEnvironment()
     val adRoller = AdRoller(externalMockEnvironment.environment)
 
     val tilgangService = TilgangService(
         graphApiClient = graphApiClient,
         adRoller = adRoller,
-        redisStore = redisStore,
+        valkeyStore = valkeyStore,
         axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
+        dispatcher = Dispatchers.IO.limitedParallelism(20),
     )
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
@@ -45,9 +47,9 @@ class TilgangServiceSpek : Spek({
     fun verifyCacheSet(exactly: Int, key: String = "", harTilgang: Boolean = true) {
         verify(exactly = exactly) {
             if (exactly == 0) {
-                redisStore.setObject<Any>(any(), any(), any())
+                valkeyStore.setObject<Any>(any(), any(), any())
             } else {
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = key,
                     value = Tilgang(erGodkjent = harTilgang),
                     expireSeconds = TWELVE_HOURS_IN_SECONDS
@@ -73,7 +75,7 @@ class TilgangServiceSpek : Spek({
                 pdlClient,
                 behandlendeEnhetClient,
                 norgClient,
-                redisStore,
+                valkeyStore,
             )
         }
 
@@ -82,27 +84,27 @@ class TilgangServiceSpek : Spek({
 
             it("return result from cache hit") {
                 val callId = "123"
-                every { redisStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
                     tilgangService.checkTilgangToSyfo(validToken, callId)
                 }
 
-                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
                 verifyCacheSet(exactly = 0)
             }
 
             it("cache response from GraphApiClient on cache miss") {
                 val callId = "123"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
                 runBlocking {
                     tilgangService.checkTilgangToSyfo(validToken, callId)
                 }
 
-                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
                 verifyCacheSet(exactly = 1, key = cacheKey)
             }
@@ -119,7 +121,7 @@ class TilgangServiceSpek : Spek({
                 )
                 val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
                 val callId = "123"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
@@ -129,7 +131,7 @@ class TilgangServiceSpek : Spek({
                     tilgang.erGodkjent shouldBeEqualTo true
                 }
 
-                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
                 verifyCacheSet(exactly = 1, key = cacheKey)
             }
@@ -143,7 +145,7 @@ class TilgangServiceSpek : Spek({
                 )
                 val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$wantedEnhet"
                 val callId = "123"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { axsysClient.getEnheter(validToken, callId) } returns listOf(veiledersEnhet)
 
                 runBlocking {
@@ -152,7 +154,7 @@ class TilgangServiceSpek : Spek({
                     tilgang.erGodkjent shouldBeEqualTo false
                 }
 
-                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
                 verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
             }
@@ -161,7 +163,7 @@ class TilgangServiceSpek : Spek({
                 val enhet = Enhet(UserConstants.ENHET_VEILEDER)
                 val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
                 val callId = "123"
-                every { redisStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)
+                every { valkeyStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)
 
                 runBlocking {
                     val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
@@ -169,7 +171,7 @@ class TilgangServiceSpek : Spek({
                     tilgang.erGodkjent shouldBeEqualTo true
                 }
 
-                verify(exactly = 1) { redisStore.getObject<Tilgang?>(key = cacheKey) }
+                verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
                 coVerify(exactly = 0) { axsysClient.getEnheter(any(), any()) }
                 verifyCacheSet(exactly = 0)
@@ -185,7 +187,7 @@ class TilgangServiceSpek : Spek({
                 val personidenter = listOf(personident1.value, personident2.value)
                 val cacheKey1 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident1"
                 val cacheKey2 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident2"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns false
 
                 runBlocking {
@@ -224,7 +226,7 @@ class TilgangServiceSpek : Spek({
                 val personidenter = listOf(personident.value, personidentSkjermet.value)
                 val cacheKeyAccess = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
                 val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                 coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
                 coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
@@ -284,7 +286,7 @@ class TilgangServiceSpek : Spek({
                 val cacheKeyOtherEnhet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentOtherEnhet"
                 val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
                 val cacheKeyGradert = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentGradert"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                 coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
                 coEvery { behandlendeEnhetClient.getEnhetWithOboToken(any(), personidentOtherEnhet, any()) } returns otherBehandlendeEnhet
@@ -345,7 +347,7 @@ class TilgangServiceSpek : Spek({
                 val invalidPersonident = "1234567890"
                 val personidenter = listOf(validPersonident.value, invalidPersonident)
                 val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
-                every { redisStore.getObject<Tilgang?>(any()) } returns null
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
                 coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
                 coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
                 coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
@@ -369,6 +371,42 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, validPersonident, validToken) }
                 coVerify(exactly = 2) { pdlClient.getPerson(callId, validPersonident) }
                 verifyCacheSet(exactly = 1, key = cacheKeyValidPersonident, harTilgang = true)
+            }
+
+            it("Remove personidenter with missing enhet") {
+                val callId = "123"
+                val appName = "anyApp"
+                val veiledersEnhet = AxsysEnhet(
+                    enhetId = UserConstants.ENHET_VEILEDER,
+                    navn = "enhet",
+                )
+                val ugradertInnbygger = getUgradertInnbygger()
+                val validPersonident = Personident(UserConstants.PERSONIDENT)
+                val personidenter = listOf(validPersonident.value)
+                val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
+                every { valkeyStore.getObject<Tilgang?>(any()) } returns null
+                coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+                coEvery { norgClient.getNAVKontorForGT(any(), any()) } throws RuntimeException("Feil")
+                coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), validPersonident, any()) } returns false
+                coEvery { pdlClient.getPerson(any(), validPersonident) } returns ugradertInnbygger
+
+                runBlocking {
+                    val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
+                        callId = callId,
+                        token = validToken,
+                        personidenter = personidenter,
+                        appName = appName,
+                    )
+
+                    filteredPersonidenter.size shouldBeEqualTo 0
+                }
+
+                coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+                coVerify(exactly = 1) { norgClient.getNAVKontorForGT(callId, GeografiskTilknytning(GeografiskTilknytningType.BYDEL, UserConstants.ENHET_VEILEDER_GT)) }
+                coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, validPersonident, validToken) }
+                coVerify(exactly = 1) { pdlClient.getPerson(callId, validPersonident) }
+                verifyCacheSet(exactly = 1, key = cacheKeyValidPersonident, harTilgang = false)
             }
         }
 

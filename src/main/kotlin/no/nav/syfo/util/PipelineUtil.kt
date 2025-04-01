@@ -3,7 +3,7 @@ package no.nav.syfo.util
 import com.auth0.jwt.JWT
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.util.pipeline.*
+import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.domain.Personident
 
@@ -19,7 +19,7 @@ fun ApplicationCall.getConsumerClientId(): String? =
 fun ApplicationCall.getBearerHeader(): Token? =
     this.request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")?.let { Token(it) }
 
-fun PipelineContext<out Unit, ApplicationCall>.getCallId(): String {
+fun RoutingContext.getCallId(): String {
     return this.call.getCallId()
 }
 

@@ -9,13 +9,13 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.httpClientProxy
 import org.slf4j.LoggerFactory
 
 class AzureAdClient(
     private val azureEnvironment: AzureEnvironment,
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientProxy()
 ) {
     suspend fun getOnBehalfOfToken(scopeClientId: String, token: Token, callId: String): AzureAdToken? =
@@ -42,7 +42,7 @@ class AzureAdClient(
     ): AzureAdToken? {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX$scopeClientId-$veilederIdent"
-        val cachedOboToken: AzureAdToken? = redisStore.getObject(key = cacheKey)
+        val cachedOboToken: AzureAdToken? = valkeyStore.getObject(key = cacheKey)
         return if (cachedOboToken?.isExpired() == false) {
             cachedOboToken
         } else {
@@ -52,7 +52,7 @@ class AzureAdClient(
             )
 
             azureAdTokenResponse?.toAzureAdToken()?.also { oboToken ->
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = cacheKey,
                     value = oboToken,
                     expireSeconds = azureAdTokenResponse.expires_in,
@@ -73,7 +73,7 @@ class AzureAdClient(
 
     suspend fun getSystemToken(scopeClientId: String, callId: String): AzureAdToken? {
         val cacheKey = "$CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX$scopeClientId"
-        val cachedSystemToken: AzureAdToken? = redisStore.getObject(key = cacheKey)
+        val cachedSystemToken: AzureAdToken? = valkeyStore.getObject(key = cacheKey)
         return if (cachedSystemToken?.isExpired() == false) {
             cachedSystemToken
         } else {
@@ -88,7 +88,7 @@ class AzureAdClient(
             )
 
             azureAdTokenResponse?.toAzureAdToken()?.also { oboToken ->
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = cacheKey,
                     value = oboToken,
                     expireSeconds = azureAdTokenResponse.expires_in,

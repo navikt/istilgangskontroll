@@ -1,0 +1,39 @@
+name: aiven-valkey
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/aiven-valkey.yaml'
+      - '.nais/valkey/**'
+
+permissions:
+  id-token: write
+
+jobs:
+  deploy-valkey-dev:
+    name: Deploy Aiven Valkey dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Aiven Valkey dev
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: dev-gcp
+          RESOURCE: .nais/valkey/aiven-valkey.yaml
+          VARS: .nais/valkey/dev.json
+
+  deploy-valkey-prod:
+    name: Deploy Aiven Valkey prod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Aiven Valkey prod
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: prod-gcp
+          RESOURCE: .nais/valkey/aiven-valkey.yaml
+          VARS: .nais/valkey/prod.json

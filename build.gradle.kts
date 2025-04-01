@@ -9,7 +9,7 @@ val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "7.4"
 val micrometerRegistry = "1.12.13"
 val mockk = "1.13.17"
-val nimbusJoseJwt = "9.41.1"
+val nimbusJoseJwt = "9.47"
 val spek = "2.0.19"
 val jedis = "5.2.0"
 
@@ -53,7 +53,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonDataType")
 
     // Tests
-    testImplementation("io.ktor:ktor-server-tests:$ktor")
+    testImplementation("io.ktor:ktor-server-test-host:$ktor")
     testImplementation("io.mockk:mockk:$mockk")
     testImplementation("io.ktor:ktor-client-mock:$ktor")
     testImplementation("com.nimbusds:nimbus-jose-jwt:$nimbusJoseJwt")

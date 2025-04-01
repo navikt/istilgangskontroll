@@ -1,12 +1,9 @@
 package no.nav.syfo.tilgang
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.audit.*
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
@@ -26,7 +23,8 @@ class TilgangService(
     val behandlendeEnhetClient: BehandlendeEnhetClient,
     val norgClient: NorgClient,
     val adRoller: AdRoller,
-    val redisStore: RedisStore,
+    val valkeyStore: ValkeyStore,
+    val dispatcher: CoroutineDispatcher,
 ) {
 
     private suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
@@ -40,7 +38,7 @@ class TilgangService(
     suspend fun checkTilgangToSyfo(token: Token, callId: String): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
-        val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+        val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
         if (cachedTilgang != null) {
             return cachedTilgang
@@ -52,7 +50,7 @@ class TilgangService(
                 callId = callId,
             )
         )
-        redisStore.setObject(
+        valkeyStore.setObject(
             key = cacheKey,
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS
@@ -63,7 +61,7 @@ class TilgangService(
     suspend fun checkTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent-$enhet"
-        val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+        val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
         if (cachedTilgang != null) {
             return cachedTilgang
@@ -72,7 +70,7 @@ class TilgangService(
         val tilgang = Tilgang(
             erGodkjent = enheter.map { it.enhetId }.contains(enhet.id)
         )
-        redisStore.setObject(
+        valkeyStore.setObject(
             key = cacheKey,
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS
@@ -88,13 +86,15 @@ class TilgangService(
         return graphApiClient.hasAccess(adRolle = adRoller.REGIONAL, token = token, callId = callId)
     }
 
-    private suspend fun veiledersOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
+    private suspend fun veiledersEnheterOgOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
+        val veiledersEnheter = enheter.toMutableList()
         val overordnedeEnheter = enheter.map {
             norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = it)
                 .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
         }.flatten()
+        veiledersEnheter.addAll(overordnedeEnheter)
 
-        return overordnedeEnheter
+        return veiledersEnheter
     }
 
     private suspend fun innbyggersOverordnedeEnheter(enhet: Enhet, callId: String): List<Enhet> {
@@ -123,12 +123,17 @@ class TilgangService(
             return false
         }
 
-        val innbyggersEnhetNr = getInnbyggersEnhet(
-            callId = callId,
-            personident = personident,
-            geografiskTilknytning = geografiskTilknytning,
-            token = token,
-        )
+        val innbyggersEnhetNr = try {
+            getInnbyggersEnhet(
+                callId = callId,
+                personident = personident,
+                geografiskTilknytning = geografiskTilknytning,
+                token = token,
+            )
+        } catch (exc: Exception) {
+            log.warn("Didn't get enhet for innbygger, unable to check geografisk access callId=$callId")
+            return false
+        }
 
         val behandlendeEnhet = Enhet(innbyggersEnhetNr)
 
@@ -140,10 +145,10 @@ class TilgangService(
         }
 
         if (hasRegionalAccess(token = token, callId = callId)) {
-            val veiledersOverordnedeEnheter = veiledersOverordnedeEnheter(enheter = veiledersEnheter, callId = callId)
+            val veiledersEnheterOgOverordnedeEnheter = veiledersEnheterOgOverordnedeEnheter(enheter = veiledersEnheter, callId = callId)
             val innbyggersOverordnedeEnheter = innbyggersOverordnedeEnheter(enhet = behandlendeEnhet, callId = callId)
 
-            return innbyggersOverordnedeEnheter.any { it in veiledersOverordnedeEnheter }
+            return innbyggersOverordnedeEnheter.any { it in veiledersEnheterOgOverordnedeEnheter }
         }
 
         return false
@@ -247,10 +252,10 @@ class TilgangService(
         appName: String,
         doAuditLog: Boolean = true,
     ): Deferred<Tilgang> =
-        CoroutineScope(Dispatchers.IO).async {
+        CoroutineScope(dispatcher).async {
             val veilederIdent = token.getNAVIdent()
             val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
-            val cachedTilgang: Tilgang? = redisStore.getObject(key = cacheKey)
+            val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
             val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
             if (doAuditLog) {
@@ -286,7 +291,7 @@ class TilgangService(
         }
         val tilgang = Tilgang(erGodkjent = erGodkjent)
 
-        redisStore.setObject(
+        valkeyStore.setObject(
             key = cacheKey,
             value = tilgang,
             expireSeconds = TWELVE_HOURS_IN_SECS

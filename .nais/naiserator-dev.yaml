@@ -47,6 +47,7 @@ spec:
         - application: ismanglendemedvirkning
         - application: ismeroppfolging
         - application: isnarmesteleder
+        - application: isoppfolgingsplan
         - application: isoppfolgingstilfelle
         - application: ispengestopp
         - application: ispersonoppgave
@@ -104,7 +105,6 @@ spec:
           ports:
             - port: 6514
       rules:
-        - application: istilgangskontroll-redis
         - application: syfobehandlendeenhet
         - application: skjermede-personer-pip
           namespace: nom
@@ -118,12 +118,13 @@ spec:
       claims:
         extra:
           - "NAVident"
+  valkey:
+    - instance: cache
+      access: readwrite
   observability:
     autoInstrumentation:
       enabled: true
       runtime: java
-  envFrom:
-    - secret: istilgangskontroll-redis-password
   env:
     - name: AXSYS_URL
       value: "https://axsys.dev-fss-pub.nais.io"
@@ -145,8 +146,6 @@ spec:
       value: "dev-gcp.nom.skjermede-personer-pip"
     - name: SKJERMEDE_PERSONER_URL
       value: "http://skjermede-personer-pip.nom"
-    - name: REDIS_HOST
-      value: "istilgangskontroll-redis"
 
     - name: ROLE_KODE6_ID
       value: "5ef775f2-61f8-4283-bf3d-8d03f428aa14" # 0000-GA-Strengt_Fortrolig_Adresse

@@ -8,7 +8,7 @@ import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.application.cache.RedisStore
+import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.tilgang.AdRolle
@@ -21,7 +21,7 @@ class GraphApiClient(
     private val baseUrl: String,
     private val relevantSyfoRoller: List<AdRolle>,
     private val httpClient: HttpClient = httpClientProxy(),
-    private val redisStore: RedisStore,
+    private val valkeyStore: ValkeyStore,
 ) {
     suspend fun hasAccess(
         adRolle: AdRolle,
@@ -47,7 +47,7 @@ class GraphApiClient(
             cachedRoleList
         } else {
             getRoleListFromGraphApi(token, callId).also {
-                redisStore.setObject(
+                valkeyStore.setObject(
                     key = cacheKey,
                     value = it,
                     expireSeconds = TWELVE_HOURS_IN_SECS,
@@ -89,7 +89,7 @@ class GraphApiClient(
     }
 
     private fun getCachedRoleList(cacheKey: String): List<GraphApiGroup>? {
-        return redisStore.getListObject(key = cacheKey)
+        return valkeyStore.getListObject(key = cacheKey)
     }
 
     private fun isRoleInUserGroupList(

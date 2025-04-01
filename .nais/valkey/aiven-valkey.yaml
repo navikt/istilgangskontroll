@@ -1,0 +1,26 @@
+apiVersion: aiven.io/v1alpha1
+kind: Valkey
+metadata:
+  labels:
+    app: istilgangskontroll
+    team: teamsykefravr
+  name: valkey-teamsykefravr-cache
+  namespace: teamsykefravr
+spec:
+  plan: {{ plan }}
+  project:  {{ project }}
+  userConfig:
+     valkey_number_of_databases: 50
+---
+  apiVersion: aiven.io/v1alpha1
+  kind: ServiceIntegration
+  metadata:
+    labels:
+      team: teamsykefravr
+    name: valkey-teamsykefravr-cache
+    namespace: teamsykefravr
+  spec:
+    project: {{ project }}
+    integrationType: prometheus
+    destinationEndpointId: {{ prometheus }}
+    sourceServiceName: valkey-teamsykefravr-cache
