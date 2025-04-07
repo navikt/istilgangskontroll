@@ -9,7 +9,7 @@ val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "7.4"
 val micrometerRegistry = "1.12.13"
 val mockk = "1.13.17"
-val nimbusJoseJwt = "9.47"
+val nimbusJoseJwt = "10.2"
 val spek = "2.0.19"
 val jedis = "5.2.0"
 
