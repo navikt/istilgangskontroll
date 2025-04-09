@@ -74,7 +74,7 @@ class GraphApiClientSpek : Spek({
                     )
                 }
             }
-            it("Denies syfo access and stores in cache") {
+            it("Denies syfo access and does not store in cache") {
                 val validToken = generateJWT(
                     audience = externalMockEnvironment.environment.azure.appClientId,
                     issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
@@ -97,7 +97,7 @@ class GraphApiClientSpek : Spek({
                 }
                 hasAccess shouldBeEqualTo false
                 verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
-                verify(exactly = 1) {
+                verify(exactly = 0) {
                     valkeyStore.setObject<List<GraphApiGroup>>(
                         key = eq(cacheKey),
                         value = any(),
