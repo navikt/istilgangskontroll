@@ -37,6 +37,7 @@ class GraphApiClientSpek : Spek({
         relevantSyfoRoller = adRoller.toList(),
         httpClient = mockHttpClient,
         valkeyStore = valkeyStore,
+        adRoller = adRoller,
     )
 
     describe("GraphApiClient") {
