@@ -53,7 +53,7 @@ class SkjermedePersonerPipClient(
         return if (cachedSkjerming != null) {
             cachedSkjerming
         } else {
-            val skjermet = getSkjermingFromSkjermedePersoner(
+            val enheter = getSkjermingFromSkjermedePersoner(
                 callId = callId,
                 personIdent = personIdent,
                 token = token,
@@ -61,10 +61,10 @@ class SkjermedePersonerPipClient(
 
             valkeyStore.setObject(
                 key = cacheKey,
-                value = skjermet,
+                value = enheter,
                 expireSeconds = TWELVE_HOURS_IN_SECS,
             )
-            skjermet
+            enheter
         }
     }
 

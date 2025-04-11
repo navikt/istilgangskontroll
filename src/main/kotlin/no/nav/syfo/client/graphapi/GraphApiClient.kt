@@ -12,7 +12,6 @@ import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.tilgang.AdRolle
-import no.nav.syfo.tilgang.AdRoller
 import no.nav.syfo.util.bearerHeader
 import no.nav.syfo.util.callIdArgument
 import org.slf4j.LoggerFactory
@@ -23,7 +22,6 @@ class GraphApiClient(
     private val relevantSyfoRoller: List<AdRolle>,
     private val httpClient: HttpClient = httpClientProxy(),
     private val valkeyStore: ValkeyStore,
-    private val adRoller: AdRoller,
 ) {
     suspend fun hasAccess(
         adRolle: AdRolle,
@@ -49,13 +47,11 @@ class GraphApiClient(
             cachedRoleList
         } else {
             getRoleListFromGraphApi(token, callId).also {
-                if (isRoleInUserGroupList(it, adRoller.SYFO)) {
-                    valkeyStore.setObject(
-                        key = cacheKey,
-                        value = it,
-                        expireSeconds = TWELVE_HOURS_IN_SECS,
-                    )
-                }
+                valkeyStore.setObject(
+                    key = cacheKey,
+                    value = it,
+                    expireSeconds = TWELVE_HOURS_IN_SECS,
+                )
             }
         }
     }
