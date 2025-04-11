@@ -61,7 +61,7 @@ class BehandlendeEnhetClient(
             valkeyStore.setObject(
                 key = cacheKey,
                 value = behandlendeEnhet,
-                expireSeconds = TWELVE_HOURS_IN_SECS
+                expireSeconds = ONE_HOUR_IN_SECS
             )
             behandlendeEnhet
         }
@@ -139,6 +139,6 @@ class BehandlendeEnhetClient(
         private val log = LoggerFactory.getLogger(BehandlendeEnhetClient::class.java)
 
         const val BEHANDLENDEENHET_CACHE_KEY = "behandlendeenhet"
-        const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
+        const val ONE_HOUR_IN_SECS = 1 * 60 * 60L
     }
 }

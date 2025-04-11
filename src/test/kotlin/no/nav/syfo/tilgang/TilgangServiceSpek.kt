@@ -46,15 +46,11 @@ class TilgangServiceSpek : Spek({
 
     fun verifyCacheSet(exactly: Int, key: String = "", harTilgang: Boolean = true) {
         verify(exactly = exactly) {
-            if (exactly == 0) {
-                valkeyStore.setObject<Any>(any(), any(), any())
-            } else {
-                valkeyStore.setObject(
-                    key = key,
-                    value = Tilgang(erGodkjent = harTilgang),
-                    expireSeconds = TWELVE_HOURS_IN_SECONDS
-                )
-            }
+            valkeyStore.setObject(
+                key = key,
+                value = Tilgang(erGodkjent = harTilgang),
+                expireSeconds = TWELVE_HOURS_IN_SECONDS
+            )
         }
     }
 
@@ -156,7 +152,7 @@ class TilgangServiceSpek : Spek({
 
                 verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
                 coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
-                verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
             }
 
             it("return result from cache hit") {
@@ -208,8 +204,8 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident2, any()) }
                 coVerify(exactly = 0) { pdlClient.getPerson(any(), personident1) }
                 coVerify(exactly = 0) { pdlClient.getPerson(any(), personident2) }
-                verifyCacheSet(exactly = 1, key = cacheKey1, harTilgang = false)
-                verifyCacheSet(exactly = 1, key = cacheKey2, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKey1, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKey2, harTilgang = false)
             }
 
             it("remove skjermet innbygger when veileder is missing access") {
@@ -255,7 +251,7 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 2) { pdlClient.getPerson(callId, personident) }
                 coVerify(exactly = 1) { pdlClient.getPerson(callId, personidentSkjermet) }
                 verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
-                verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKeySkjermet, harTilgang = false)
             }
 
             it("remove innbyggere when veileder is missing correct access") {
@@ -329,9 +325,9 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 1) { pdlClient.getPerson(any(), personidentSkjermet) }
                 coVerify(exactly = 2) { pdlClient.getPerson(callId, personidentGradert) }
                 verifyCacheSet(exactly = 1, key = cacheKeyAccess, harTilgang = true)
-                verifyCacheSet(exactly = 1, key = cacheKeySkjermet, harTilgang = false)
-                verifyCacheSet(exactly = 1, key = cacheKeyOtherEnhet, harTilgang = false)
-                verifyCacheSet(exactly = 1, key = cacheKeyGradert, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKeySkjermet, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKeyOtherEnhet, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKeyGradert, harTilgang = false)
             }
 
             it("Remove invalid personidenter") {
@@ -406,7 +402,7 @@ class TilgangServiceSpek : Spek({
                 coVerify(exactly = 1) { norgClient.getNAVKontorForGT(callId, GeografiskTilknytning(GeografiskTilknytningType.BYDEL, UserConstants.ENHET_VEILEDER_GT)) }
                 coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(callId, validPersonident, validToken) }
                 coVerify(exactly = 1) { pdlClient.getPerson(callId, validPersonident) }
-                verifyCacheSet(exactly = 1, key = cacheKeyValidPersonident, harTilgang = false)
+                verifyCacheSet(exactly = 0, key = cacheKeyValidPersonident, harTilgang = false)
             }
         }
 

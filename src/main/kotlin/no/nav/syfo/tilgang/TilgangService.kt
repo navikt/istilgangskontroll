@@ -50,11 +50,13 @@ class TilgangService(
                 callId = callId,
             )
         )
-        valkeyStore.setObject(
-            key = cacheKey,
-            value = tilgang,
-            expireSeconds = TWELVE_HOURS_IN_SECS
-        )
+        if (tilgang.erGodkjent) {
+            valkeyStore.setObject(
+                key = cacheKey,
+                value = tilgang,
+                expireSeconds = TWELVE_HOURS_IN_SECS
+            )
+        }
         return tilgang
     }
 
@@ -70,11 +72,13 @@ class TilgangService(
         val tilgang = Tilgang(
             erGodkjent = enheter.map { it.enhetId }.contains(enhet.id)
         )
-        valkeyStore.setObject(
-            key = cacheKey,
-            value = tilgang,
-            expireSeconds = TWELVE_HOURS_IN_SECS
-        )
+        if (tilgang.erGodkjent) {
+            valkeyStore.setObject(
+                key = cacheKey,
+                value = tilgang,
+                expireSeconds = TWELVE_HOURS_IN_SECS
+            )
+        }
         return tilgang
     }
 
@@ -291,12 +295,13 @@ class TilgangService(
         }
         val tilgang = Tilgang(erGodkjent = erGodkjent)
 
-        valkeyStore.setObject(
-            key = cacheKey,
-            value = tilgang,
-            expireSeconds = TWELVE_HOURS_IN_SECS
-        )
-
+        if (tilgang.erGodkjent) {
+            valkeyStore.setObject(
+                key = cacheKey,
+                value = tilgang,
+                expireSeconds = TWELVE_HOURS_IN_SECS
+            )
+        }
         return tilgang
     }
 

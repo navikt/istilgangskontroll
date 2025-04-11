@@ -110,7 +110,7 @@ class TilgangServicePersonSpek : Spek({
                             callId = callId,
                         )
                     }
-                    verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                    verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
                 }
 
                 it("Return access if veileder has SYFO access") {
@@ -236,7 +236,7 @@ class TilgangServicePersonSpek : Spek({
                             any(),
                         )
                     }
-                    verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                    verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
                 }
 
                 it("Return access if veileder doesn't have national access but has access to innbyggers enhet") {
@@ -518,7 +518,7 @@ class TilgangServicePersonSpek : Spek({
                             callId = callId
                         )
                     }
-                    verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                    verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
                 }
 
                 it("return godkjent access if person is skjermet and veileder has correct AdRolle") {
@@ -606,7 +606,7 @@ class TilgangServicePersonSpek : Spek({
                             callId = callId
                         )
                     }
-                    verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                    verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
                 }
 
                 it("Return no access if person is kode7 and veileder doesn't have correct AdRolle") {
@@ -641,7 +641,7 @@ class TilgangServicePersonSpek : Spek({
                             callId = callId
                         )
                     }
-                    verifyCacheSet(exactly = 1, key = cacheKey, harTilgang = false)
+                    verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
                 }
 
                 it("return godkjent access if person is kode6 and veileder has correct AdRolle") {

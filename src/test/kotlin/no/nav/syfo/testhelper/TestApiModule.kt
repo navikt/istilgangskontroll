@@ -48,6 +48,7 @@ fun Application.testApiModule(
         relevantSyfoRoller = adRoller.toList(),
         httpClient = mockHttpClient,
         valkeyStore = valkeyStore,
+        adRoller = adRoller,
     )
 
     val axsysClient = AxsysClient(

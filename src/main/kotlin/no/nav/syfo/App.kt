@@ -57,6 +57,7 @@ fun main() {
         baseUrl = environment.clients.graphApiUrl,
         relevantSyfoRoller = adRoller.toList(),
         valkeyStore = valkeyStore,
+        adRoller = adRoller,
     )
 
     val axsysClient = AxsysClient(
