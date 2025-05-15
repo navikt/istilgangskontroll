@@ -32,39 +32,30 @@ class BehandlendeEnhetClient(
         token = token,
     )
 
-    suspend fun getEnhetWithSystemToken(
-        callId: String,
-        personident: Personident,
-    ) = getEnhet(
-        callId = callId,
-        personident = personident,
-        token = null,
-    )
-
     private suspend fun getEnhet(
         callId: String,
         personident: Personident,
         token: Token?,
     ): BehandlendeEnhetDTO {
-        val cacheKey = "$BEHANDLENDEENHET_CACHE_KEY-$personident"
-        val cachedEnhet = getCachedBehandlendeEnhet(cacheKey)
+//        val cacheKey = "$BEHANDLENDEENHET_CACHE_KEY-$personident"
+//        val cachedEnhet = getCachedBehandlendeEnhet(cacheKey)
 
-        return if (cachedEnhet != null) {
-            cachedEnhet
-        } else {
-            val behandlendeEnhet = getEnhetFromSyfobehandlendeenhet(
-                callId = callId,
-                personident = personident,
-                token = token,
-            )
+//        return if (cachedEnhet != null) {
+//            cachedEnhet
+//        } else {
+        val behandlendeEnhet = getEnhetFromSyfobehandlendeenhet(
+            callId = callId,
+            personident = personident,
+            token = token,
+        )
 
-            valkeyStore.setObject(
-                key = cacheKey,
-                value = behandlendeEnhet,
-                expireSeconds = ONE_HOUR_IN_SECS
-            )
-            behandlendeEnhet
-        }
+//        valkeyStore.setObject(
+//            key = cacheKey,
+//            value = behandlendeEnhet,
+//            expireSeconds = ONE_HOUR_IN_SECS
+//        )
+        return behandlendeEnhet
+//        }
     }
 
     private fun getCachedBehandlendeEnhet(cacheKey: String): BehandlendeEnhetDTO? {

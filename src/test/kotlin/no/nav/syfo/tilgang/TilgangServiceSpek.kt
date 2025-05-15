@@ -9,6 +9,7 @@ import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
+import no.nav.syfo.client.behandlendeenhet.EnhetDTO
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.*
@@ -257,13 +258,12 @@ class TilgangServiceSpek : Spek({
             it("remove innbyggere when veileder is missing correct access") {
                 val callId = "123"
                 val appName = "anyApp"
-                val behandlendeEnhet = BehandlendeEnhetDTO(
-                    enhetId = UserConstants.ENHET_VEILEDER,
-                    navn = "enhet",
-                )
                 val otherBehandlendeEnhet = BehandlendeEnhetDTO(
-                    enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
-                    navn = "enhet",
+                    geografiskEnhet = EnhetDTO(
+                        enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
+                        navn = "enhet",
+                    ),
+                    oppfolgingsenhetDTO = null,
                 )
                 val veiledersEnhet = AxsysEnhet(
                     enhetId = UserConstants.ENHET_VEILEDER,
