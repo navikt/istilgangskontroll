@@ -9,6 +9,7 @@ import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
+import no.nav.syfo.client.behandlendeenhet.EnhetDTO
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.norg.domain.NorgEnhet
@@ -299,7 +300,13 @@ class TilgangServicePersonSpek : Spek({
                 }
 
                 it("Return access if veileder doesn't have national access but has access to innbyggers enhet, uses syfobehandlendeenhet when UTLAND GT") {
-                    val innbyggerEnhet = BehandlendeEnhetDTO(enhetId = UserConstants.ENHET_VEILEDER, navn = "enhet")
+                    val innbyggerEnhet = BehandlendeEnhetDTO(
+                        geografiskEnhet = EnhetDTO(
+                            enhetId = UserConstants.ENHET_VEILEDER,
+                            navn = "enhet",
+                        ),
+                        oppfolgingsenhetDTO = null,
+                    )
                     val veiledersEnhet = AxsysEnhet(
                         enhetId = UserConstants.ENHET_VEILEDER,
                         navn = "enhet",

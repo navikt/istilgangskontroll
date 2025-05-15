@@ -165,11 +165,12 @@ class TilgangService(
         token: Token,
     ): String {
         return if (geografiskTilknytning.isUtlandOrWithoutGT()) {
-            behandlendeEnhetClient.getEnhetWithOboToken(
+            val behandlendeEnhetDTO = behandlendeEnhetClient.getEnhetWithOboToken(
                 callId = callId,
                 personident = personident,
                 token = token,
-            ).enhetId
+            )
+            behandlendeEnhetDTO.oppfolgingsenhetDTO?.enhet?.enhetId ?: behandlendeEnhetDTO.geografiskEnhet.enhetId
         } else {
             norgClient.getNAVKontorForGT(
                 callId = callId,
