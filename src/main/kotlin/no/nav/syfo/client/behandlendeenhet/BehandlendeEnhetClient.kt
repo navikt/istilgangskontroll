@@ -37,8 +37,8 @@ class BehandlendeEnhetClient(
         personident: Personident,
         token: Token?,
     ): BehandlendeEnhetDTO {
-        val cacheKey = "$BEHANDLENDEENHET_CACHE_KEY-$personident"
-        val cachedEnhet = getCachedBehandlendeEnhet(cacheKey)
+//        val cacheKey = "$BEHANDLENDEENHET_CACHE_KEY-$personident"
+//        val cachedEnhet = getCachedBehandlendeEnhet(cacheKey)
 
 //        return if (cachedEnhet != null) {
 //            cachedEnhet
@@ -49,11 +49,11 @@ class BehandlendeEnhetClient(
             token = token,
         )
 
-        valkeyStore.setObject(
-            key = cacheKey,
-            value = behandlendeEnhet,
-            expireSeconds = ONE_HOUR_IN_SECS
-        )
+//        valkeyStore.setObject(
+//            key = cacheKey,
+//            value = behandlendeEnhet,
+//            expireSeconds = ONE_HOUR_IN_SECS
+//        )
         return behandlendeEnhet
 //        }
     }
