@@ -110,6 +110,8 @@ spec:
           namespace: nom
         - application: norg2
           namespace: org
+        - application: populasjonstilgangskontroll
+          namespace: tilgangsmaskin
   azure:
     application:
       allowAllUsers: true
@@ -125,6 +127,9 @@ spec:
     autoInstrumentation:
       enabled: true
       runtime: java
+    logging:
+      destinations:
+        - id: elastic
   env:
     - name: AXSYS_URL
       value: "https://axsys.prod-fss-pub.nais.io"
@@ -138,6 +143,10 @@ spec:
       value: "prod-fss.pdl.pdl-pip-api"
     - name: PDL_URL
       value: "https://pdl-pip-api.prod-fss-pub.nais.io"
+    - name: TILGANGSMASKIN_CLIENT_ID
+      value: "prod-gcp.tilgangsmaskin.populasjonstilgangskontroll"
+    - name: TILGANGSMASKIN_URL
+      value: "http://populasjonstilgangskontroll.tilgangsmaskin"
     - name: SYFOBEHANDLENDEENHET_CLIENT_ID
       value: "prod-gcp.teamsykefravr.syfobehandlendeenhet"
     - name: SYFOBEHANDLENDEENHET_URL

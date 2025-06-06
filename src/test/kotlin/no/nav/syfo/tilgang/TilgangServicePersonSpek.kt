@@ -15,6 +15,7 @@ import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
+import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.testhelper.*
 import org.amshove.kluent.shouldBeEqualTo
@@ -29,6 +30,7 @@ class TilgangServicePersonSpek : Spek({
     val behandlendeEnhetClient = mockk<BehandlendeEnhetClient>(relaxed = true)
     val norgClient = mockk<NorgClient>(relaxed = true)
     val valkeyStore = mockk<ValkeyStore>(relaxed = true)
+    val tilgangsmaskin = mockk<TilgangsmaskinClient>(relaxed = true)
     val externalMockEnvironment = ExternalMockEnvironment()
     val adRoller = AdRoller(externalMockEnvironment.environment)
 
@@ -42,6 +44,7 @@ class TilgangServicePersonSpek : Spek({
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
         dispatcher = Dispatchers.IO.limitedParallelism(20),
+        tilgangsmaskin = tilgangsmaskin,
     )
 
     val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L

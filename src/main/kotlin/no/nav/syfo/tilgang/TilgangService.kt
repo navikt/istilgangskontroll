@@ -1,9 +1,12 @@
 package no.nav.syfo.tilgang
 
+import io.micrometer.core.instrument.Counter
 import kotlinx.coroutines.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.application.metric.METRICS_NS
+import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.audit.*
 import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
@@ -11,6 +14,7 @@ import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
+import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.domain.removeInvalidPersonidenter
 import org.slf4j.LoggerFactory
@@ -25,7 +29,9 @@ class TilgangService(
     val adRoller: AdRoller,
     val valkeyStore: ValkeyStore,
     val dispatcher: CoroutineDispatcher,
+    val tilgangsmaskin: TilgangsmaskinClient,
 ) {
+    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
         return graphApiClient.hasAccess(
@@ -250,19 +256,33 @@ class TilgangService(
         )
     }
 
-    suspend fun checkTilgangToPerson(
+    fun checkTilgangToPerson(
         token: Token,
         personident: Personident,
         callId: String,
         appName: String,
         doAuditLog: Boolean = true,
     ): Deferred<Tilgang> =
-        CoroutineScope(dispatcher).async {
+        coroutineScope.async {
             val veilederIdent = token.getNAVIdent()
             val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
             val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
             val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+            if (cachedTilgang == null) {
+                coroutineScope.launch {
+                    val hasTilgang = tilgangsmaskin.hasTilgang(token, personident, callId)
+                    if (!hasTilgang && tilgang.erGodkjent) {
+                        COUNT_TILGANGSMASKIN_DIFF.increment()
+                        log.error("Tilgangsmaskin gir annet resultat (ikke ok) enn istilgangskontroll (ok): $callId")
+                    } else if (hasTilgang && !tilgang.erGodkjent) {
+                        COUNT_TILGANGSMASKIN_DIFF.increment()
+                        log.error("Tilgangsmaskin gir annet resultat (ok) enn istilgangskontroll (ikke ok): $callId")
+                    } else {
+                        COUNT_TILGANGSMASKIN_OK.increment()
+                    }
+                }
+            }
             if (doAuditLog) {
                 auditLog(
                     CEF(
@@ -361,5 +381,16 @@ class TilgangService(
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"
         const val TILGANG_TIL_PERSON_PREFIX = "tilgang-til-person-"
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
+
+        const val TILGANGSMASKIN_BASE = "${METRICS_NS}_tilgangsmaskin"
+        const val TILGANGSMASKIN_OK = "${TILGANGSMASKIN_BASE}_ok"
+        const val TILGANGSMASKIN_DIFF = "${TILGANGSMASKIN_BASE}_diff"
+
+        val COUNT_TILGANGSMASKIN_OK: Counter = Counter.builder(TILGANGSMASKIN_OK)
+            .description("Counts the number of successful calls to tilgangsmaskin where access matches")
+            .register(METRICS_REGISTRY)
+        val COUNT_TILGANGSMASKIN_DIFF: Counter = Counter.builder(TILGANGSMASKIN_DIFF)
+            .description("Counts the number of successful calls to tilgangsmaskin where access does not match")
+            .register(METRICS_REGISTRY)
     }
 }

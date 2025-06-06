@@ -45,6 +45,10 @@ fun testEnvironment() = Environment(
             baseUrl = "pdlBaseurl",
             clientId = "pdlClientId",
         ),
+        tilgangsmaskin = ClientEnvironment(
+            baseUrl = "tilgangsmaskinBaseurl",
+            clientId = "tilgangsmaskinClientId",
+        ),
         behandlendeEnhet = ClientEnvironment(
             baseUrl = "behandlendeEnhetBaseurl",
             clientId = "behandlendeEnhetClientId",

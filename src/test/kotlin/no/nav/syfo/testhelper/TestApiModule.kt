@@ -10,6 +10,7 @@ import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
+import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.tilgang.AdRoller
 import redis.clients.jedis.DefaultJedisClientConfig
@@ -75,6 +76,13 @@ fun Application.testApiModule(
         httpClient = mockHttpClient,
     )
 
+    val tilgangsmaskinClient = TilgangsmaskinClient(
+        azureAdClient = azureAdClient,
+        baseUrl = externalMockEnvironment.environment.clients.tilgangsmaskin.baseUrl,
+        clientId = externalMockEnvironment.environment.clients.tilgangsmaskin.clientId,
+        httpClient = mockHttpClient,
+    )
+
     val behandlendeEnhetClient = BehandlendeEnhetClient(
         azureAdClient = azureAdClient,
         baseUrl = externalMockEnvironment.environment.clients.behandlendeEnhet.baseUrl,
@@ -101,5 +109,6 @@ fun Application.testApiModule(
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
+        tilgangsmaskin = tilgangsmaskinClient,
     )
 }

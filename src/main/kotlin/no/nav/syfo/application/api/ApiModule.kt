@@ -15,6 +15,7 @@ import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
+import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.client.wellknown.WellKnown
 import no.nav.syfo.tilgang.*
 
@@ -30,6 +31,7 @@ fun Application.apiModule(
     pdlClient: PdlClient,
     behandlendeEnhetClient: BehandlendeEnhetClient,
     norgClient: NorgClient,
+    tilgangsmaskin: TilgangsmaskinClient,
 ) {
     installMetrics()
     installCallId()
@@ -55,6 +57,7 @@ fun Application.apiModule(
         valkeyStore = valkeyStore,
         norgClient = norgClient,
         dispatcher = Dispatchers.IO.limitedParallelism(20),
+        tilgangsmaskin = tilgangsmaskin,
     )
 
     routing {

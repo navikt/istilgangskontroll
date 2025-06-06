@@ -16,6 +16,7 @@ import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
+import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.client.wellknown.getWellKnown
 import no.nav.syfo.tilgang.AdRoller
 import org.slf4j.LoggerFactory
@@ -93,6 +94,12 @@ fun main() {
         valkeyStore = valkeyStore,
     )
 
+    val tilgangsmaskin = TilgangsmaskinClient(
+        azureAdClient = azureAdClient,
+        baseUrl = environment.clients.tilgangsmaskin.baseUrl,
+        clientId = environment.clients.tilgangsmaskin.clientId,
+    )
+
     val wellKnownInternalAzureAD = getWellKnown(
         wellKnownUrl = environment.azure.appWellKnownUrl,
     )
@@ -126,6 +133,7 @@ fun main() {
                 pdlClient = pdlClient,
                 behandlendeEnhetClient = behandlendeEnhetClient,
                 norgClient = norgClient,
+                tilgangsmaskin = tilgangsmaskin,
             )
             monitor.subscribe(ApplicationStarted) {
                 applicationState.ready = true
