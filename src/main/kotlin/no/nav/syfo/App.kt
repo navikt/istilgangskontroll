@@ -117,7 +117,7 @@ fun main() {
                 port = applicationPort
             }
             connectionGroupSize = 8
-            workerGroupSize = 8
+            workerGroupSize = 16
             callGroupSize = 16
         },
         module = {
