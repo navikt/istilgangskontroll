@@ -144,6 +144,7 @@ fun main() {
 
     Runtime.getRuntime().addShutdownHook(
         Thread {
+            applicationState.ready = false
             server.stop(10, 10, TimeUnit.SECONDS)
         }
     )
