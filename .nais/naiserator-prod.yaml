@@ -8,16 +8,24 @@ metadata:
 spec:
   image: {{ image }}
   port: 8080
+  startup:
+    path: /internal/is_ready
+    initialDelay: 10
+    periodSeconds: 2
+    timeout: 5
+    failureThreshold: 5
   liveness:
     path: /internal/is_alive
-    initialDelay: 30
+    initialDelay: 10
     timeout: 1
     periodSeconds: 10
     failureThreshold: 5
   readiness:
     path: /internal/is_ready
-    initialDelay: 30
+    initialDelay: 10
+    periodSeconds: 2
     timeout: 1
+    failureThreshold: 1
   resources:
     limits:
       memory: 1024Mi
