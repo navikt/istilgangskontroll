@@ -45,19 +45,17 @@ class GraphApiClient(
         val navIdent = token.getNAVIdent()
         val cacheKey = "$GRAPHAPI_CACHE_KEY-$navIdent"
         val cachedRoleList = getCachedRoleList(cacheKey)
-        return if (cachedRoleList != null) {
-            cachedRoleList
-        } else {
-            getRoleListFromGraphApi(token, callId).also {
-                if (isRoleInUserGroupList(it, adRoller.SYFO)) {
-                    valkeyStore.setObject(
-                        key = cacheKey,
-                        value = it,
-                        expireSeconds = TWELVE_HOURS_IN_SECS,
-                    )
-                }
+        val roller = getRoleListFromGraphApi(token, callId).also {
+            if (isRoleInUserGroupList(it, adRoller.SYFO)) {
+                valkeyStore.setObject(
+                    key = cacheKey,
+                    value = it,
+                    expireSeconds = TWELVE_HOURS_IN_SECS,
+                )
             }
         }
+        log.info(roller.toString())
+        return roller
     }
 
     private suspend fun getRoleListFromGraphApi(token: Token, callId: String): List<GraphApiGroup> {
