@@ -81,9 +81,8 @@ NB! Flushing av cache (særlig `istilgangskontroll` sin) kan skape tregheter/tim
 
 ##### Test Libraries:
 
-* Kluent
 * Mockk
-* Spek
+* JUnit
 
 #### Requirements
 
