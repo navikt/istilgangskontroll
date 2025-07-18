@@ -29,16 +29,16 @@ class AzureAdClientTest {
         httpClient = mockHttpClient,
     )
 
-    @AfterEach
-    fun afterEach() {
-        clearMocks(valkeyStore)
-    }
-
     private val validToken = generateJWT(
         audience = externalMockEnvironment.environment.azure.appClientId,
         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
         navIdent = UserConstants.VEILEDER_IDENT,
     )
+
+    @AfterEach
+    fun afterEach() {
+        clearMocks(valkeyStore)
+    }
 
     @Nested
     @DisplayName("Get obo-token")

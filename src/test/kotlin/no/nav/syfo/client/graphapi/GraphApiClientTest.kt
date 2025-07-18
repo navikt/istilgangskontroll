@@ -14,8 +14,6 @@ import no.nav.syfo.testhelper.UserConstants
 import no.nav.syfo.testhelper.generateJWT
 import no.nav.syfo.tilgang.AdRoller
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.test.assertFalse
@@ -48,74 +46,69 @@ class GraphApiClientTest {
         clearMocks(valkeyStore)
     }
 
-    @Nested
-    @DisplayName("SYFO access")
-    inner class SyfoAccess {
+    @Test
+    fun `Returns syfo access and stores in cache`() {
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT}"
+        every {
+            valkeyStore.getListObject<GraphApiGroup>(cacheKey)
+        } returns null
+        every {
+            valkeyStore.get(any<String>())
+        } returns null
 
-        @Test
-        fun `Returns syfo access and stores in cache`() {
-            val validToken = generateJWT(
-                audience = externalMockEnvironment.environment.azure.appClientId,
-                issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                navIdent = UserConstants.VEILEDER_IDENT,
+        val hasAccess = runBlocking {
+            graphApiClient.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = Token(validToken),
+                callId = UUID.randomUUID().toString(),
             )
-            val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT}"
-            every {
-                valkeyStore.getListObject<GraphApiGroup>(cacheKey)
-            } returns null
-            every {
-                valkeyStore.get(any<String>())
-            } returns null
-
-            val hasAccess = runBlocking {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.SYFO,
-                    token = Token(validToken),
-                    callId = UUID.randomUUID().toString(),
-                )
-            }
-            assertTrue(hasAccess)
-            verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
-            verify(exactly = 1) {
-                valkeyStore.setObject<List<GraphApiGroup>>(
-                    key = eq(cacheKey),
-                    value = any(),
-                    expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
-                )
-            }
         }
-
-        @Test
-        fun `Denies syfo access and does not store in cache`() {
-            val validToken = generateJWT(
-                audience = externalMockEnvironment.environment.azure.appClientId,
-                issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
+        assertTrue(hasAccess)
+        verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
+        verify(exactly = 1) {
+            valkeyStore.setObject<List<GraphApiGroup>>(
+                key = eq(cacheKey),
+                value = any(),
+                expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
             )
-            val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS}"
-            every {
-                valkeyStore.getListObject<GraphApiGroup>(cacheKey)
-            } returns null
-            every {
-                valkeyStore.get(any<String>())
-            } returns null
+        }
+    }
 
-            val hasAccess = runBlocking {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.SYFO,
-                    token = Token(validToken),
-                    callId = UUID.randomUUID().toString(),
-                )
-            }
-            assertFalse(hasAccess)
-            verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
-            verify(exactly = 0) {
-                valkeyStore.setObject<List<GraphApiGroup>>(
-                    key = eq(cacheKey),
-                    value = any(),
-                    expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
-                )
-            }
+    @Test
+    fun `Denies syfo access and does not store in cache`() {
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
+        )
+        val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS}"
+        every {
+            valkeyStore.getListObject<GraphApiGroup>(cacheKey)
+        } returns null
+        every {
+            valkeyStore.get(any<String>())
+        } returns null
+
+        val hasAccess = runBlocking {
+            graphApiClient.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = Token(validToken),
+                callId = UUID.randomUUID().toString(),
+            )
+        }
+        assertFalse(hasAccess)
+        verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
+        verify(exactly = 0) {
+            valkeyStore.setObject<List<GraphApiGroup>>(
+                key = eq(cacheKey),
+                value = any(),
+                expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
+            )
         }
     }
 }
