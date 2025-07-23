@@ -1,6 +1,7 @@
 package no.nav.syfo.testhelper
 
 import io.ktor.server.application.*
+import kotlinx.coroutines.Dispatchers
 import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.axsys.AxsysClient
@@ -50,6 +51,7 @@ fun Application.testApiModule(
         httpClient = mockHttpClient,
         valkeyStore = valkeyStore,
         adRoller = adRoller,
+        dispatcher = Dispatchers.IO.limitedParallelism(20),
     )
 
     val axsysClient = AxsysClient(

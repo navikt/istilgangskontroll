@@ -1,21 +1,32 @@
 package no.nav.syfo.client.graphapi
 
+import com.microsoft.graph.core.tasks.PageIterator
+import com.microsoft.graph.models.DirectoryObjectCollectionResponse
+import com.microsoft.graph.models.Group
+import com.microsoft.graph.serviceclient.GraphServiceClient
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
+import no.nav.syfo.client.azuread.AzureAdToken
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.tilgang.AdRolle
 import no.nav.syfo.tilgang.AdRoller
 import no.nav.syfo.util.bearerHeader
 import no.nav.syfo.util.callIdArgument
+import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.LoggerFactory
+import java.util.*
 
 class GraphApiClient(
     private val azureAdClient: AzureAdClient,
@@ -24,7 +35,10 @@ class GraphApiClient(
     private val httpClient: HttpClient = httpClientProxy(),
     private val valkeyStore: ValkeyStore,
     private val adRoller: AdRoller,
+    val dispatcher: CoroutineDispatcher,
 ) {
+    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
+
     suspend fun hasAccess(
         adRolle: AdRolle,
         token: Token,
@@ -38,7 +52,24 @@ class GraphApiClient(
         return isRoleInUserGroupList(
             groupList = groupList,
             adRolle = adRolle,
-        )
+        ).also { roleInUserGroupList ->
+            coroutineScope.launch {
+                val groupList2 = getGrupperForVeileder(
+                    token = token,
+                    callId = callId,
+                )
+                val roleInUserGroupList2 = isRoleInUserGroupList(
+                    groupList = groupList2,
+                    adRolle = adRolle,
+                )
+
+                if (roleInUserGroupList == roleInUserGroupList2) {
+                    log.debug("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er like.")
+                } else {
+                    log.warn("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er ulike.")
+                }
+            }
+        }
     }
 
     private suspend fun getRoleList(token: Token, callId: String): List<GraphApiGroup> {
@@ -103,11 +134,108 @@ class GraphApiClient(
         return groupList.map { it.id }.contains(adRolle.id)
     }
 
+    suspend fun getGrupperForVeileder(token: Token, callId: String): List<GraphApiGroup> {
+        val veilederIdent = token.getNAVIdent()
+        val cacheKey = cacheKeyVeilederGrupper(veilederIdent)
+        val cachedGroups: List<GraphApiGroup>? = valkeyStore.getListObject(cacheKey)
+
+        val grupper = if (cachedGroups != null) {
+            COUNT_CALL_GRAPHAPI_GRUPPE_CACHE_HIT.increment()
+            cachedGroups
+        } else {
+            COUNT_CALL_GRAPHAPI_GRUPPE_CACHE_MISS.increment()
+            getGroupsForVeileder(token, callId)
+        }
+
+        return grupper.also {
+            valkeyStore.setObject(
+                key = cacheKey,
+                value = it,
+                // TODO: Midlertidig for testing
+//                expireSeconds = TWELVE_HOURS_IN_SECS,
+                expireSeconds = 60 * 5,
+            )
+        }
+    }
+
+    suspend fun getGroupsForVeileder(token: Token, callId: String): List<GraphApiGroup> {
+        try {
+            return getGroupsForVeilederRequest(token, callId)
+                .map { it.graphApiGroup() }
+                .apply { COUNT_CALL_GRAPHAPI_GRUPPE_SUCCESS.increment() }
+        } catch (e: Exception) {
+            COUNT_CALL_GRAPHAPI_GRUPPE_FAIL.increment()
+            // TODO: Håndtere ApiException
+//            throw e.toRestException("Error while getting groups for veileder")
+            log.error("Error while getting groups for veileder", e)
+            return emptyList()
+        }
+    }
+
+    private fun Group.graphApiGroup(): GraphApiGroup {
+        return GraphApiGroup(
+            id = this.id,
+            displayName = this.displayName,
+            mailNickname = null,
+        )
+    }
+
+    /**
+     * @throws com.microsoft.kiota.ApiException
+     * @throws Exception
+     */
+    @VisibleForTesting
+    internal suspend fun getGroupsForVeilederRequest(token: Token, callId: String): List<Group> {
+        val oboToken = azureAdClient.getOnBehalfOfTokenForGraphApi(
+            scopeClientId = baseUrl,
+            token = token,
+            callId = callId,
+        )
+            ?: throw RuntimeException("Failed to request list of groups for veileder in Graph API: Failed to get system token from AzureAD")
+
+        val graphServiceClient = createGraphServiceClient(azureAdToken = oboToken)
+        val directoryObjectCollectionResponse = graphServiceClient.me().memberOf().get { requestConfiguration ->
+            requestConfiguration.headers.add("ConsistencyLevel", "eventual")
+            requestConfiguration.queryParameters.select =
+                arrayOf(
+                    "id",
+                    "displayName",
+                )
+            requestConfiguration.queryParameters.count = true
+        }
+
+        val groups = mutableListOf<Group>()
+        PageIterator.Builder<Group, DirectoryObjectCollectionResponse>()
+            .client(graphServiceClient)
+            .collectionPage(Objects.requireNonNull(directoryObjectCollectionResponse))
+            .collectionPageFactory(DirectoryObjectCollectionResponse::createFromDiscriminatorValue)
+            .processPageItemCallback { group -> groups.add(group) }
+            .build()
+            .iterate()
+
+        return groups
+    }
+
+    fun createGraphServiceClient(azureAdToken: AzureAdToken): GraphServiceClient {
+        return GraphServiceClient(azureAdToken.toTokenCredential(), scope(baseUrl))
+    }
+
+    // TODO: Erstatte bruk andre steder?
+    private fun scope(scopeClientId: String): String {
+        return if (scopeClientId == baseUrl) {
+            "$scopeClientId/.default"
+        } else {
+            "api://$scopeClientId/.default"
+        }
+    }
+
     companion object {
         const val GRAPHAPI_CACHE_KEY = "graphapi"
+        const val GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX = "graphapiVeilederGrupper-"
         const val GRAPHAPI_USER_GROUPS_PATH = "/me/memberOf"
         const val FILTER_QUERY = "\$filter="
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
+        fun cacheKeyVeilederGrupper(veilederIdent: String) = "$GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
     }
 }

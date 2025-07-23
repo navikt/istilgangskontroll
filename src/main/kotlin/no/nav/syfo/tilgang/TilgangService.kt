@@ -78,6 +78,19 @@ class TilgangService(
         val tilgang = Tilgang(
             erGodkjent = enheter.map { it.enhetId }.contains(enhet.id)
         )
+
+        coroutineScope.launch {
+            val enheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId)
+            val tilgang2 = Tilgang(
+                erGodkjent = enheter2.map { it.getEnhetNr() }.contains(enhet.id)
+            )
+            if (tilgang.erGodkjent == tilgang2.erGodkjent) {
+                log.debug("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er like.")
+            } else {
+                log.warn("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er ulike.")
+            }
+        }
+
         if (tilgang.erGodkjent) {
             valkeyStore.setObject(
                 key = cacheKey,
@@ -149,6 +162,17 @@ class TilgangService(
 
         val veiledersEnheter = axsysClient.getEnheter(token = token, callId = callId).map { Enhet(it.enhetId) }
         val hasAccessToLokalEnhet = veiledersEnheter.map { it.id }.contains(behandlendeEnhet.id)
+
+        coroutineScope.launch {
+            val veiledersEnheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId).map { Enhet(it.getEnhetNr()) }
+            val hasAccessToLokalEnhet2 = veiledersEnheter2.map { it.id }.contains(behandlendeEnhet.id)
+
+            if (hasAccessToLokalEnhet == hasAccessToLokalEnhet2) {
+                log.debug("Sammenligning (isGeografiskAccessGodkjent). Gammel: $hasAccessToLokalEnhet og ny: $hasAccessToLokalEnhet2 er like.")
+            } else {
+                log.warn("Sammenligning (isGeografiskAccessGodkjent). Gammel: $hasAccessToLokalEnhet og ny: $hasAccessToLokalEnhet2 er ulike.")
+            }
+        }
 
         if (hasAccessToLokalEnhet) {
             return true
