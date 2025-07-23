@@ -64,7 +64,7 @@ class GraphApiClient(
                 )
 
                 if (roleInUserGroupList == roleInUserGroupList2) {
-                    log.debug("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er like.")
+                    log.info("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er like.")
                 } else {
                     log.warn("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er ulike.")
                 }
@@ -217,16 +217,8 @@ class GraphApiClient(
     }
 
     fun createGraphServiceClient(azureAdToken: AzureAdToken): GraphServiceClient {
-        return GraphServiceClient(azureAdToken.toTokenCredential(), scope(baseUrl))
-    }
-
-    // TODO: Erstatte bruk andre steder?
-    private fun scope(scopeClientId: String): String {
-        return if (scopeClientId == baseUrl) {
-            "$scopeClientId/.default"
-        } else {
-            "api://$scopeClientId/.default"
-        }
+        val scopes = "$baseUrl/.default"
+        return GraphServiceClient(azureAdToken.toTokenCredential(), scopes)
     }
 
     companion object {

@@ -85,7 +85,7 @@ class TilgangService(
                 erGodkjent = enheter2.map { it.getEnhetNr() }.contains(enhet.id)
             )
             if (tilgang.erGodkjent == tilgang2.erGodkjent) {
-                log.debug("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er like.")
+                log.info("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er like.")
             } else {
                 log.warn("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er ulike.")
             }
@@ -168,7 +168,7 @@ class TilgangService(
             val hasAccessToLokalEnhet2 = veiledersEnheter2.map { it.id }.contains(behandlendeEnhet.id)
 
             if (hasAccessToLokalEnhet == hasAccessToLokalEnhet2) {
-                log.debug("Sammenligning (isGeografiskAccessGodkjent). Gammel: $hasAccessToLokalEnhet og ny: $hasAccessToLokalEnhet2 er like.")
+                log.info("Sammenligning (isGeografiskAccessGodkjent). Gammel: $hasAccessToLokalEnhet og ny: $hasAccessToLokalEnhet2 er like.")
             } else {
                 log.warn("Sammenligning (isGeografiskAccessGodkjent). Gammel: $hasAccessToLokalEnhet og ny: $hasAccessToLokalEnhet2 er ulike.")
             }
