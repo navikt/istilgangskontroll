@@ -4,6 +4,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
@@ -39,6 +40,7 @@ class GraphApiClientTest {
         httpClient = mockHttpClient,
         valkeyStore = valkeyStore,
         adRoller = adRoller,
+        dispatcher = Dispatchers.IO.limitedParallelism(20),
     )
 
     @BeforeEach
