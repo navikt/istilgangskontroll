@@ -82,7 +82,7 @@ class TilgangService(
         coroutineScope.launch {
             val enheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId)
             val tilgang2 = Tilgang(
-                erGodkjent = enheter2.map { it.getEnhetNr() }.contains(enhet.id)
+                erGodkjent = enheter2.mapNotNull { it.getEnhetNr() }.contains(enhet.id)
             )
             if (tilgang.erGodkjent == tilgang2.erGodkjent) {
                 log.info("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er like.")
@@ -164,7 +164,9 @@ class TilgangService(
         val hasAccessToLokalEnhet = veiledersEnheter.map { it.id }.contains(behandlendeEnhet.id)
 
         coroutineScope.launch {
-            val veiledersEnheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId).map { Enhet(it.getEnhetNr()) }
+            val veiledersEnheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId)
+                .mapNotNull { it.getEnhetNr() }
+                .map { Enhet(it) }
             val hasAccessToLokalEnhet2 = veiledersEnheter2.map { it.id }.contains(behandlendeEnhet.id)
 
             if (hasAccessToLokalEnhet == hasAccessToLokalEnhet2) {

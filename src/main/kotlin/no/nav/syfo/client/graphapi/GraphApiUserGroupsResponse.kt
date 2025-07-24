@@ -5,10 +5,10 @@ data class GraphApiGroup(
     val displayName: String?,
     val mailNickname: String?,
 ) {
-    fun getEnhetNr(): String = displayName?.let { regex.find(it) }?.let {
+    fun getEnhetNr(): String? = displayName?.let { regex.find(it) }?.let {
         val (enhetNr) = it.destructured
         enhetNr
-    } ?: ""
+    }
 
     companion object {
         const val ENHETSNAVN_PREFIX = "0000-GA-ENHET_"

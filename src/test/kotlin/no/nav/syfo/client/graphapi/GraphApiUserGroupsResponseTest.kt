@@ -1,6 +1,6 @@
 package no.nav.syfo.client.graphapi
 
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullAndEmptySource
@@ -32,6 +32,6 @@ class GraphApiUserGroupsResponseTest {
     )
     fun `DisplayName som ikke inneholder enhetNr`(displayName: String?) {
         val group = GraphApiGroup(id = "uuid", displayName = displayName, mailNickname = null)
-        assertTrue(group.getEnhetNr().isEmpty())
+        assertNull(group.getEnhetNr())
     }
 }
