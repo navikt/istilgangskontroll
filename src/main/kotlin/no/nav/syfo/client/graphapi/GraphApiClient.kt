@@ -4,6 +4,7 @@ import com.microsoft.graph.core.tasks.PageIterator
 import com.microsoft.graph.models.DirectoryObjectCollectionResponse
 import com.microsoft.graph.models.Group
 import com.microsoft.graph.serviceclient.GraphServiceClient
+import com.microsoft.kiota.ApiException
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -159,16 +160,18 @@ class GraphApiClient(
     }
 
     suspend fun getGroupsForVeileder(token: Token, callId: String): List<GraphApiGroup> {
-        try {
-            return getGroupsForVeilederRequest(token, callId)
+        return try {
+            getGroupsForVeilederRequest(token, callId)
                 .map { it.graphApiGroup() }
                 .apply { COUNT_CALL_GRAPHAPI_GRUPPE_SUCCESS.increment() }
         } catch (e: Exception) {
             COUNT_CALL_GRAPHAPI_GRUPPE_FAIL.increment()
-            // TODO: Håndtere ApiException
-//            throw e.toRestException("Error while getting groups for veileder")
-            log.error("Error while getting groups for veileder", e)
-            return emptyList()
+            val additionalInfo = when (e) {
+                is ApiException -> ", statusCode=${e.responseStatusCode}"
+                else -> ""
+            }
+            log.error("Error while getting groups for veileder, callId=$callId$additionalInfo", e)
+            emptyList()
         }
     }
 
