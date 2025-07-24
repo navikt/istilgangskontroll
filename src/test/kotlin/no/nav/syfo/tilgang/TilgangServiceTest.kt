@@ -20,12 +20,12 @@ import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.testhelper.*
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class TilgangServiceTest {
     private val graphApiClient = mockk<GraphApiClient>(relaxed = true)

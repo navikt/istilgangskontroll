@@ -9,9 +9,9 @@ import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.testhelper.ExternalMockEnvironment
 import no.nav.syfo.testhelper.UserConstants
 import no.nav.syfo.tilgang.Enhet
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.*
-import kotlin.test.assertTrue
 
 class NorgClientTest {
     private val externalMockEnvironment = ExternalMockEnvironment()
