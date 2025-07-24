@@ -13,11 +13,11 @@ import no.nav.syfo.testhelper.ExternalMockEnvironment
 import no.nav.syfo.testhelper.UserConstants
 import no.nav.syfo.testhelper.generateJWT
 import no.nav.syfo.tilgang.AdRoller
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class GraphApiClientTest {
     private val externalMockEnvironment = ExternalMockEnvironment()
