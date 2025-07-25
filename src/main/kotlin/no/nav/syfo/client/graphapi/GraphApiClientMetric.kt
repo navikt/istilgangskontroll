@@ -16,7 +16,6 @@ val COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_FAIL: Counter = Counter.builder(CALL_
     .description("Counts the number of failed calls to graph api user groups")
     .register(METRICS_REGISTRY)
 
-// TODO: Bør disse være unike per app?
 const val CALL_GRAPHAPI_GRUPPE_BASE = "${METRICS_NS}_GRUPPE"
 const val CALL_GRAPHAPI_GRUPPE_SUCCESS = "${CALL_GRAPHAPI_GRUPPE_BASE}_success_count"
 const val CALL_GRAPHAPI_GRUPPE_FAIL = "${CALL_GRAPHAPI_GRUPPE_BASE}_fail_count"
