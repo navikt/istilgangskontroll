@@ -5,7 +5,6 @@ import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import kotlinx.coroutines.Dispatchers
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.apiModule
@@ -60,7 +59,6 @@ fun main() {
         relevantSyfoRoller = adRoller.toList(),
         valkeyStore = valkeyStore,
         adRoller = adRoller,
-        dispatcher = Dispatchers.IO.limitedParallelism(20),
     )
 
     val axsysClient = AxsysClient(
