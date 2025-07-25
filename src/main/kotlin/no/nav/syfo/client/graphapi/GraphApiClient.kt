@@ -10,9 +10,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
@@ -36,10 +34,7 @@ class GraphApiClient(
     private val httpClient: HttpClient = httpClientProxy(),
     private val valkeyStore: ValkeyStore,
     private val adRoller: AdRoller,
-    val dispatcher: CoroutineDispatcher,
 ) {
-    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
-
     suspend fun hasAccess(
         adRolle: AdRolle,
         token: Token,
@@ -54,20 +49,22 @@ class GraphApiClient(
             groupList = groupList,
             adRolle = adRolle,
         ).also { roleInUserGroupList ->
-            coroutineScope.launch {
-                val groupList2 = getGrupperForVeileder(
-                    token = token,
-                    callId = callId,
-                )
-                val roleInUserGroupList2 = isRoleInUserGroupList(
-                    groupList = groupList2,
-                    adRolle = adRolle,
-                )
+            coroutineScope {
+                launch {
+                    val groupList2 = getGrupperForVeileder(
+                        token = token,
+                        callId = callId,
+                    )
+                    val roleInUserGroupList2 = isRoleInUserGroupList(
+                        groupList = groupList2,
+                        adRolle = adRolle,
+                    )
 
-                if (roleInUserGroupList == roleInUserGroupList2) {
-                    log.info("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er like.")
-                } else {
-                    log.warn("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er ulike.")
+                    if (roleInUserGroupList == roleInUserGroupList2) {
+                        log.info("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er like.")
+                    } else {
+                        log.warn("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er ulike.")
+                    }
                 }
             }
         }
