@@ -12,7 +12,7 @@ val micrometerRegistry = "1.12.13"
 val mockk = "1.13.17"
 val nimbusJoseJwt = "10.2"
 val jedis = "5.2.0"
-val graphApiVersion = "6.42.0"
+val microsoftGraphVersion = "6.42.0"
 
 plugins {
     kotlin("jvm") version "2.1.10"
@@ -39,8 +39,8 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktor")
     implementation("io.ktor:ktor-server-status-pages:$ktor")
 
-    // Graph API
-    implementation("com.microsoft.graph:microsoft-graph:$graphApiVersion")
+    // Microsoft Graph SDK
+    implementation("com.microsoft.graph:microsoft-graph:$microsoftGraphVersion")
 
     // Logging
     implementation("ch.qos.logback:logback-classic:$logback")

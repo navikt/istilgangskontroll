@@ -138,10 +138,10 @@ class GraphApiClient(
         val cachedGroups: List<GraphApiGroup>? = valkeyStore.getListObject(cacheKey)
 
         val grupper = if (cachedGroups != null) {
-            COUNT_CALL_GRAPHAPI_GRUPPE_CACHE_HIT.increment()
+            COUNT_CALL_MS_GRAPH_API_GRUPPE_CACHE_HIT.increment()
             cachedGroups
         } else {
-            COUNT_CALL_GRAPHAPI_GRUPPE_CACHE_MISS.increment()
+            COUNT_CALL_MS_GRAPH_API_GRUPPE_CACHE_MISS.increment()
             getGroupsForVeileder(token, callId)
         }
 
@@ -160,14 +160,14 @@ class GraphApiClient(
         return try {
             getGroupsForVeilederRequest(token, callId)
                 .map { it.graphApiGroup() }
-                .apply { COUNT_CALL_GRAPHAPI_GRUPPE_SUCCESS.increment() }
+                .apply { COUNT_CALL_MS_GRAPH_API_GRUPPE_SUCCESS.increment() }
         } catch (e: Exception) {
-            COUNT_CALL_GRAPHAPI_GRUPPE_FAIL.increment()
+            COUNT_CALL_MS_GRAPH_API_GRUPPE_FAIL.increment()
             val additionalInfo = when (e) {
                 is ApiException -> ", statusCode=${e.responseStatusCode}"
                 else -> ""
             }
-            log.error("Error while getting groups for veileder, callId=$callId$additionalInfo", e)
+            log.error("Error while getting groups for veileder from Microsoft Graph API, callId=$callId$additionalInfo", e)
             emptyList()
         }
     }
@@ -191,7 +191,7 @@ class GraphApiClient(
             token = token,
             callId = callId,
         )
-            ?: throw RuntimeException("Failed to request list of groups for veileder in Graph API: Failed to get system token from AzureAD")
+            ?: throw RuntimeException("Failed to request list of groups for veileder in Microsoft Graph API: Failed to get system token from AzureAD")
 
         val graphServiceClient = createGraphServiceClient(azureAdToken = oboToken)
         val directoryObjectCollectionResponse = graphServiceClient.me().memberOf().get { requestConfiguration ->
@@ -223,11 +223,11 @@ class GraphApiClient(
 
     companion object {
         const val GRAPHAPI_CACHE_KEY = "graphapi"
-        const val GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX = "graphapiVeilederGrupper-"
+        const val MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX = "graphapiVeilederGrupper-"
         const val GRAPHAPI_USER_GROUPS_PATH = "/me/memberOf"
         const val FILTER_QUERY = "\$filter="
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
-        fun cacheKeyVeilederGrupper(veilederIdent: String) = "$GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
+        fun cacheKeyVeilederGrupper(veilederIdent: String) = "$MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
     }
 }

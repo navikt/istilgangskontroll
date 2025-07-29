@@ -22,7 +22,7 @@ class GraphApiUserGroupsResponseTest {
         assertEquals(expectedEnhetNr, group.getEnhetNr())
     }
 
-    @ParameterizedTest(name = "GraphApiGroup med displayName: `{0}` skal returnere tom string")
+    @ParameterizedTest(name = "GraphApiGroup med displayName: `{0}` skal returnere null")
     @NullAndEmptySource
     @ValueSource(
         strings = [
