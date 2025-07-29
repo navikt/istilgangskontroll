@@ -146,13 +146,15 @@ class GraphApiClient(
         }
 
         return grupper.also {
-            valkeyStore.setObject(
-                key = cacheKey,
-                value = it,
-                // TODO: Midlertidig for testing
+            if (isRoleInUserGroupList(it, adRoller.SYFO)) {
+                valkeyStore.setObject(
+                    key = cacheKey,
+                    value = it,
+                    // TODO: Midlertidig for testing
 //                expireSeconds = TWELVE_HOURS_IN_SECS,
-                expireSeconds = 60 * 5,
-            )
+                    expireSeconds = 60 * 5,
+                )
+            }
         }
     }
 
@@ -167,7 +169,10 @@ class GraphApiClient(
                 is ApiException -> ", statusCode=${e.responseStatusCode}"
                 else -> ""
             }
-            log.error("Error while getting groups for veileder from Microsoft Graph API, callId=$callId$additionalInfo", e)
+            log.error(
+                "Error while getting groups for veileder from Microsoft Graph API, callId=$callId$additionalInfo",
+                e
+            )
             emptyList()
         }
     }
