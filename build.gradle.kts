@@ -3,19 +3,19 @@ import com.adarshr.gradle.testlogger.theme.ThemeType
 group = "no.nav.syfo"
 version = "0.0.1"
 
-val jacksonDataType = "2.18.3"
-val ktor = "3.1.2"
-val logback = "1.5.17"
+val jacksonDataType = "2.19.2"
+val ktor = "3.2.2"
+val logback = "1.5.18"
 val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "7.4"
-val micrometerRegistry = "1.12.13"
-val mockk = "1.13.17"
-val nimbusJoseJwt = "10.2"
+val micrometerRegistry = "1.15.2"
+val mockk = "1.14.5"
+val nimbusJoseJwt = "10.4"
 val jedis = "5.2.0"
 
 plugins {
-    kotlin("jvm") version "2.1.10"
-    id("com.gradleup.shadow") version "8.3.6"
+    kotlin("jvm") version "2.2.0"
+    id("com.gradleup.shadow") version "8.3.8"
     id("org.jlleitschuh.gradle.ktlint") version "11.4.1"
     id("com.adarshr.test-logger") version "4.0.0"
 }
