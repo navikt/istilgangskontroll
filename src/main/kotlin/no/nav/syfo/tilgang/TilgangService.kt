@@ -271,11 +271,11 @@ class TilgangService(
             val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
             if (cachedTilgang == null) {
                 coroutineScope.launch {
-                    val hasTilgang = tilgangsmaskin.hasTilgang(token, personident, callId)
-                    if (!hasTilgang.hasAccess && tilgang.erGodkjent) {
+                    val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, personident, callId)
+                    if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
                         COUNT_TILGANGSMASKIN_DIFF.increment()
-                        log.info("Tilgangsmaskin gir annet resultat (ikke ok: ${hasTilgang.problemDetailResponse?.begrunnelse}) for $veilederIdent enn istilgangskontroll (ok): $callId")
-                    } else if (hasTilgang.hasAccess && !tilgang.erGodkjent) {
+                        log.info("Tilgangsmaskin gir annet resultat (ikke ok: ${tilgangsmaskinTilgang.problemDetailResponse?.begrunnelse}) for $veilederIdent enn istilgangskontroll (ok): $callId")
+                    } else if (tilgangsmaskinTilgang.hasAccess && !tilgang.erGodkjent) {
                         COUNT_TILGANGSMASKIN_DIFF.increment()
                         log.info("Tilgangsmaskin gir annet resultat (ok) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
                     } else {
