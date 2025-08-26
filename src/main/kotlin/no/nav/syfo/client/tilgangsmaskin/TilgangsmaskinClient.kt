@@ -1,10 +1,13 @@
 package no.nav.syfo.client.tilgangsmaskin
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.request.accept
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import no.nav.syfo.application.api.auth.Token
@@ -26,7 +29,7 @@ class TilgangsmaskinClient(
         token: Token,
         personident: Personident,
         callId: String,
-    ): Boolean {
+    ): TilgangsmaskinTilgang {
         val oboToken = azureAdClient.getOnBehalfOfToken(
             scopeClientId = clientId,
             token = token,
@@ -38,10 +41,20 @@ class TilgangsmaskinClient(
                 header(HttpHeaders.Authorization, bearerHeader(oboToken.accessToken))
                 header(NAV_CALL_ID_HEADER, callId)
                 setBody(personident.value)
+                accept(ContentType.Application.Json)
             }
         } catch (exc: ClientRequestException) {
             exc.response
         }
-        return response.status == HttpStatusCode.NoContent
+        val hasAccess = response.status == HttpStatusCode.NoContent
+        return TilgangsmaskinTilgang(
+            hasAccess = hasAccess,
+            problemDetailResponse = if (hasAccess) null else response.body() as ProblemDetailResponse?,
+        )
     }
 }
+
+data class TilgangsmaskinTilgang(
+    val hasAccess: Boolean,
+    val problemDetailResponse: ProblemDetailResponse? = null,
+)
