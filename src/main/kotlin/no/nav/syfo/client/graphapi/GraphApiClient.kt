@@ -10,12 +10,15 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.micrometer.core.instrument.Counter
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.application.metric.METRICS_NS
+import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.azuread.AzureAdToken
 import no.nav.syfo.client.httpClientProxy
@@ -60,10 +63,11 @@ class GraphApiClient(
                         adRolle = adRolle,
                     )
 
-                    if (roleInUserGroupList == roleInUserGroupList2) {
-                        log.info("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er like.")
-                    } else {
+                    if (roleInUserGroupList != roleInUserGroupList2) {
+                        COUNT_GRAPH_API_USER_GROUPS_DIFF.increment()
                         log.warn("Sammenligning (hasAccess). Gammel: $roleInUserGroupList, ny: $roleInUserGroupList2 er ulike.")
+                    } else {
+                        COUNT_GRAPH_API_USER_GROUPS_OK.increment()
                     }
                 }
             }
@@ -233,6 +237,18 @@ class GraphApiClient(
         const val FILTER_QUERY = "\$filter="
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
+
+        const val GRAPH_API_USER_GROUPS_BASE = "${METRICS_NS}_graph_api_user_groups"
+        const val GRAPH_API_USER_GROUPS_OK = "${GRAPH_API_USER_GROUPS_BASE}_ok"
+        const val GRAPH_API_USER_GROUPS_DIFF = "${GRAPH_API_USER_GROUPS_BASE}_diff"
+
+        val COUNT_GRAPH_API_USER_GROUPS_OK: Counter = Counter.builder(GRAPH_API_USER_GROUPS_OK)
+            .description("Counts the number of successful calls to graph_api where access matches")
+            .register(METRICS_REGISTRY)
+        val COUNT_GRAPH_API_USER_GROUPS_DIFF: Counter = Counter.builder(GRAPH_API_USER_GROUPS_DIFF)
+            .description("Counts the number of successful calls to graph_api where access does not match")
+            .register(METRICS_REGISTRY)
+
         fun cacheKeyVeilederGrupper(veilederIdent: String) = "$MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
     }
 }
