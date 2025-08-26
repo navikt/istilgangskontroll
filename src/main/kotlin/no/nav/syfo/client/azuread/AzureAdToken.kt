@@ -4,6 +4,8 @@ import com.azure.core.credential.AccessToken
 import com.azure.core.credential.TokenCredential
 import reactor.core.publisher.Mono
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 data class AzureAdToken(
@@ -11,9 +13,11 @@ data class AzureAdToken(
     val expires: LocalDateTime,
 ) {
     fun toTokenCredential(): TokenCredential {
-        val atOffset = expires.atOffset(ZoneOffset.UTC)
-        return TokenCredential { Mono.just(AccessToken(accessToken, atOffset)) }
+        return TokenCredential { Mono.just(AccessToken(accessToken, expires.toOffsetDateTimeUTC())) }
     }
 }
+
+fun LocalDateTime.toOffsetDateTimeUTC(): OffsetDateTime =
+    this.atZone(ZoneId.of("Europe/Oslo")).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
 
 fun AzureAdToken.isExpired() = this.expires < LocalDateTime.now().plusSeconds(60)
