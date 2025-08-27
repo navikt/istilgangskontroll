@@ -426,10 +426,10 @@ class TilgangService(
         const val GRAPH_API_ENHET_DIFF = "${GRAPH_API_ENHET_BASE}_diff"
 
         val COUNT_GRAPH_API_ENHET_OK: Counter = Counter.builder(GRAPH_API_ENHET_OK)
-            .description("Counts the number of successful calls to graph_api where access matches")
+            .description("Counts the number of successful calls to graph_api where enhet matches")
             .register(METRICS_REGISTRY)
         val COUNT_GRAPH_API_ENHET_DIFF: Counter = Counter.builder(GRAPH_API_ENHET_DIFF)
-            .description("Counts the number of successful calls to graph_api where access does not match")
+            .description("Counts the number of successful calls to graph_api where enhet does not match")
             .register(METRICS_REGISTRY)
     }
 }

@@ -154,9 +154,7 @@ class GraphApiClient(
                 valkeyStore.setObject(
                     key = cacheKey,
                     value = it,
-                    // TODO: Midlertidig for testing
-//                expireSeconds = TWELVE_HOURS_IN_SECS,
-                    expireSeconds = 60 * 5,
+                    expireSeconds = TWELVE_HOURS_IN_SECS,
                 )
             }
         }
@@ -243,10 +241,10 @@ class GraphApiClient(
         const val GRAPH_API_USER_GROUPS_DIFF = "${GRAPH_API_USER_GROUPS_BASE}_diff"
 
         val COUNT_GRAPH_API_USER_GROUPS_OK: Counter = Counter.builder(GRAPH_API_USER_GROUPS_OK)
-            .description("Counts the number of successful calls to graph_api where access matches")
+            .description("Counts the number of successful calls to graph_api where user groups matches")
             .register(METRICS_REGISTRY)
         val COUNT_GRAPH_API_USER_GROUPS_DIFF: Counter = Counter.builder(GRAPH_API_USER_GROUPS_DIFF)
-            .description("Counts the number of successful calls to graph_api where access does not match")
+            .description("Counts the number of successful calls to graph_api where user groups does not match")
             .register(METRICS_REGISTRY)
 
         fun cacheKeyVeilederGrupper(veilederIdent: String) = "$MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
