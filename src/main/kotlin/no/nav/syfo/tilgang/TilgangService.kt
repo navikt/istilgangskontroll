@@ -78,6 +78,20 @@ class TilgangService(
         val tilgang = Tilgang(
             erGodkjent = enheter.map { it.enhetId }.contains(enhet.id)
         )
+
+        coroutineScope.launch {
+            val enheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId)
+            val tilgang2 = Tilgang(
+                erGodkjent = enheter2.mapNotNull { it.getEnhetNr() }.contains(enhet.id)
+            )
+            if (tilgang.erGodkjent != tilgang2.erGodkjent) {
+                COUNT_GRAPH_API_ENHET_DIFF.increment()
+                log.warn("Sammenligning (checkTilgangToEnhet). Gammel: ${tilgang.erGodkjent} og ny: ${tilgang2.erGodkjent} er ulike.")
+            } else {
+                COUNT_GRAPH_API_ENHET_OK.increment()
+            }
+        }
+
         if (tilgang.erGodkjent) {
             valkeyStore.setObject(
                 key = cacheKey,
@@ -149,6 +163,20 @@ class TilgangService(
 
         val veiledersEnheter = axsysClient.getEnheter(token = token, callId = callId).map { Enhet(it.enhetId) }
         val hasAccessToLokalEnhet = veiledersEnheter.map { it.id }.contains(behandlendeEnhet.id)
+
+        coroutineScope.launch {
+            val veiledersEnheter2 = graphApiClient.getGrupperForVeileder(token = token, callId = callId)
+                .mapNotNull { it.getEnhetNr() }
+                .map { Enhet(it) }
+            val hasAccessToLokalEnhet2 = veiledersEnheter2.map { it.id }.contains(behandlendeEnhet.id)
+
+            if (hasAccessToLokalEnhet != hasAccessToLokalEnhet2) {
+                COUNT_GRAPH_API_ENHET_DIFF.increment()
+                log.warn("Sammenligning (isGeografiskAccessGodkjent). Gammel: $hasAccessToLokalEnhet og ny: $hasAccessToLokalEnhet2 er ulike.")
+            } else {
+                COUNT_GRAPH_API_ENHET_OK.increment()
+            }
+        }
 
         if (hasAccessToLokalEnhet) {
             return true
@@ -391,6 +419,17 @@ class TilgangService(
             .register(METRICS_REGISTRY)
         val COUNT_TILGANGSMASKIN_DIFF: Counter = Counter.builder(TILGANGSMASKIN_DIFF)
             .description("Counts the number of successful calls to tilgangsmaskin where access does not match")
+            .register(METRICS_REGISTRY)
+
+        const val GRAPH_API_ENHET_BASE = "${METRICS_NS}_graph_api_enhet"
+        const val GRAPH_API_ENHET_OK = "${GRAPH_API_ENHET_BASE}_ok"
+        const val GRAPH_API_ENHET_DIFF = "${GRAPH_API_ENHET_BASE}_diff"
+
+        val COUNT_GRAPH_API_ENHET_OK: Counter = Counter.builder(GRAPH_API_ENHET_OK)
+            .description("Counts the number of successful calls to graph_api where enhet matches")
+            .register(METRICS_REGISTRY)
+        val COUNT_GRAPH_API_ENHET_DIFF: Counter = Counter.builder(GRAPH_API_ENHET_DIFF)
+            .description("Counts the number of successful calls to graph_api where enhet does not match")
             .register(METRICS_REGISTRY)
     }
 }
