@@ -5,8 +5,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
-import no.nav.syfo.client.axsys.AxsysClient
-import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.behandlendeenhet.EnhetDTO
@@ -20,16 +18,13 @@ import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.testhelper.*
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class TilgangServiceTest {
     private val graphApiClient = mockk<GraphApiClient>(relaxed = true)
-    private val axsysClient = mockk<AxsysClient>(relaxed = true)
     private val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
     private val pdlClient = mockk<PdlClient>(relaxed = true)
     private val behandlendeEnhetClient = mockk<BehandlendeEnhetClient>(relaxed = true)
@@ -43,7 +38,6 @@ class TilgangServiceTest {
         graphApiClient = graphApiClient,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
-        axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
@@ -76,7 +70,6 @@ class TilgangServiceTest {
     fun afterEach() {
         clearMocks(
             graphApiClient,
-            axsysClient,
             skjermedePersonerPipClient,
             pdlClient,
             behandlendeEnhetClient,
@@ -123,44 +116,35 @@ class TilgangServiceTest {
     @Nested
     @DisplayName("Check if veileder has access to enhet")
     inner class CheckVeilederAccessToEnhet {
-        private val cacheKeySyfo = "tilgang-til-tjenesten-${UserConstants.VEILEDER_IDENT}"
 
         @Test
-        fun `return has access if enhet is in veileders list from Axsys`() {
-            val enhet = Enhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = enhet.id,
-                navn = "enhet",
-            )
-            val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
+        fun `return has access if enhet is in veileders list from Microsoft Graph API`() {
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+            val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$veiledersEnhet"
             val callId = "123"
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
+                val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, veiledersEnhet)
 
                 assertTrue(tilgang.erGodkjent)
             }
 
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getEnheterForVeileder(validToken, callId) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
-        fun `return no access if enhet is not in veileders list from Axsys`() {
+        fun `return no access if enhet is not in veileders list from Microsoft Graph API`() {
             val wantedEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val actualEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = actualEnhet.id,
-                navn = "enhet",
-            )
             val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$wantedEnhet"
             val callId = "123"
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { axsysClient.getEnheter(validToken, callId) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(validToken, callId) } returns listOf(actualEnhet)
 
             runBlocking {
                 val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, wantedEnhet)
@@ -169,7 +153,7 @@ class TilgangServiceTest {
             }
 
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) { axsysClient.getEnheter(validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getEnheterForVeileder(validToken, callId) }
             verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
         }
 
@@ -188,7 +172,7 @@ class TilgangServiceTest {
 
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
-            coVerify(exactly = 0) { axsysClient.getEnheter(any(), any()) }
+            coVerify(exactly = 0) { graphApiClient.getEnheterForVeileder(any(), any()) }
             verifyCacheSet(exactly = 0)
         }
     }
@@ -235,10 +219,7 @@ class TilgangServiceTest {
         fun `remove skjermet innbygger when veileder is missing access`() {
             val callId = "123"
             val appName = "anyApp"
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val personident = Personident(UserConstants.PERSONIDENT)
@@ -249,7 +230,7 @@ class TilgangServiceTest {
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
@@ -312,10 +293,7 @@ class TilgangServiceTest {
                 ),
                 oppfolgingsenhetDTO = null,
             )
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val kode6Innbygger = getinnbyggerWithKode6()
@@ -345,7 +323,7 @@ class TilgangServiceTest {
                 )
             } returns otherBehandlendeEnhet
             coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns false
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
@@ -439,10 +417,7 @@ class TilgangServiceTest {
         fun `Remove invalid personidenter`() {
             val callId = "123"
             val appName = "anyApp"
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val validPersonident = Personident(UserConstants.PERSONIDENT)
@@ -452,7 +427,7 @@ class TilgangServiceTest {
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     any(),
@@ -496,10 +471,7 @@ class TilgangServiceTest {
         fun `Remove personidenter with missing enhet`() {
             val callId = "123"
             val appName = "anyApp"
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val validPersonident = Personident(UserConstants.PERSONIDENT)
             val personidenter = listOf(validPersonident.value)
@@ -507,7 +479,7 @@ class TilgangServiceTest {
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } throws RuntimeException("Feil")
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     any(),

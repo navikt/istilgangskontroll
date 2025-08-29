@@ -8,6 +8,7 @@ const val CALL_GRAPHAPI_USER_GROUPS_PERSON_BASE = "${METRICS_NS}_call_graphapi_u
 const val CALL_GRAPHAPI_USER_GROUPS_PERSON_SUCCESS = "${CALL_GRAPHAPI_USER_GROUPS_PERSON_BASE}_success_count"
 const val CALL_GRAPHAPI_USER_GROUPS_PERSON_FAIL = "${CALL_GRAPHAPI_USER_GROUPS_PERSON_BASE}_fail_count"
 
+// TODO: Skal disse tas i bruk i stedet for de nye som er definert?
 val COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_SUCCESS: Counter = Counter.builder(CALL_GRAPHAPI_USER_GROUPS_PERSON_SUCCESS)
     .description("Counts the number of successful calls to graph api user groups")
     .register(METRICS_REGISTRY)

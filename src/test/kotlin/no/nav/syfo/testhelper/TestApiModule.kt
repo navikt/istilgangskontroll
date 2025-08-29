@@ -3,7 +3,6 @@ package no.nav.syfo.testhelper
 import io.ktor.server.application.*
 import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.application.cache.ValkeyStore
-import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
@@ -20,6 +19,7 @@ import redis.clients.jedis.JedisPoolConfig
 
 fun Application.testApiModule(
     externalMockEnvironment: ExternalMockEnvironment,
+    graphApiClientMock: GraphApiClient? = null,
 ) {
     val adRoller = AdRoller(env = externalMockEnvironment.environment)
 
@@ -43,21 +43,11 @@ fun Application.testApiModule(
         httpClient = mockHttpClient,
     )
 
-    val graphApiClient = GraphApiClient(
+    val graphApiClient = graphApiClientMock ?: GraphApiClient(
         azureAdClient = azureAdClient,
         baseUrl = externalMockEnvironment.environment.clients.graphApiUrl,
-        relevantSyfoRoller = adRoller.toList(),
-        httpClient = mockHttpClient,
         valkeyStore = valkeyStore,
         adRoller = adRoller,
-    )
-
-    val axsysClient = AxsysClient(
-        azureAdClient = azureAdClient,
-        axsysUrl = externalMockEnvironment.environment.clients.axsys.baseUrl,
-        clientId = externalMockEnvironment.environment.clients.axsys.clientId,
-        valkeyStore = valkeyStore,
-        httpClient = mockHttpClient,
     )
 
     val skjermedePersonerPipClient = SkjermedePersonerPipClient(
@@ -104,7 +94,6 @@ fun Application.testApiModule(
         wellKnownInternalAzureAD = externalMockEnvironment.wellKnownInternalAzureAD,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
-        axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
