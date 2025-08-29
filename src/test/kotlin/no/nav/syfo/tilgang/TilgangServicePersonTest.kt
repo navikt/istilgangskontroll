@@ -5,8 +5,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
-import no.nav.syfo.client.axsys.AxsysClient
-import no.nav.syfo.client.axsys.AxsysEnhet
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.behandlendeenhet.EnhetDTO
@@ -24,7 +22,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 
 class TilgangServicePersonTest {
     private val graphApiClient = mockk<GraphApiClient>(relaxed = true)
-    private val axsysClient = mockk<AxsysClient>(relaxed = true)
     private val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
     private val pdlClient = mockk<PdlClient>(relaxed = true)
     private val behandlendeEnhetClient = mockk<BehandlendeEnhetClient>(relaxed = true)
@@ -38,7 +35,6 @@ class TilgangServicePersonTest {
         graphApiClient = graphApiClient,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
-        axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
@@ -76,7 +72,6 @@ class TilgangServicePersonTest {
     fun afterEach() {
         clearMocks(
             graphApiClient,
-            axsysClient,
             valkeyStore,
             skjermedePersonerPipClient,
             pdlClient,
@@ -199,23 +194,18 @@ class TilgangServicePersonTest {
             coVerify(exactly = 0) {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
             }
-            coVerify(exactly = 0) {
-                axsysClient.getEnheter(any(), any())
-            }
+            coVerify(exactly = 0) { graphApiClient.getEnheterForVeileder(any(), any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
         fun `Return no access if veileder doesn't have national or regional access and not access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
 
             runBlocking {
                 val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
@@ -242,7 +232,7 @@ class TilgangServicePersonTest {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
             }
             coVerify(exactly = 1) {
-                axsysClient.getEnheter(
+                graphApiClient.getEnheterForVeileder(
                     callId = callId,
                     token = validToken,
                 )
@@ -268,13 +258,10 @@ class TilgangServicePersonTest {
         @Test
         fun `Return access if veileder doesn't have national access but has access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
 
             runBlocking {
@@ -302,7 +289,7 @@ class TilgangServicePersonTest {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
             }
             coVerify(exactly = 1) {
-                axsysClient.getEnheter(
+                graphApiClient.getEnheterForVeileder(
                     callId = callId,
                     token = validToken,
                 )
@@ -334,14 +321,11 @@ class TilgangServicePersonTest {
                 ),
                 oppfolgingsenhetDTO = null,
             )
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbyggerWithUtlandGT()
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery {
                 behandlendeEnhetClient.getEnhetWithOboToken(
                     any(),
@@ -379,7 +363,7 @@ class TilgangServicePersonTest {
                 )
             }
             coVerify(exactly = 1) {
-                axsysClient.getEnheter(
+                graphApiClient.getEnheterForVeileder(
                     callId = callId,
                     token = validToken,
                 )
@@ -399,15 +383,12 @@ class TilgangServicePersonTest {
         @Test
         fun `Return access if veileder doesn't have national or local access but has regional access`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
-                navn = "enhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
             val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
             coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery { norgClient.getOverordnetEnhetListForNAVKontor(any(), any()) } returns listOf(
                 overordnetEnhet
@@ -431,7 +412,7 @@ class TilgangServicePersonTest {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
             }
             coVerify(exactly = 1) {
-                axsysClient.getEnheter(
+                graphApiClient.getEnheterForVeileder(
                     callId = callId,
                     token = validToken,
                 )
@@ -463,15 +444,12 @@ class TilgangServicePersonTest {
         @Test
         fun `Return access if veileder doesn't have national or local access but has regional access and belongs to fylkeskontor`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_INNBYGGER)
-            val veiledersEnhet = AxsysEnhet(
-                enhetId = UserConstants.ENHET_OVERORDNET,
-                navn = "fylkesenhet",
-            )
+            val veiledersEnhet = Enhet(UserConstants.ENHET_OVERORDNET)
             val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
             coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
-            coEvery { axsysClient.getEnheter(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery {
                 norgClient.getOverordnetEnhetListForNAVKontor(
@@ -498,7 +476,7 @@ class TilgangServicePersonTest {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
             }
             coVerify(exactly = 1) {
-                axsysClient.getEnheter(
+                graphApiClient.getEnheterForVeileder(
                     callId = callId,
                     token = validToken,
                 )
