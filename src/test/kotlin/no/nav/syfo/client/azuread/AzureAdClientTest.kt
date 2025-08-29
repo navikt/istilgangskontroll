@@ -46,14 +46,14 @@ class AzureAdClientTest {
 
         @Test
         fun `Returns obo-token from AzureAD and stores in cache`() {
-            val axsysClientId = externalMockEnvironment.environment.clients.axsys.clientId
+            val behandlendeEnhetClientId = externalMockEnvironment.environment.clients.behandlendeEnhet.clientId
             val cacheKey =
-                "${AzureAdClient.CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX}$axsysClientId-${UserConstants.VEILEDER_IDENT}"
+                "${AzureAdClient.CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX}$behandlendeEnhetClientId-${UserConstants.VEILEDER_IDENT}"
             every { valkeyStore.getObject<AzureAdToken?>(key = cacheKey) } returns null
 
             runBlocking {
                 azureAdClient.getOnBehalfOfToken(
-                    scopeClientId = axsysClientId,
+                    scopeClientId = behandlendeEnhetClientId,
                     token = Token(validToken),
                     callId = "",
                 )
@@ -71,9 +71,9 @@ class AzureAdClientTest {
 
         @Test
         fun `Returns obo-token from cache`() {
-            val axsysClientId = externalMockEnvironment.environment.clients.axsys.clientId
+            val behandlendeEnhetClientId = externalMockEnvironment.environment.clients.behandlendeEnhet.clientId
             val cacheKey =
-                "${AzureAdClient.CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX}$axsysClientId-${UserConstants.VEILEDER_IDENT}"
+                "${AzureAdClient.CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX}$behandlendeEnhetClientId-${UserConstants.VEILEDER_IDENT}"
             every {
                 valkeyStore.getObject<AzureAdToken?>(key = cacheKey)
             } returns AzureAdToken(
@@ -83,7 +83,7 @@ class AzureAdClientTest {
 
             runBlocking {
                 azureAdClient.getOnBehalfOfToken(
-                    scopeClientId = axsysClientId,
+                    scopeClientId = behandlendeEnhetClientId,
                     token = Token(validToken),
                     callId = "",
                 )
@@ -100,14 +100,14 @@ class AzureAdClientTest {
                 issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
                 navIdent = UserConstants.VEILEDER_IDENT_NO_AZURE_AD_TOKEN,
             )
-            val axsysClientId = externalMockEnvironment.environment.clients.axsys.clientId
+            val behandlendeEnhetClientId = externalMockEnvironment.environment.clients.behandlendeEnhet.clientId
             val cacheKey =
-                "${AzureAdClient.CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX}$axsysClientId-${UserConstants.VEILEDER_IDENT_NO_AZURE_AD_TOKEN}"
+                "${AzureAdClient.CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX}$behandlendeEnhetClientId-${UserConstants.VEILEDER_IDENT_NO_AZURE_AD_TOKEN}"
             every { valkeyStore.getObject<AzureAdToken?>(key = cacheKey) } returns null
 
             runBlocking {
                 azureAdClient.getOnBehalfOfToken(
-                    scopeClientId = axsysClientId,
+                    scopeClientId = behandlendeEnhetClientId,
                     token = Token(validTokenReturningNull),
                     callId = "",
                 )

@@ -15,14 +15,6 @@ fun getMockHttpClient(env: Environment) = HttpClient(MockEngine) {
                     getAzureAdResponse(request)
                 }
 
-                requestUrl.startsWith("/${env.clients.graphApiUrl}") -> {
-                    getGraphApiResponse(request)
-                }
-
-                requestUrl.startsWith("/${env.clients.axsys.baseUrl}") -> {
-                    getAxsysResponse(request)
-                }
-
                 requestUrl.startsWith("/${env.clients.skjermedePersoner.baseUrl}") -> {
                     getSkjermedePersonerResponse(request)
                 }
