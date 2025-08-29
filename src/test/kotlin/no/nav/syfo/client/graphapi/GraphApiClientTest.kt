@@ -163,12 +163,12 @@ class GraphApiClientTest {
         }
 
         testApplication {
-            val graphApiGroups = graphApiClientStub.getGrupperForVeileder(
+            val grupper = graphApiClientStub.getGrupperForVeileder(
                 token = Token("eyJhbGciOiJIUz..."),
                 callId = "callId"
             )
 
-            assertTrue(graphApiGroups.isEmpty())
+            assertTrue(grupper.isEmpty())
         }
     }
 
@@ -180,12 +180,12 @@ class GraphApiClientTest {
         } throws IllegalAccessException("Some access error")
 
         testApplication {
-            val graphApiGroups = graphApiClientStub.getGrupperForVeileder(
+            val grupper = graphApiClientStub.getGrupperForVeileder(
                 token = Token("eyJhbGciOiJIUz..."),
                 callId = "callId"
             )
 
-            assertTrue(graphApiGroups.isEmpty())
+            assertTrue(grupper.isEmpty())
         }
     }
 
