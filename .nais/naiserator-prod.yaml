@@ -102,7 +102,6 @@ spec:
           cluster: prod-gcp
     outbound:
       external:
-        - host: "axsys.prod-fss-pub.nais.io"
         - host: "graph.microsoft.com"
         - host: "pdl-pip-api.prod-fss-pub.nais.io"
         - host: "audit.nais"
@@ -136,10 +135,6 @@ spec:
         - id: loki
         - id: elastic
   env:
-    - name: AXSYS_URL
-      value: "https://axsys.prod-fss-pub.nais.io"
-    - name: AXSYS_CLIENT_ID
-      value: "prod-fss.org.axsys"
     - name: GRAPHAPI_URL
       value: "https://graph.microsoft.com"
     - name: NORG2_URL
