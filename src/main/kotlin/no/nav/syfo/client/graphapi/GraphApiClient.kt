@@ -146,7 +146,7 @@ class GraphApiClient(
     }
 
     companion object {
-        private const val MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX = "graphapiVeilederGrupper-"
+        private const val MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX = "msGraphapiVeilederGrupper-"
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
         fun cacheKeyVeilederGrupper(veilederIdent: String) = "$MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
