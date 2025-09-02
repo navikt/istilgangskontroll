@@ -69,7 +69,7 @@ spec:
           namespace: team-esyfo
         - application: syfooppfolgingsplanservice
           namespace: team-esyfo
-          cluster: dev-fss
+          cluster: prod-fss
         - application: lps-oppfolgingsplan-mottak
           namespace: team-esyfo
         - application: meroppfolging-backend
