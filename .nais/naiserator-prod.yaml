@@ -67,22 +67,20 @@ spec:
         - application: syfoperson
         - application: esyfovarsel
           namespace: team-esyfo
-          cluster: prod-gcp
-        - application: syfomotebehov
-          namespace: team-esyfo
-          cluster: prod-fss
-        - application: syfomotebehov
-          namespace: team-esyfo
-          cluster: prod-gcp
         - application: syfooppfolgingsplanservice
           namespace: team-esyfo
           cluster: prod-fss
         - application: lps-oppfolgingsplan-mottak
           namespace: team-esyfo
-          cluster: prod-gcp
         - application: meroppfolging-backend
           namespace: team-esyfo
         - application: oppfolgingsplan-backend
+          namespace: team-esyfo
+        - application: syfomotebehov
+          namespace: team-esyfo
+        - application: syfo-oppfolgingsplan-backend
+          namespace: team-esyfo
+        - application: sykepengedager-informasjon
           namespace: team-esyfo
         - application: spinnsyn-backend
           namespace: flex
@@ -102,8 +100,6 @@ spec:
         - application: syk-dig-backend
           namespace: teamsykmelding
           cluster: prod-gcp
-        - application: sykepengedager-informasjon
-          namespace: team-esyfo
     outbound:
       external:
         - host: "axsys.prod-fss-pub.nais.io"
