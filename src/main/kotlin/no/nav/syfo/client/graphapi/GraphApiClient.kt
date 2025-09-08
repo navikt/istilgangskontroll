@@ -92,7 +92,6 @@ class GraphApiClient(
                 "Error while getting groups for veileder from Microsoft Graph API, callId=$callId$additionalInfo",
                 e
             )
-            // TODO: Tom liste? Kaste exception?
             emptyList()
         }
     }
