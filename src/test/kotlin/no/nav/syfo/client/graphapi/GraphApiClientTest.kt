@@ -46,7 +46,45 @@ class GraphApiClientTest {
     }
 
     @Test
-    fun `Returns syfo access and stores in cache`() {
+    fun `Returns syfo access and one enhet - Stores in cache`() {
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        val enhetGroup = Gruppe(uuid = "UUID", adGruppenavn = "0000-GA-ENHET_1234")
+        val graphApiClientMock = spyk(graphApiClient)
+        coEvery { graphApiClientMock.getGrupperForVeileder(any(), any()) } returns listOf(syfoGruppe, enhetGroup)
+
+        val cacheKey = cacheKeyVeilederGrupper(UserConstants.VEILEDER_IDENT)
+        every {
+            valkeyStore.getListObject<Gruppe>(cacheKey)
+        } returns null
+        every {
+            valkeyStore.get(any<String>())
+        } returns null
+
+        val hasAccess = runBlocking {
+            graphApiClientMock.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = Token(validToken),
+                callId = UUID.randomUUID().toString(),
+            )
+        }
+        assertTrue(hasAccess)
+        verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
+        verify(exactly = 1) {
+            valkeyStore.setObject<List<Gruppe>>(
+                key = eq(cacheKey),
+                value = any(),
+                expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
+            )
+        }
+    }
+
+    @Test
+    fun `Returns only syfo access and does not store in cache`() {
         val validToken = generateJWT(
             audience = externalMockEnvironment.environment.azure.appClientId,
             issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
@@ -73,7 +111,7 @@ class GraphApiClientTest {
         }
         assertTrue(hasAccess)
         verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             valkeyStore.setObject<List<Gruppe>>(
                 key = eq(cacheKey),
                 value = any(),

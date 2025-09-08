@@ -66,8 +66,8 @@ class GraphApiClient(
         }
 
         return grupper.also {
-            // TODO: Er dette fortsatt korrekt sjekk mtp. når grupper skal caches?
-            if (isRoleInUserGroupList(it, adRoller.SYFO)) {
+            val tilgangTilMinstEnEnhet = it.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
+            if (isRoleInUserGroupList(it, adRoller.SYFO) && tilgangTilMinstEnEnhet) {
                 valkeyStore.setObject(
                     key = cacheKey,
                     value = it,

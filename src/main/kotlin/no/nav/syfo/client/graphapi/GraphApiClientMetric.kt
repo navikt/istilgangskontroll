@@ -17,7 +17,7 @@ val COUNT_CALL_GRAPHAPI_USER_GROUPS_PERSON_FAIL: Counter = Counter.builder(CALL_
     .description("Counts the number of failed calls to graph api user groups")
     .register(METRICS_REGISTRY)
 
-const val CALL_MS_GRAPH_API_GRUPPE_BASE = "${METRICS_NS}_GRUPPE"
+const val CALL_MS_GRAPH_API_GRUPPE_BASE = "${METRICS_NS}_gruppe"
 const val CALL_MS_GRAPH_API_GRUPPE_SUCCESS = "${CALL_MS_GRAPH_API_GRUPPE_BASE}_success_count"
 const val CALL_MS_GRAPH_API_GRUPPE_FAIL = "${CALL_MS_GRAPH_API_GRUPPE_BASE}_fail_count"
 const val CALL_MS_GRAPH_API_GRUPPE_CACHE_HIT = "${CALL_MS_GRAPH_API_GRUPPE_BASE}_cache_hit"
