@@ -58,10 +58,10 @@ class GraphApiClient(
         val cachedGrupper: List<Gruppe>? = valkeyStore.getListObject(cacheKey)
 
         val grupper = if (cachedGrupper != null) {
-            COUNT_CALL_MS_GRAPH_API_GRUPPE_CACHE_HIT.increment()
+            COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_HIT.increment()
             cachedGrupper
         } else {
-            COUNT_CALL_MS_GRAPH_API_GRUPPE_CACHE_MISS.increment()
+            COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
             getGrupperForVeileder(token, callId)
         }
 
@@ -81,9 +81,9 @@ class GraphApiClient(
         return try {
             getGroupsForVeilederRequest(token, callId)
                 .map { it.toGruppe() }
-                .apply { COUNT_CALL_MS_GRAPH_API_GRUPPE_SUCCESS.increment() }
+                .apply { COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_SUCCESS.increment() }
         } catch (e: Exception) {
-            COUNT_CALL_MS_GRAPH_API_GRUPPE_FAIL.increment()
+            COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_FAIL.increment()
             val additionalInfo = when (e) {
                 is ApiException -> ", statusCode=${e.responseStatusCode}"
                 else -> ""
