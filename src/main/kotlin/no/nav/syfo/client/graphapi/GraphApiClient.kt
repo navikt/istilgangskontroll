@@ -57,15 +57,13 @@ class GraphApiClient(
         val cacheKey = cacheKeyVeilederGrupper(veilederIdent)
         val cachedGrupper: List<Gruppe>? = valkeyStore.getListObject(cacheKey)
 
-        val grupper = if (cachedGrupper != null) {
+        if (cachedGrupper != null) {
             COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_HIT.increment()
-            cachedGrupper
-        } else {
-            COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
-            getGrupperForVeileder(token, callId)
+            return cachedGrupper
         }
 
-        return grupper.also {
+        COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
+        return getGrupperForVeileder(token, callId).also {
             val tilgangTilMinstEnEnhet = it.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
             if (isRoleInUserGroupList(it, adRoller.SYFO) && tilgangTilMinstEnEnhet) {
                 valkeyStore.setObject(

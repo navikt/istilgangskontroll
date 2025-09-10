@@ -84,6 +84,40 @@ class GraphApiClientTest {
     }
 
     @Test
+    fun `Returns cached syfo access and one enhet - Grupper should not be cached more than once`() {
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        val enhetGroup = Gruppe(uuid = "UUID", adGruppenavn = "0000-GA-ENHET_1234")
+        val graphApiClientMock = spyk(graphApiClient)
+
+        val cacheKey = cacheKeyVeilederGrupper(UserConstants.VEILEDER_IDENT)
+        every {
+            valkeyStore.getListObject<Gruppe>(cacheKey)
+        } returns listOf(syfoGruppe, enhetGroup)
+
+        val hasAccess = runBlocking {
+            graphApiClientMock.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = Token(validToken),
+                callId = UUID.randomUUID().toString(),
+            )
+        }
+        assertTrue(hasAccess)
+        verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
+        verify(exactly = 0) {
+            valkeyStore.setObject<List<Gruppe>>(
+                key = eq(cacheKey),
+                value = any(),
+                expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
+            )
+        }
+    }
+
+    @Test
     fun `Returns only syfo access and does not store in cache`() {
         val validToken = generateJWT(
             audience = externalMockEnvironment.environment.azure.appClientId,
