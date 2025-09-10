@@ -65,12 +65,17 @@ class GraphApiClient(
         COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
         return getGrupperForVeileder(token, callId).also {
             val tilgangTilMinstEnEnhet = it.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
-            if (isRoleInUserGroupList(it, adRoller.SYFO) && tilgangTilMinstEnEnhet) {
+            val harSyfoRolle = isRoleInUserGroupList(it, adRoller.SYFO)
+            if (harSyfoRolle && tilgangTilMinstEnEnhet) {
                 valkeyStore.setObject(
                     key = cacheKey,
                     value = it,
                     expireSeconds = TWELVE_HOURS_IN_SECS,
                 )
+            }
+
+            if (harSyfoRolle && !tilgangTilMinstEnEnhet) {
+                log.error("Veileder doesn't have access to any enheter, callId=$callId")
             }
         }
     }
