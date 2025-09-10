@@ -8,19 +8,25 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.routing.*
 import io.ktor.server.testing.*
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.mockk
+import io.mockk.spyk
+import no.nav.syfo.client.graphapi.GraphApiClient
+import no.nav.syfo.client.graphapi.Gruppe
 import no.nav.syfo.testhelper.*
 import no.nav.syfo.util.NAV_CALL_ID_HEADER
 import no.nav.syfo.util.NAV_PERSONIDENT_HEADER
 import no.nav.syfo.util.configure
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class TilgangApiTest {
     private val externalMockEnvironment = ExternalMockEnvironment()
+    private val graphApiClient = mockk<GraphApiClient>(relaxed = true)
     private val validToken = generateJWT(
         audience = externalMockEnvironment.environment.azure.appClientId,
         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
@@ -44,12 +50,18 @@ class TilgangApiTest {
 
     private val enhet = UserConstants.ENHET_VEILEDER
     private val enhetWithoutTilgang = UserConstants.ENHET_VEILEDER_NO_ACCESS
+    private val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+    private val papirsykmeldingGruppe = Gruppe(
+        uuid = "papirsykmeldingId",
+        adGruppenavn = "0000-GA-papirsykmelding"
+    )
 
-    private fun ApplicationTestBuilder.setupApi(): HttpClient {
+    private fun ApplicationTestBuilder.setupApi(graphApiClient: GraphApiClient? = null): HttpClient {
         application {
             routing {
                 application.testApiModule(
                     externalMockEnvironment = externalMockEnvironment,
+                    graphApiClientMock = graphApiClient,
                 )
             }
         }
@@ -61,6 +73,13 @@ class TilgangApiTest {
         return client
     }
 
+    @AfterEach
+    fun afterEach() {
+        clearMocks(
+            graphApiClient,
+        )
+    }
+
     @Nested
     @DisplayName("SYFO access")
     inner class SyfoAccess {
@@ -68,7 +87,9 @@ class TilgangApiTest {
         @Test
         fun `Allows access to veileder with SYFO-tilgang`() {
             testApplication {
-                val client = setupApi()
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(syfoGruppe)
+                val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/syfo") {
                     bearerAuth(validToken)
                     header(NAV_CALL_ID_HEADER, "123")
@@ -103,7 +124,11 @@ class TilgangApiTest {
         @Test
         fun `Allows access to veileder with correct enhet`() {
             testApplication {
-                val client = setupApi()
+                val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(syfoGruppe)
+                coEvery { graphApiClientMock.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+                val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/enhet/$enhet") {
                     bearerAuth(validToken)
                     header(NAV_CALL_ID_HEADER, "123")
@@ -153,7 +178,11 @@ class TilgangApiTest {
         @Test
         fun `Allows access to person with SYFO access, correct local enhet, and no special permissions needed`() {
             testApplication {
-                val client = setupApi()
+                val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(syfoGruppe)
+                coEvery { graphApiClientMock.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+                val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validToken)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
@@ -238,7 +267,14 @@ class TilgangApiTest {
         @Test
         fun `approve access for veileder with correct AD group for 'normal' person`() {
             testApplication {
-                val client = setupApi()
+                val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    papirsykmeldingGruppe,
+                    syfoGruppe
+                )
+                coEvery { graphApiClientMock.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+                val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/person/papirsykmelding") {
                     bearerAuth(validToken)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)

@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
+import no.nav.syfo.client.graphapi.GraphApiClient.Companion.cacheKeyVeilederGrupper
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.testhelper.ExternalMockEnvironment
 import no.nav.syfo.testhelper.UserConstants
@@ -35,8 +36,6 @@ class GraphApiClientTest {
     private val graphApiClient = GraphApiClient(
         azureAdClient = azureAdClient,
         baseUrl = externalMockEnvironment.environment.clients.graphApiUrl,
-        relevantSyfoRoller = adRoller.toList(),
-        httpClient = mockHttpClient,
         valkeyStore = valkeyStore,
         adRoller = adRoller,
     )
@@ -47,22 +46,27 @@ class GraphApiClientTest {
     }
 
     @Test
-    fun `Returns syfo access and stores in cache`() {
+    fun `Returns syfo access and one enhet - Stores in cache`() {
         val validToken = generateJWT(
             audience = externalMockEnvironment.environment.azure.appClientId,
             issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
             navIdent = UserConstants.VEILEDER_IDENT,
         )
-        val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT}"
+        val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        val enhetGroup = Gruppe(uuid = "UUID", adGruppenavn = "0000-GA-ENHET_1234")
+        val graphApiClientMock = spyk(graphApiClient)
+        coEvery { graphApiClientMock.getGrupperForVeileder(any(), any()) } returns listOf(syfoGruppe, enhetGroup)
+
+        val cacheKey = cacheKeyVeilederGrupper(UserConstants.VEILEDER_IDENT)
         every {
-            valkeyStore.getListObject<GraphApiGroup>(cacheKey)
+            valkeyStore.getListObject<Gruppe>(cacheKey)
         } returns null
         every {
             valkeyStore.get(any<String>())
         } returns null
 
         val hasAccess = runBlocking {
-            graphApiClient.hasAccess(
+            graphApiClientMock.hasAccess(
                 adRolle = adRoller.SYFO,
                 token = Token(validToken),
                 callId = UUID.randomUUID().toString(),
@@ -71,7 +75,78 @@ class GraphApiClientTest {
         assertTrue(hasAccess)
         verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
         verify(exactly = 1) {
-            valkeyStore.setObject<List<GraphApiGroup>>(
+            valkeyStore.setObject<List<Gruppe>>(
+                key = eq(cacheKey),
+                value = any(),
+                expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
+            )
+        }
+    }
+
+    @Test
+    fun `Returns cached syfo access and one enhet - Grupper should not be cached more than once`() {
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        val enhetGroup = Gruppe(uuid = "UUID", adGruppenavn = "0000-GA-ENHET_1234")
+        val graphApiClientMock = spyk(graphApiClient)
+
+        val cacheKey = cacheKeyVeilederGrupper(UserConstants.VEILEDER_IDENT)
+        every {
+            valkeyStore.getListObject<Gruppe>(cacheKey)
+        } returns listOf(syfoGruppe, enhetGroup)
+
+        val hasAccess = runBlocking {
+            graphApiClientMock.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = Token(validToken),
+                callId = UUID.randomUUID().toString(),
+            )
+        }
+        assertTrue(hasAccess)
+        verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
+        verify(exactly = 0) {
+            valkeyStore.setObject<List<Gruppe>>(
+                key = eq(cacheKey),
+                value = any(),
+                expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
+            )
+        }
+    }
+
+    @Test
+    fun `Returns only syfo access and does not store in cache`() {
+        val validToken = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        val graphApiClientMock = spyk(graphApiClient)
+        coEvery { graphApiClientMock.getGrupperForVeileder(any(), any()) } returns listOf(syfoGruppe)
+
+        val cacheKey = cacheKeyVeilederGrupper(UserConstants.VEILEDER_IDENT)
+        every {
+            valkeyStore.getListObject<Gruppe>(cacheKey)
+        } returns null
+        every {
+            valkeyStore.get(any<String>())
+        } returns null
+
+        val hasAccess = runBlocking {
+            graphApiClientMock.hasAccess(
+                adRolle = adRoller.SYFO,
+                token = Token(validToken),
+                callId = UUID.randomUUID().toString(),
+            )
+        }
+        assertTrue(hasAccess)
+        verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
+        verify(exactly = 0) {
+            valkeyStore.setObject<List<Gruppe>>(
                 key = eq(cacheKey),
                 value = any(),
                 expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
@@ -86,16 +161,19 @@ class GraphApiClientTest {
             issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
             navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
         )
-        val cacheKey = "${GraphApiClient.GRAPHAPI_CACHE_KEY}-${UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS}"
+        val graphApiClientMock = spyk(graphApiClient)
+        coEvery { graphApiClientMock.getGrupperForVeileder(any(), any()) } returns listOf()
+
+        val cacheKey = cacheKeyVeilederGrupper(UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS)
         every {
-            valkeyStore.getListObject<GraphApiGroup>(cacheKey)
+            valkeyStore.getListObject<Gruppe>(cacheKey)
         } returns null
         every {
             valkeyStore.get(any<String>())
         } returns null
 
         val hasAccess = runBlocking {
-            graphApiClient.hasAccess(
+            graphApiClientMock.hasAccess(
                 adRolle = adRoller.SYFO,
                 token = Token(validToken),
                 callId = UUID.randomUUID().toString(),
@@ -104,7 +182,7 @@ class GraphApiClientTest {
         assertFalse(hasAccess)
         verify(exactly = 1) { valkeyStore.get(key = eq(cacheKey)) }
         verify(exactly = 0) {
-            valkeyStore.setObject<List<GraphApiGroup>>(
+            valkeyStore.setObject<List<Gruppe>>(
                 key = eq(cacheKey),
                 value = any(),
                 expireSeconds = eq(GraphApiClient.TWELVE_HOURS_IN_SECS),
@@ -129,20 +207,20 @@ class GraphApiClientTest {
         } returns listOf(enhetGroup, syfoGroup)
 
         testApplication {
-            val graphApiGroups = graphApiClientStub.getGroupsForVeileder(
+            val grupper = graphApiClientStub.getGrupperForVeileder(
                 token = Token("eyJhbGciOiJIUz..."),
                 callId = "callId"
             )
 
-            assertEquals(2, graphApiGroups.size)
+            assertEquals(2, grupper.size)
 
-            val enhetGroup = graphApiGroups.first()
-            assertEquals("UUID", enhetGroup.id)
-            assertEquals("0000-GA-ENHET_1234", enhetGroup.displayName)
+            val enhetGruppe = grupper.first()
+            assertEquals("UUID", enhetGruppe.uuid)
+            assertEquals("0000-GA-ENHET_1234", enhetGruppe.adGruppenavn)
 
-            val syfoGroup = graphApiGroups.last()
-            assertEquals("UUID2", syfoGroup.id)
-            assertEquals("0000-GA-SYFO-SENSITIV", syfoGroup.displayName)
+            val syfoGruppe = grupper.last()
+            assertEquals("UUID2", syfoGruppe.uuid)
+            assertEquals("0000-GA-SYFO-SENSITIV", syfoGruppe.adGruppenavn)
         }
     }
 
@@ -157,12 +235,12 @@ class GraphApiClientTest {
         }
 
         testApplication {
-            val graphApiGroups = graphApiClientStub.getGroupsForVeileder(
+            val grupper = graphApiClientStub.getGrupperForVeileder(
                 token = Token("eyJhbGciOiJIUz..."),
                 callId = "callId"
             )
 
-            assertTrue(graphApiGroups.isEmpty())
+            assertTrue(grupper.isEmpty())
         }
     }
 
@@ -174,12 +252,32 @@ class GraphApiClientTest {
         } throws IllegalAccessException("Some access error")
 
         testApplication {
-            val graphApiGroups = graphApiClientStub.getGroupsForVeileder(
+            val grupper = graphApiClientStub.getGrupperForVeileder(
                 token = Token("eyJhbGciOiJIUz..."),
                 callId = "callId"
             )
 
-            assertTrue(graphApiGroups.isEmpty())
+            assertTrue(grupper.isEmpty())
+        }
+    }
+
+    @Test
+    fun `get enheter for veileder - Veileder har flere grupper, men kun en enhet`() {
+        val graphApiClientStub = spyk(graphApiClient)
+        val enhetGroup = Gruppe(uuid = "UUID", adGruppenavn = "0000-GA-ENHET_1234")
+        val syfoGroup = Gruppe(uuid = "UUID2", adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        coEvery {
+            graphApiClientStub.getGrupperForVeilederOgCache(any(), any())
+        } returns listOf(enhetGroup, syfoGroup)
+
+        testApplication {
+            val enheter = graphApiClientStub.getEnheterForVeileder(
+                token = Token("eyJhbGciOiJIUz..."),
+                callId = "callId"
+            )
+
+            assertEquals(1, enheter.size)
+            assertEquals("1234", enheter.first().id)
         }
     }
 }

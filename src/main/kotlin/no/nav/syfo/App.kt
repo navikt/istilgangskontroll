@@ -9,7 +9,6 @@ import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.application.cache.ValkeyStore
-import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
@@ -56,16 +55,8 @@ fun main() {
     val graphApiClient = GraphApiClient(
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.graphApiUrl,
-        relevantSyfoRoller = adRoller.toList(),
         valkeyStore = valkeyStore,
         adRoller = adRoller,
-    )
-
-    val axsysClient = AxsysClient(
-        azureAdClient = azureAdClient,
-        axsysUrl = environment.clients.axsys.baseUrl,
-        clientId = environment.clients.axsys.clientId,
-        valkeyStore = valkeyStore,
     )
 
     val skjermedePersonerPipClient = SkjermedePersonerPipClient(
@@ -128,7 +119,6 @@ fun main() {
                 wellKnownInternalAzureAD = wellKnownInternalAzureAD,
                 adRoller = adRoller,
                 valkeyStore = valkeyStore,
-                axsysClient = axsysClient,
                 skjermedePersonerPipClient = skjermedePersonerPipClient,
                 pdlClient = pdlClient,
                 behandlendeEnhetClient = behandlendeEnhetClient,

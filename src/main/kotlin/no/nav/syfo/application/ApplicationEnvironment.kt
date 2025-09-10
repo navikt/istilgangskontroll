@@ -33,10 +33,6 @@ data class Environment(
 
     val clients: ClientsEnvironment = ClientsEnvironment(
         graphApiUrl = getEnvVar("GRAPHAPI_URL"),
-        axsys = ClientEnvironment(
-            baseUrl = getEnvVar("AXSYS_URL"),
-            clientId = getEnvVar("AXSYS_CLIENT_ID")
-        ),
         skjermedePersoner = ClientEnvironment(
             baseUrl = getEnvVar("SKJERMEDE_PERSONER_URL"),
             clientId = getEnvVar("SKJERMEDE_PERSONER_CLIENT_ID")

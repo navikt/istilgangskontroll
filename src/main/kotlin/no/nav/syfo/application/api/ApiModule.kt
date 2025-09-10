@@ -9,7 +9,6 @@ import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.auth.*
 import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.application.metric.registerMetricApi
-import no.nav.syfo.client.axsys.AxsysClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
@@ -26,7 +25,6 @@ fun Application.apiModule(
     wellKnownInternalAzureAD: WellKnown,
     adRoller: AdRoller,
     valkeyStore: ValkeyStore,
-    axsysClient: AxsysClient,
     skjermedePersonerPipClient: SkjermedePersonerPipClient,
     pdlClient: PdlClient,
     behandlendeEnhetClient: BehandlendeEnhetClient,
@@ -49,7 +47,6 @@ fun Application.apiModule(
 
     val tilgangService = TilgangService(
         graphApiClient = graphApiClient,
-        axsysClient = axsysClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
