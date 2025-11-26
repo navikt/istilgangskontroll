@@ -10,6 +10,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
@@ -70,6 +71,7 @@ class TilgangsmaskinClient(
                 header(HttpHeaders.Authorization, bearerHeader(oboToken.accessToken))
                 header(NAV_CALL_ID_HEADER, callId)
                 setBody(personidenter.map { personident -> TilgangsmaskinBulkRequest(personident) })
+                contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
             }
         } catch (exc: ClientRequestException) {
