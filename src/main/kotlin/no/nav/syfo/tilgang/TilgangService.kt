@@ -356,14 +356,14 @@ class TilgangService(
         coroutineScope.launch {
             val veilederIdent = token.getNAVIdent()
             val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, validPersonidenter, callId)
-            val baseLine = validPersonidenter - godkjente
-            val tilgangsmaskin = validPersonidenter - tilgangsmaskinTilgang
-            val agreeDenied = baseLine.intersect(tilgangsmaskin)
-            val diffDeniedByBaseline = baseLine - agreeDenied
-            val diffDeniedByTilgangsmaskin = tilgangsmaskin - agreeDenied
+            val baseLineDenied = validPersonidenter - godkjente
+            val tilgangsmaskinDenied = validPersonidenter - tilgangsmaskinTilgang
+            val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
+            val diffDeniedByBaseline = baseLineDenied - agreeDenied
+            val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
             if (!diffDeniedByBaseline.isEmpty()) {
                 COUNT_TILGANGSMASKIN_DIFF.increment()
-                log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
+                log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
             }
             if (!diffDeniedByTilgangsmaskin.isEmpty()) {
                 COUNT_TILGANGSMASKIN_DIFF.increment()
