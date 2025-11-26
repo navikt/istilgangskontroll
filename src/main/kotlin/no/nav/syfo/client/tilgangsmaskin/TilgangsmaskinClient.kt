@@ -25,7 +25,7 @@ class TilgangsmaskinClient(
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
     private val tilgangsmaskinUrl: String = "$baseUrl/api/v1/komplett"
-    private val tilgangsmaskinBulkUrl: String = "$baseUrl/api/v1/bulk/obo/"
+    private val tilgangsmaskinBulkUrl: String = "$baseUrl/api/v1/bulk/obo"
 
     suspend fun hasTilgang(
         token: Token,
