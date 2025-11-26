@@ -369,6 +369,7 @@ class TilgangService(
                 COUNT_TILGANGSMASKIN_DIFF.increment()
                 log.info("Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
             }
+            COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
         }
         return godkjente
     }
