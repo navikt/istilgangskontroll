@@ -79,7 +79,7 @@ class TilgangsmaskinClient(
         }
         return if (response.status == HttpStatusCode.MultiStatus) {
             val tilgangsmaskinBulk = response.body<TilgangsmaskinBulkResponse>()
-            return tilgangsmaskinBulk.resultater.filter {
+            tilgangsmaskinBulk.resultater.filter {
                 it.status == HttpStatusCode.NoContent.value
             }.map {
                 it.brukerId
