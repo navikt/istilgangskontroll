@@ -362,11 +362,11 @@ class TilgangService(
             val diffDeniedByBaseline = baseLineDenied - agreeDenied
             val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
             if (!diffDeniedByBaseline.isEmpty()) {
-                COUNT_TILGANGSMASKIN_DIFF.increment()
+                COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
                 log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
             }
             if (!diffDeniedByTilgangsmaskin.isEmpty()) {
-                COUNT_TILGANGSMASKIN_DIFF.increment()
+                COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
                 log.info("Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
             }
             COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
