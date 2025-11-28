@@ -20,6 +20,8 @@ import no.nav.syfo.domain.Personident
 import no.nav.syfo.domain.removeInvalidPersonidenter
 import org.slf4j.LoggerFactory
 
+private const val MAX_BULK_SIZE_TILGANGSMASKIN = 1000
+
 class TilgangService(
     val graphApiClient: GraphApiClient,
     val skjermedePersonerPipClient: SkjermedePersonerPipClient,
@@ -264,6 +266,7 @@ class TilgangService(
         callId: String,
         appName: String,
         doAuditLog: Boolean = true,
+        bulk: Boolean = false,
     ): Deferred<Tilgang> =
         coroutineScope.async {
             val veilederIdent = token.getNAVIdent()
@@ -271,7 +274,7 @@ class TilgangService(
             val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
             val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
-            if (cachedTilgang == null) {
+            if (cachedTilgang == null && !bulk) {
                 coroutineScope.launch {
                     val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, personident, callId)
                     if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
@@ -333,14 +336,16 @@ class TilgangService(
         token: Token,
         personidenter: List<String>,
         appName: String,
-    ): List<String> =
-        personidenter.removeInvalidPersonidenter().map { personident ->
+    ): List<String> {
+        val validPersonidenter = personidenter.removeInvalidPersonidenter()
+        val godkjente = validPersonidenter.map { personident ->
             val tilgang = checkTilgangToPerson(
                 token = token,
                 personident = Personident(personident),
                 callId = callId,
                 appName = appName,
                 doAuditLog = false,
+                bulk = true,
             )
             Pair(personident, tilgang)
         }.mapNotNull { (personident, tilgang) ->
@@ -350,6 +355,28 @@ class TilgangService(
                 null
             }
         }
+        if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
+            coroutineScope.launch {
+                val veilederIdent = token.getNAVIdent()
+                val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, validPersonidenter, callId)
+                val baseLineDenied = validPersonidenter - godkjente
+                val tilgangsmaskinDenied = validPersonidenter - tilgangsmaskinTilgang
+                val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
+                val diffDeniedByBaseline = baseLineDenied - agreeDenied
+                val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
+                if (diffDeniedByBaseline.isNotEmpty()) {
+                    COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
+                    log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
+                }
+                if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
+                    COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
+                    log.info("Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
+                }
+                COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
+            }
+        }
+        return godkjente
+    }
 
     private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
         try {
