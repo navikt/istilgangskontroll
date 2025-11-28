@@ -20,6 +20,8 @@ import no.nav.syfo.domain.Personident
 import no.nav.syfo.domain.removeInvalidPersonidenter
 import org.slf4j.LoggerFactory
 
+private const val MAX_BULK_SIZE_TILGANGSMASKIN = 1000
+
 class TilgangService(
     val graphApiClient: GraphApiClient,
     val skjermedePersonerPipClient: SkjermedePersonerPipClient,
@@ -353,23 +355,25 @@ class TilgangService(
                 null
             }
         }
-        coroutineScope.launch {
-            val veilederIdent = token.getNAVIdent()
-            val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, validPersonidenter, callId)
-            val baseLineDenied = validPersonidenter - godkjente
-            val tilgangsmaskinDenied = validPersonidenter - tilgangsmaskinTilgang
-            val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
-            val diffDeniedByBaseline = baseLineDenied - agreeDenied
-            val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
-            if (diffDeniedByBaseline.isNotEmpty()) {
-                COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
-                log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
+        if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
+            coroutineScope.launch {
+                val veilederIdent = token.getNAVIdent()
+                val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, validPersonidenter, callId)
+                val baseLineDenied = validPersonidenter - godkjente
+                val tilgangsmaskinDenied = validPersonidenter - tilgangsmaskinTilgang
+                val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
+                val diffDeniedByBaseline = baseLineDenied - agreeDenied
+                val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
+                if (diffDeniedByBaseline.isNotEmpty()) {
+                    COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
+                    log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
+                }
+                if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
+                    COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
+                    log.info("Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
+                }
+                COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
             }
-            if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
-                COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
-                log.info("Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
-            }
-            COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
         }
         return godkjente
     }
