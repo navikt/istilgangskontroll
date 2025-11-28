@@ -63,7 +63,8 @@ suspend fun MockRequestHandleScope.getTilgangsmaskinResponse(request: HttpReques
                     }
                 )
             ),
-            status = HttpStatusCode.MultiStatus
+            status = HttpStatusCode.MultiStatus,
+            headers = headersOf(HttpHeaders.ContentType, "application/json"),
         )
     } else {
         throw RuntimeException("Unknown path: $requestUrl")
