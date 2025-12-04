@@ -3,20 +3,20 @@ import com.adarshr.gradle.testlogger.theme.ThemeType
 group = "no.nav.syfo"
 version = "0.0.1"
 
-val jacksonDataType = "2.18.3"
-val ktor = "3.1.2"
-val logback = "1.5.17"
+val jacksonDataType = "2.20.1"
+val ktor = "3.3.3"
+val logback = "1.5.21"
 val logbackSyslog4jVersion = "1.0.0"
-val logstashEncoder = "7.4"
+val logstashEncoder = "9.0"
 val micrometerRegistry = "1.12.13"
-val mockk = "1.13.17"
-val nimbusJoseJwt = "10.2"
+val mockk = "1.14.6"
+val nimbusJoseJwt = "10.6"
 val jedis = "5.2.0"
-val microsoftGraphVersion = "6.42.0"
+val microsoftGraphVersion = "6.57.0"
 
 plugins {
-    kotlin("jvm") version "2.1.10"
-    id("com.gradleup.shadow") version "8.3.6"
+    kotlin("jvm") version "2.2.21"
+    id("com.gradleup.shadow") version "8.3.8"
     id("org.jlleitschuh.gradle.ktlint") version "11.4.1"
     id("com.adarshr.test-logger") version "4.0.0"
 }
@@ -81,6 +81,8 @@ tasks {
     }
 
     shadowJar {
+        isZip64 = true
+        mergeServiceFiles()
         archiveBaseName.set("app")
         archiveClassifier.set("")
         archiveVersion.set("")
