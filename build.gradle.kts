@@ -81,6 +81,8 @@ tasks {
     }
 
     shadowJar {
+        isZip64 = true
+        mergeServiceFiles()
         archiveBaseName.set("app")
         archiveClassifier.set("")
         archiveVersion.set("")
