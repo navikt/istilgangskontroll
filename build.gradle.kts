@@ -11,7 +11,7 @@ val logstashEncoder = "9.0"
 val micrometerRegistry = "1.12.13"
 val mockk = "1.14.6"
 val nimbusJoseJwt = "10.6"
-val jedis = "5.2.0"
+val jedis = "7.1.0"
 val microsoftGraphVersion = "6.57.0"
 
 plugins {
