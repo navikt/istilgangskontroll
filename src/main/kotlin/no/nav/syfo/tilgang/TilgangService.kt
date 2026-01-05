@@ -274,20 +274,6 @@ class TilgangService(
             val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
             val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
-            if (cachedTilgang == null && !bulk) {
-                coroutineScope.launch {
-                    val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, personident, callId)
-                    if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
-                        COUNT_TILGANGSMASKIN_DIFF.increment()
-                        log.info("Tilgangsmaskin gir annet resultat (ikke ok: ${tilgangsmaskinTilgang.problemDetailResponse?.begrunnelse}) for $veilederIdent enn istilgangskontroll (ok): $callId")
-                    } else if (tilgangsmaskinTilgang.hasAccess && !tilgang.erGodkjent) {
-                        COUNT_TILGANGSMASKIN_DIFF.increment()
-                        log.info("Tilgangsmaskin gir annet resultat (ok) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
-                    } else {
-                        COUNT_TILGANGSMASKIN_OK.increment()
-                    }
-                }
-            }
             if (doAuditLog) {
                 auditLog(
                     CEF(
@@ -353,26 +339,6 @@ class TilgangService(
                 personident
             } else {
                 null
-            }
-        }
-        if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
-            coroutineScope.launch {
-                val veilederIdent = token.getNAVIdent()
-                val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(token, validPersonidenter, callId)
-                val baseLineDenied = validPersonidenter - godkjente
-                val tilgangsmaskinDenied = validPersonidenter - tilgangsmaskinTilgang
-                val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
-                val diffDeniedByBaseline = baseLineDenied - agreeDenied
-                val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
-                if (diffDeniedByBaseline.isNotEmpty()) {
-                    COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
-                    log.info("Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for $veilederIdent enn istilgangskontroll (ikke ok): $callId")
-                }
-                if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
-                    COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
-                    log.info("Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for $veilederIdent enn istilgangskontroll (ok): $callId")
-                }
-                COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
             }
         }
         return godkjente
