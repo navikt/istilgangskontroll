@@ -107,9 +107,9 @@ fun main() {
             connector {
                 port = applicationPort
             }
-            connectionGroupSize = 8
-            workerGroupSize = 16
-            callGroupSize = 16
+            connectionGroupSize = 16
+            workerGroupSize = 32
+            callGroupSize = 32
         },
         module = {
             apiModule(
