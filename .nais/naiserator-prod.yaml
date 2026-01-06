@@ -28,10 +28,10 @@ spec:
     failureThreshold: 1
   resources:
     limits:
-      memory: 3Gi
-    requests:
-      cpu: 1000m
       memory: 2Gi
+    requests:
+      cpu: 300m
+      memory: 1536Mi
   replicas:
     min: 4
     max: 4
