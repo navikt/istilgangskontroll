@@ -20,4 +20,4 @@ data class AzureAdToken(
 fun LocalDateTime.toOffsetDateTimeUTC(): OffsetDateTime =
     this.atZone(ZoneId.of("Europe/Oslo")).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
 
-fun AzureAdToken.isExpired() = this.expires < LocalDateTime.now().plusMinutes(10)
+fun AzureAdToken.isExpired() = this.expires < LocalDateTime.now().plusSeconds(60)
