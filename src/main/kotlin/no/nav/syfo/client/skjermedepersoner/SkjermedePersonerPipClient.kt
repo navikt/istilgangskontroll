@@ -5,6 +5,8 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
@@ -21,7 +23,6 @@ class SkjermedePersonerPipClient(
     private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
-    private val log = LoggerFactory.getLogger(SkjermedePersonerPipClient::class.java)
 
     suspend fun getIsSkjermetWithOboToken(
         callId: String,
@@ -95,16 +96,22 @@ class SkjermedePersonerPipClient(
             val url = "$skjermedePersonerUrl/skjermet"
             val body = SkjermedePersonerRequestDTO(personIdent.value)
 
-            val skjermet: Boolean = httpClient.post(url) {
-                contentType(ContentType.Application.Json)
-                setBody(body)
-                header(HttpHeaders.Authorization, bearerHeader(newToken))
-                header(NAV_CALL_ID_HEADER, callId)
-                header(NAV_CONSUMER_ID_HEADER, NAV_CONSUMER_APP_ID)
-                accept(ContentType.Application.Json)
-            }.body<Boolean>()
-            COUNT_CALL_SKJERMEDE_PERSONER_SUCCESS.increment()
-            skjermet
+            withTimeout(TIMEOUT_LIMIT_MS) {
+                val skjermet: Boolean = httpClient.post(url) {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                    header(HttpHeaders.Authorization, bearerHeader(newToken))
+                    header(NAV_CALL_ID_HEADER, callId)
+                    header(NAV_CONSUMER_ID_HEADER, NAV_CONSUMER_APP_ID)
+                    accept(ContentType.Application.Json)
+                }.body<Boolean>()
+                COUNT_CALL_SKJERMEDE_PERSONER_SUCCESS.increment()
+                skjermet
+            }
+        } catch (e: TimeoutCancellationException) {
+            COUNT_CALL_SKJERMEDE_PERSONER_FAIL.increment()
+            log.error("Timeout while requesting skjerming from SkjermedePersoner, callId=$callId", e)
+            throw e
         } catch (e: ResponseException) {
             COUNT_CALL_SKJERMEDE_PERSONER_FAIL.increment()
             log.error(
@@ -120,7 +127,7 @@ class SkjermedePersonerPipClient(
 
     companion object {
         private val log = LoggerFactory.getLogger(SkjermedePersonerPipClient::class.java)
-
+        const val TIMEOUT_LIMIT_MS = 1_000L
         const val SKJERMEDE_PERSONER_CACHE_KEY = "skjermedePersoner"
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
     }

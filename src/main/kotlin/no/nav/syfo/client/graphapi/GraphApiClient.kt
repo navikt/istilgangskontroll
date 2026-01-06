@@ -5,6 +5,8 @@ import com.microsoft.graph.models.DirectoryObjectCollectionResponse
 import com.microsoft.graph.models.Group
 import com.microsoft.graph.serviceclient.GraphServiceClient
 import com.microsoft.kiota.ApiException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
@@ -120,26 +122,34 @@ class GraphApiClient(
             ?: throw RuntimeException("Failed to request list of groups for veileder in Microsoft Graph API: Failed to get system token from AzureAD")
 
         val graphServiceClient = createGraphServiceClient(azureAdToken = oboToken)
-        val directoryObjectCollectionResponse = graphServiceClient.me().memberOf().get { requestConfiguration ->
-            requestConfiguration.headers.add("ConsistencyLevel", "eventual")
-            requestConfiguration.queryParameters.select =
-                arrayOf(
-                    "id",
-                    "displayName",
-                )
-            requestConfiguration.queryParameters.count = true
+
+        return try {
+            withTimeout(TIMEOUT_LIMIT_MS) {
+                val directoryObjectCollectionResponse = graphServiceClient.me().memberOf().get { requestConfiguration ->
+                    requestConfiguration.headers.add("ConsistencyLevel", "eventual")
+                    requestConfiguration.queryParameters.select =
+                        arrayOf(
+                            "id",
+                            "displayName",
+                        )
+                    requestConfiguration.queryParameters.count = true
+                }
+
+                val groups = mutableListOf<Group>()
+                PageIterator.Builder<Group, DirectoryObjectCollectionResponse>()
+                    .client(graphServiceClient)
+                    .collectionPage(Objects.requireNonNull(directoryObjectCollectionResponse))
+                    .collectionPageFactory(DirectoryObjectCollectionResponse::createFromDiscriminatorValue)
+                    .processPageItemCallback { group -> groups.add(group) }
+                    .build()
+                    .iterate()
+
+                groups
+            }
+        } catch (e: TimeoutCancellationException) {
+            log.error("Timeout while requesting groups for veileder from Microsoft Graph API, callId=$callId", e)
+            throw e
         }
-
-        val groups = mutableListOf<Group>()
-        PageIterator.Builder<Group, DirectoryObjectCollectionResponse>()
-            .client(graphServiceClient)
-            .collectionPage(Objects.requireNonNull(directoryObjectCollectionResponse))
-            .collectionPageFactory(DirectoryObjectCollectionResponse::createFromDiscriminatorValue)
-            .processPageItemCallback { group -> groups.add(group) }
-            .build()
-            .iterate()
-
-        return groups
     }
 
     fun createGraphServiceClient(azureAdToken: AzureAdToken): GraphServiceClient {
@@ -151,6 +161,7 @@ class GraphApiClient(
         private const val MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX = "msGraphapiVeilederGrupper-"
         private val log = LoggerFactory.getLogger(GraphApiClient::class.java)
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
+        const val TIMEOUT_LIMIT_MS = 1_000L
         fun cacheKeyVeilederGrupper(veilederIdent: String) = "$MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
     }
 }
