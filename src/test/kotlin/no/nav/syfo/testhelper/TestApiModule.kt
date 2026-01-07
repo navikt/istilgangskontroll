@@ -40,7 +40,7 @@ fun Application.testApiModule(
     val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,
         valkeyStore = valkeyStore,
-        httpClient = mockHttpClient,
+        proxyHttpClient = mockHttpClient,
     )
 
     val graphApiClient = graphApiClientMock ?: GraphApiClient(
