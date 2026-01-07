@@ -7,8 +7,6 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withTimeout
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
@@ -104,28 +102,29 @@ class AzureAdClient(
         callId: String,
     ): AzureAdTokenResponse? =
         try {
-            withTimeout(TIMEOUT_LIMIT_MS) {
-                val response: HttpResponse = httpClient.post(azureEnvironment.openidConfigTokenEndpoint) {
-                    accept(ContentType.Application.Json)
-                    setBody(FormDataContent(formParameters))
-                }
-                response.body<AzureAdTokenResponse>()
+            val response: HttpResponse = httpClient.post(azureEnvironment.openidConfigTokenEndpoint) {
+                accept(ContentType.Application.Json)
+                setBody(FormDataContent(formParameters))
             }
-        } catch (e: TimeoutCancellationException) {
-            log.error("Timeout while requesting AzureAdAccessToken, callId: $callId", e)
-            throw e
+            response.body<AzureAdTokenResponse>()
         } catch (e: ResponseException) {
-            log.error(
-                "Error while requesting AzureAdAccessToken with statusCode=${e.response.status.value}, callId: $callId",
-                e
-            )
+            handleUnexpectedResponseException(e, callId)
             null
         }
+
+    private fun handleUnexpectedResponseException(
+        responseException: ResponseException,
+        callId: String,
+    ) {
+        log.error(
+            "Error while requesting AzureAdAccessToken with statusCode=${responseException.response.status.value}, callId: $callId",
+            responseException
+        )
+    }
 
     companion object {
         const val CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX = "azuread-token-system-"
         const val CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX = "azuread-token-obo-"
-        const val TIMEOUT_LIMIT_MS = 1_000L
         private val log = LoggerFactory.getLogger(AzureAdClient::class.java)
     }
 }
