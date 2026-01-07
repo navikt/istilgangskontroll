@@ -1,7 +1,6 @@
 package no.nav.syfo.tilgang
 
 import io.mockk.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
@@ -42,7 +41,6 @@ class TilgangServicePersonTest {
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
-        dispatcher = Dispatchers.IO.limitedParallelism(20),
         tilgangsmaskin = tilgangsmaskin,
     )
 
@@ -109,7 +107,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns false
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertFalse(tilgang.erGodkjent)
             }
@@ -131,7 +129,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -174,7 +172,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -211,7 +209,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertFalse(tilgang.erGodkjent)
             }
@@ -268,7 +266,7 @@ class TilgangServicePersonTest {
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -338,7 +336,7 @@ class TilgangServicePersonTest {
             } returns innbyggerEnhet
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -398,7 +396,7 @@ class TilgangServicePersonTest {
             )
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -462,7 +460,7 @@ class TilgangServicePersonTest {
             } returns listOf(overordnetEnhet)
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -530,7 +528,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertFalse(tilgang.erGodkjent)
             }
@@ -560,7 +558,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns true
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -623,7 +621,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertFalse(tilgang.erGodkjent)
             }
@@ -659,7 +657,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns false
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertFalse(tilgang.erGodkjent)
             }
@@ -695,7 +693,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns true
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -731,7 +729,7 @@ class TilgangServicePersonTest {
             coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns true
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -766,7 +764,7 @@ class TilgangServicePersonTest {
             coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbygger()
 
             runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
                 assertTrue(tilgang.erGodkjent)
             }
@@ -804,7 +802,7 @@ class TilgangServicePersonTest {
         every { valkeyStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
         runBlocking {
-            val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName).await()
+            val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
 
             assertTrue(tilgang.erGodkjent)
         }

@@ -3,10 +3,11 @@ package no.nav.syfo.application.api
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.Dispatchers
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.Environment
-import no.nav.syfo.application.api.auth.*
+import no.nav.syfo.application.api.auth.JwtIssuer
+import no.nav.syfo.application.api.auth.JwtIssuerType
+import no.nav.syfo.application.api.auth.installJwtAuthentication
 import no.nav.syfo.application.cache.ValkeyStore
 import no.nav.syfo.application.metric.registerMetricApi
 import no.nav.syfo.client.azuread.AzureAdClient
@@ -17,7 +18,9 @@ import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.client.wellknown.WellKnown
-import no.nav.syfo.tilgang.*
+import no.nav.syfo.tilgang.AdRoller
+import no.nav.syfo.tilgang.TilgangService
+import no.nav.syfo.tilgang.registerTilgangApi
 
 fun Application.apiModule(
     applicationState: ApplicationState,
@@ -56,7 +59,6 @@ fun Application.apiModule(
         adRoller = adRoller,
         valkeyStore = valkeyStore,
         norgClient = norgClient,
-        dispatcher = Dispatchers.IO.limitedParallelism(20),
         tilgangsmaskin = tilgangsmaskin,
     )
 
