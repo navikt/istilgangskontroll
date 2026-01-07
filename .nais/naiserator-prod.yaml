@@ -30,12 +30,12 @@ spec:
     limits:
       memory: 3Gi
     requests:
-      cpu: 300m
+      cpu: 1000m
       memory: 1536Mi
   replicas:
     min: 4
-    max: 4
-    cpuThresholdPercentage: 90
+    max: 6
+    cpuThresholdPercentage: 70
   prometheus:
     enabled: true
     path: /internal/metrics
