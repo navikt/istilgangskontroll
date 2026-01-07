@@ -1,10 +1,10 @@
 package no.nav.syfo.tilgang
 
 import io.micrometer.core.instrument.Counter
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
@@ -248,7 +248,7 @@ class TilgangService(
                 personident = personident,
                 callId = callId,
                 appName = appName,
-            ).await()
+            )
         } else {
             Tilgang(erGodkjent = false)
         }
@@ -269,28 +269,25 @@ class TilgangService(
         appName: String,
         doAuditLog: Boolean = true,
         bulk: Boolean = false,
-    ): Deferred<Tilgang> =
-        withContext(Dispatchers.IO.limitedParallelism(20)) {
-            async {
-                val veilederIdent = token.getNAVIdent()
-                val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
-                val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
+    ): Tilgang {
+        val veilederIdent = token.getNAVIdent()
+        val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+        val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
-                val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
-                if (doAuditLog) {
-                    auditLog(
-                        CEF(
-                            suid = veilederIdent,
-                            duid = personident.value,
-                            event = AuditLogEvent.Access,
-                            permit = tilgang.erGodkjent,
-                            appName = appName,
-                        )
-                    )
-                }
-                tilgang
-            }
+        val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+        if (doAuditLog) {
+            auditLog(
+                CEF(
+                    suid = veilederIdent,
+                    duid = personident.value,
+                    event = AuditLogEvent.Access,
+                    permit = tilgang.erGodkjent,
+                    appName = appName,
+                )
+            )
         }
+        return tilgang
+    }
 
     private suspend fun checkTilgangToPersonAndCache(
         callId: String,
@@ -331,26 +328,27 @@ class TilgangService(
             return emptyList()
         }
         preloadOboTokens(callId = callId, token = token)
-
         val validPersonidenter = personidenter.removeInvalidPersonidenter()
-        val godkjente = validPersonidenter.map { personident ->
-            val tilgang = checkTilgangToPerson(
-                token = token,
-                personident = Personident(personident),
-                callId = callId,
-                appName = appName,
-                doAuditLog = false,
-                bulk = true,
-            )
-            Pair(personident, tilgang)
-        }.mapNotNull { (personident, tilgang) ->
-            if (tilgang.await().erGodkjent) {
-                personident
-            } else {
-                null
+
+        return supervisorScope {
+            validPersonidenter.map { personident ->
+                async(CHECK_PERSON_TILGANG_DISPATCHER) {
+                    val tilgang = checkTilgangToPerson(
+                        token = token,
+                        personident = Personident(personident),
+                        callId = callId,
+                        appName = appName,
+                        doAuditLog = false,
+                        bulk = true,
+                    )
+                    personident to tilgang
+                }
             }
+                .awaitAll()
+                .mapNotNull { (personident, tilgang) ->
+                    personident.takeIf { tilgang.erGodkjent }
+                }
         }
-        return godkjente
     }
 
     private suspend fun preloadOboTokens(
@@ -390,6 +388,7 @@ class TilgangService(
 
     companion object {
         private val log = LoggerFactory.getLogger(TilgangService::class.java)
+        private val CHECK_PERSON_TILGANG_DISPATCHER = Dispatchers.IO.limitedParallelism(20)
 
         const val TILGANG_TIL_TJENESTEN_PREFIX = "tilgang-til-tjenesten-"
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"

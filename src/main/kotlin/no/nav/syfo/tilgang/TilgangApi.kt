@@ -95,7 +95,7 @@ fun Route.registerTilgangApi(
                 personident = requestedPersonIdent,
                 callId = callId,
                 appName = appName,
-            ).await()
+            )
 
             if (tilgang.erGodkjent) {
                 call.respond(tilgang)
@@ -181,7 +181,7 @@ fun Route.registerTilgangApi(
 }
 
 private fun ApplicationCall.getAppname(
-    preAuthorizedApps: List<PreAuthorizedApp>
+    preAuthorizedApps: List<PreAuthorizedApp>,
 ): String? {
     val consumerClientId = this.getConsumerClientId() ?: ""
     return preAuthorizedApps.find { it.clientId == consumerClientId }?.getAppnavn()
