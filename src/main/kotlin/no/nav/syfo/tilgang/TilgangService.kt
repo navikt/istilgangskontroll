@@ -326,8 +326,6 @@ class TilgangService(
         if (!hasAccessToSYFO(callId = callId, token = token)) {
             return emptyList()
         }
-        // Just so that enheter for veileder is cached before checking tilgang to persons
-        graphApiClient.getEnheterForVeileder(token = token, callId = callId)
         preloadOboTokens()
         val validPersonidenter = personidenter.removeInvalidPersonidenter()
         val godkjente = validPersonidenter.map { personident ->
