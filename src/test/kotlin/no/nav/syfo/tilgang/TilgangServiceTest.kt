@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.behandlendeenhet.EnhetDTO
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class TilgangServiceTest {
+    private val azureAdClient = mockk<AzureAdClient>(relaxed = true)
     private val graphApiClient = mockk<GraphApiClient>(relaxed = true)
     private val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
     private val pdlClient = mockk<PdlClient>(relaxed = true)
@@ -38,6 +40,7 @@ class TilgangServiceTest {
         graphApiClient = graphApiClient,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
+        azureAdClient = azureAdClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
@@ -204,7 +207,7 @@ class TilgangServiceTest {
                 assertEquals(0, filteredPersonidenter.size)
             }
 
-            coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident1, any()) }
             coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident2, any()) }
             coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident1, any()) }
@@ -255,7 +258,7 @@ class TilgangServiceTest {
                 assertEquals(personident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 3) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 2) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -358,7 +361,7 @@ class TilgangServiceTest {
                 assertEquals(personident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 4) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 5) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.REGIONAL, validToken, callId) }
             coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, validToken, callId) }
             coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.KODE6, validToken, callId) }
@@ -449,7 +452,7 @@ class TilgangServiceTest {
                 assertEquals(validPersonident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -500,7 +503,7 @@ class TilgangServiceTest {
                 assertEquals(0, filteredPersonidenter.size)
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId,

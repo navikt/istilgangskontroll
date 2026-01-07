@@ -94,6 +94,7 @@ fun Application.testApiModule(
         wellKnownInternalAzureAD = externalMockEnvironment.wellKnownInternalAzureAD,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
+        azureAdClient = azureAdClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,

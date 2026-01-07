@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
 import no.nav.syfo.client.behandlendeenhet.EnhetDTO
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 
 class TilgangServicePersonTest {
+    private val azureAdClient = mockk<AzureAdClient>(relaxed = true)
     private val graphApiClient = mockk<GraphApiClient>(relaxed = true)
     private val skjermedePersonerPipClient = mockk<SkjermedePersonerPipClient>(relaxed = true)
     private val pdlClient = mockk<PdlClient>(relaxed = true)
@@ -35,6 +37,7 @@ class TilgangServicePersonTest {
         graphApiClient = graphApiClient,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
+        azureAdClient = azureAdClient,
         skjermedePersonerPipClient = skjermedePersonerPipClient,
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,

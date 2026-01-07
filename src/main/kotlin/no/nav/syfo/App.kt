@@ -119,6 +119,7 @@ fun main() {
                 wellKnownInternalAzureAD = wellKnownInternalAzureAD,
                 adRoller = adRoller,
                 valkeyStore = valkeyStore,
+                azureAdClient = azureAdClient,
                 skjermedePersonerPipClient = skjermedePersonerPipClient,
                 pdlClient = pdlClient,
                 behandlendeEnhetClient = behandlendeEnhetClient,
