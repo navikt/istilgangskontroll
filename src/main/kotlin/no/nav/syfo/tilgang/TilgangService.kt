@@ -1,7 +1,10 @@
 package no.nav.syfo.tilgang
 
 import io.micrometer.core.instrument.Counter
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.application.cache.ValkeyStore
@@ -32,11 +35,8 @@ class TilgangService(
     val norgClient: NorgClient,
     val adRoller: AdRoller,
     val valkeyStore: ValkeyStore,
-    val dispatcher: CoroutineDispatcher,
     val tilgangsmaskin: TilgangsmaskinClient,
 ) {
-    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcher)
-
     private suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
         return graphApiClient.hasAccess(
             adRolle = adRoller.SYFO,
@@ -262,7 +262,7 @@ class TilgangService(
         )
     }
 
-    fun checkTilgangToPerson(
+    suspend fun checkTilgangToPerson(
         token: Token,
         personident: Personident,
         callId: String,
@@ -270,24 +270,26 @@ class TilgangService(
         doAuditLog: Boolean = true,
         bulk: Boolean = false,
     ): Deferred<Tilgang> =
-        coroutineScope.async {
-            val veilederIdent = token.getNAVIdent()
-            val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
-            val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
+        withContext(Dispatchers.IO.limitedParallelism(20)) {
+            async {
+                val veilederIdent = token.getNAVIdent()
+                val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+                val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
-            val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
-            if (doAuditLog) {
-                auditLog(
-                    CEF(
-                        suid = veilederIdent,
-                        duid = personident.value,
-                        event = AuditLogEvent.Access,
-                        permit = tilgang.erGodkjent,
-                        appName = appName,
+                val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+                if (doAuditLog) {
+                    auditLog(
+                        CEF(
+                            suid = veilederIdent,
+                            duid = personident.value,
+                            event = AuditLogEvent.Access,
+                            permit = tilgang.erGodkjent,
+                            appName = appName,
+                        )
                     )
-                )
+                }
+                tilgang
             }
-            tilgang
         }
 
     private suspend fun checkTilgangToPersonAndCache(

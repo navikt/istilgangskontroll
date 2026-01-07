@@ -1,7 +1,6 @@
 package no.nav.syfo.tilgang
 
 import io.mockk.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.cache.ValkeyStore
@@ -42,7 +41,6 @@ class TilgangServicePersonTest {
         pdlClient = pdlClient,
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
-        dispatcher = Dispatchers.IO.limitedParallelism(20),
         tilgangsmaskin = tilgangsmaskin,
     )
 
