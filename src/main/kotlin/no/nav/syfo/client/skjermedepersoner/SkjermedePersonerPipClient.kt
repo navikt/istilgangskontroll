@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
 class SkjermedePersonerPipClient(
     private val azureAdClient: AzureAdClient,
     private val skjermedePersonerUrl: String,
-    private val clientId: String,
+    val clientId: String,
     private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {

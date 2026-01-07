@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 class BehandlendeEnhetClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
-    private val clientId: String,
+    val clientId: String,
     private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {

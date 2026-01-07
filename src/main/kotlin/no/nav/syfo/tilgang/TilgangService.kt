@@ -10,6 +10,7 @@ import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.audit.AuditLogEvent
 import no.nav.syfo.audit.CEF
 import no.nav.syfo.audit.auditLog
+import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory
 private const val MAX_BULK_SIZE_TILGANGSMASKIN = 1000
 
 class TilgangService(
+    val azureAdClient: AzureAdClient,
     val graphApiClient: GraphApiClient,
     val skjermedePersonerPipClient: SkjermedePersonerPipClient,
     val pdlClient: PdlClient,
@@ -326,7 +328,8 @@ class TilgangService(
         if (!hasAccessToSYFO(callId = callId, token = token)) {
             return emptyList()
         }
-        preloadOboTokens()
+        preloadOboTokens(callId = callId, token = token)
+
         val validPersonidenter = personidenter.removeInvalidPersonidenter()
         val godkjente = validPersonidenter.map { personident ->
             val tilgang = checkTilgangToPerson(
@@ -348,8 +351,14 @@ class TilgangService(
         return godkjente
     }
 
-    private suspend fun preloadOboTokens() {
-        // TODO
+    private suspend fun preloadOboTokens(
+        callId: String,
+        token: Token,
+    ) {
+        azureAdClient.getOnBehalfOfToken(skjermedePersonerPipClient.clientId, token, callId)
+        azureAdClient.getOnBehalfOfToken(behandlendeEnhetClient.clientId, token, callId)
+        // pdlClient bruker system token, så trenger ingen OBO-token preloading
+        // graphApiClient har implisitt cachet obo-token via hasAccessToSYFO-kallet
     }
 
     private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
