@@ -1,7 +1,7 @@
 FROM gcr.io/distroless/java21
 WORKDIR /app
 COPY build/libs/app.jar app.jar
-ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=75 -Dlogback.configurationFile=logback.xml"
+ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=75 -Dlogback.configurationFile=logback.xml -Dkotlinx.coroutines.io.parallelism=128"
 ENV TZ="Europe/Oslo"
 EXPOSE 8080
 USER nonroot
