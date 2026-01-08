@@ -36,7 +36,11 @@ fun main() {
     val valkeyConfig = environment.valkeyConfig
     val valkeyStore = ValkeyStore(
         JedisPool(
-            JedisPoolConfig(),
+            JedisPoolConfig().also {
+                it.setMaxTotal(32) // default is 8
+                it.setMaxIdle(32) // default is 8
+                it.setMinIdle(16) // default is 0
+            },
             HostAndPort(valkeyConfig.host, valkeyConfig.port),
             DefaultJedisClientConfig.builder()
                 .ssl(valkeyConfig.ssl)
