@@ -37,7 +37,7 @@ class TilgangService(
     val valkeyStore: ValkeyStore,
     val tilgangsmaskin: TilgangsmaskinClient,
 ) {
-    private suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
+    suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
         return graphApiClient.hasAccess(
             adRolle = adRoller.SYFO,
             token = token,
@@ -295,9 +295,7 @@ class TilgangService(
         personident: Personident,
         cacheKey: String,
     ): Tilgang {
-        val erGodkjent = if (!hasAccessToSYFO(callId = callId, token = token)) {
-            false
-        } else if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
+        val erGodkjent = if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
             false
         } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
             false

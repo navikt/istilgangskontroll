@@ -90,6 +90,10 @@ fun Route.registerTilgangApi(
             val appName = call.getAppname(preAuthorizedApps)
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found")
 
+            if (!tilgangService.hasAccessToSYFO(callId = callId, token = token)) {
+                throw IllegalArgumentException("Veileder has no access to SYFO")
+            }
+
             val tilgang = tilgangService.checkTilgangToPerson(
                 token = token,
                 personident = requestedPersonIdent,
@@ -118,6 +122,10 @@ fun Route.registerTilgangApi(
             }
             val appName = call.getAppname(preAuthorizedApps)
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found, papirsykmelding")
+
+            if (!tilgangService.hasAccessToSYFO(callId = callId, token = token)) {
+                throw IllegalArgumentException("Veileder has no access to SYFO")
+            }
 
             val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(
                 token = token,
