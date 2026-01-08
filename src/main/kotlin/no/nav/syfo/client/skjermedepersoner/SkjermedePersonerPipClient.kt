@@ -21,7 +21,6 @@ class SkjermedePersonerPipClient(
     private val valkeyStore: ValkeyStore,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
-    private val log = LoggerFactory.getLogger(SkjermedePersonerPipClient::class.java)
 
     suspend fun getIsSkjermetWithOboToken(
         callId: String,
@@ -51,8 +50,10 @@ class SkjermedePersonerPipClient(
         val cachedSkjerming = getCachedSkjerming(cacheKey)
 
         return if (cachedSkjerming != null) {
+            COUNT_CALL_SKJERMEDE_PERSONER_CACHE_HIT.increment()
             cachedSkjerming
         } else {
+            COUNT_CALL_SKJERMEDE_PERSONER_CACHE_MISS.increment()
             val skjermet = getSkjermingFromSkjermedePersoner(
                 callId = callId,
                 personIdent = personIdent,

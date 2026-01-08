@@ -27,8 +27,10 @@ class NorgClient(
         val cachedEnheter = valkeyStore.getListObject<NorgEnhet>(key = cacheKey)
 
         return if (!cachedEnheter.isNullOrEmpty()) {
+            COUNT_CALL_NORG_ENHET_CACHE_HIT.increment()
             cachedEnheter
         } else {
+            COUNT_CALL_NORG_ENHET_CACHE_MISS.increment()
             getOverordnedeEnheter(
                 callId = callId,
                 enhet = enhet,
@@ -82,8 +84,10 @@ class NorgClient(
         val cachedEnhet = valkeyStore.getObject<NorgEnhet>(key = cacheKey)
 
         return if (cachedEnhet != null) {
+            COUNT_CALL_NAV_KONTOR_FOR_GT_CACHE_HIT.increment()
             cachedEnhet
         } else {
+            COUNT_CALL_NAV_KONTOR_FOR_GT_CACHE_MISS.increment()
             getGeografiskEnhet(
                 callId = callId,
                 geografiskTilknytning = geografiskTilknytning,

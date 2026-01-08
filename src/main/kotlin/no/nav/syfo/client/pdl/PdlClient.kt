@@ -30,8 +30,10 @@ class PdlClient(
         val cachedPerson = valkeyStore.getObject<PipPersondataResponse>(key = cacheKey)
 
         return if (cachedPerson != null) {
+            COUNT_CALL_PDL_PERSON_CACHE_HIT.increment()
             cachedPerson
         } else {
+            COUNT_CALL_PDL_PERSON_CACHE_MISS.increment()
             getPersonFromPdl(callId, personident).also {
                 valkeyStore.setObject(
                     key = cacheKey,

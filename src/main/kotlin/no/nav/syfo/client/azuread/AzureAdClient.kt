@@ -44,8 +44,10 @@ class AzureAdClient(
         val cacheKey = "$CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX$scopeClientId-$veilederIdent"
         val cachedOboToken: AzureAdToken? = valkeyStore.getObject(key = cacheKey)
         return if (cachedOboToken?.isExpired() == false) {
+            COUNT_AZURE_AD_CACHE_HIT.increment()
             cachedOboToken
         } else {
+            COUNT_AZURE_AD_CACHE_MISS.increment()
             val azureAdTokenResponse = getAccessToken(
                 formParameters = formParameters,
                 callId = callId,
@@ -75,8 +77,10 @@ class AzureAdClient(
         val cacheKey = "$CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX$scopeClientId"
         val cachedSystemToken: AzureAdToken? = valkeyStore.getObject(key = cacheKey)
         return if (cachedSystemToken?.isExpired() == false) {
+            COUNT_AZURE_AD_CACHE_HIT.increment()
             cachedSystemToken
         } else {
+            COUNT_AZURE_AD_CACHE_MISS.increment()
             val azureAdTokenResponse = getAccessToken(
                 formParameters = Parameters.build {
                     append("client_id", azureEnvironment.appClientId)
