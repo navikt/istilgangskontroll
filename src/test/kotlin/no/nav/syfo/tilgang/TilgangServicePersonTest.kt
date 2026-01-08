@@ -100,50 +100,6 @@ class TilgangServicePersonTest {
             } returns false
             coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbygger()
         }
-
-        @Test
-        fun `Return no access if veileder doesn't have SYFO access`() {
-            every { valkeyStore.getObject<Tilgang?>(cacheKey) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns false
-
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertFalse(tilgang.erGodkjent)
-            }
-
-            verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.SYFO,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
-        }
-
-        @Test
-        fun `Return access if veileder has SYFO access`() {
-            every { valkeyStore.getObject<Tilgang?>(cacheKey) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
-
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
-            }
-
-            verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.SYFO,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            verifyCacheSet(exactly = 1, key = cacheKey)
-        }
     }
 
     @Nested

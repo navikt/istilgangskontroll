@@ -91,7 +91,10 @@ fun Route.registerTilgangApi(
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found")
 
             if (!tilgangService.hasAccessToSYFO(callId = callId, token = token)) {
-                throw IllegalArgumentException("Veileder has no access to SYFO")
+                return@get call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = Tilgang(erGodkjent = false)
+                )
             }
 
             val tilgang = tilgangService.checkTilgangToPerson(
@@ -124,7 +127,10 @@ fun Route.registerTilgangApi(
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found, papirsykmelding")
 
             if (!tilgangService.hasAccessToSYFO(callId = callId, token = token)) {
-                throw IllegalArgumentException("Veileder has no access to SYFO")
+                return@get call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = Tilgang(erGodkjent = false)
+                )
             }
 
             val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(

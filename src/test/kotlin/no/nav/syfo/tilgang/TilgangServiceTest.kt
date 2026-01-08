@@ -256,7 +256,7 @@ class TilgangServiceTest {
                 assertEquals(personident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 3) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 2) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -359,7 +359,7 @@ class TilgangServiceTest {
                 assertEquals(personident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 5) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.REGIONAL, validToken, callId) }
             coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, validToken, callId) }
             coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.KODE6, validToken, callId) }
@@ -450,7 +450,7 @@ class TilgangServiceTest {
                 assertEquals(validPersonident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -501,7 +501,7 @@ class TilgangServiceTest {
                 assertEquals(0, filteredPersonidenter.size)
             }
 
-            coVerify(exactly = 2) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId,
