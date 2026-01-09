@@ -38,11 +38,13 @@ class BehandlendeEnhetClient(
         token: Token?,
     ): BehandlendeEnhetDTO {
         val cacheKey = "$BEHANDLENDEENHET_CACHE_KEY-$personident"
-        val cachedEnhet = getCachedBehandlendeEnhet(cacheKey)
+        val cachedEnhet = valkeyStore.getObject<BehandlendeEnhetDTO>(key = cacheKey)
 
         return if (cachedEnhet != null) {
+            COUNT_CALL_BEHANDLENDEENHET_CACHE_HIT.increment()
             cachedEnhet
         } else {
+            COUNT_CALL_BEHANDLENDEENHET_CACHE_MISS.increment()
             getEnhetFromSyfobehandlendeenhet(
                 callId = callId,
                 personident = personident,
@@ -55,10 +57,6 @@ class BehandlendeEnhetClient(
                 )
             }
         }
-    }
-
-    private fun getCachedBehandlendeEnhet(cacheKey: String): BehandlendeEnhetDTO? {
-        return valkeyStore.getObject(key = cacheKey)
     }
 
     private suspend fun getEnhetFromSyfobehandlendeenhet(
