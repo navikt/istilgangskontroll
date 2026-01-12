@@ -299,34 +299,34 @@ class TilgangService(
         appName: String,
     ): Map<Personident, Tilgang> {
         val veilederIdent = token.getNAVIdent()
-        val cacheKeysToPersonident: Map<String, Personident> = personidenter.associate { personident ->
-            val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
-            cacheKey to personident
+        val cacheKeysToPersonident: Map<String, Personident> = personidenter.associateBy { personident ->
+            "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
         }
 
         val cacheKeysToValue: Map<String, Tilgang?> =
             valkeyStore.getObjects(keys = cacheKeysToPersonident.keys.toList())
 
         val (cachedEntries, missingEntries) = cacheKeysToValue.entries.partition { it.value != null }
+
         val cachedTilganger: Map<Personident, Tilgang> =
             cachedEntries.associate { entry ->
                 val personident = cacheKeysToPersonident[entry.key]!!
                 personident to entry.value!!
             }
-        val uncachedPersonidenter: List<Personident> = missingEntries.map { entry -> cacheKeysToPersonident[entry.key]!! }
 
-        return supervisorScope {
-            val hentetTilganger = uncachedPersonidenter.map { personident ->
+        val hentetTilganger = supervisorScope {
+            missingEntries.map { missingEntry ->
                 async(CHECK_PERSON_TILGANG_DISPATCHER) {
-                    val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+                    val cacheKey = missingEntry.key
+                    val personident = cacheKeysToPersonident[missingEntry.key]!!
                     val tilgang = checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
                     personident to tilgang
                 }
             }.awaitAll().toMap()
+        }
 
-            val alleTilganger = cachedTilganger + hentetTilganger
-            launch { auditLog(tilganger = alleTilganger, veilederIdent = veilederIdent, appName = appName) }
-            alleTilganger
+        return (cachedTilganger + hentetTilganger).also {
+            auditLog(tilganger = it, veilederIdent = veilederIdent, appName = appName)
         }
     }
 
@@ -409,17 +409,21 @@ class TilgangService(
         }
     }
 
-    private fun auditLog(tilganger: Map<Personident, Tilgang>, veilederIdent: String, appName: String) {
-        tilganger.forEach { (personident, tilgang) ->
-            auditLog(
-                CEF(
-                    suid = veilederIdent,
-                    duid = personident.value,
-                    event = AuditLogEvent.Access,
-                    permit = tilgang.erGodkjent,
-                    appName = appName,
-                )
-            )
+    private suspend fun auditLog(tilganger: Map<Personident, Tilgang>, veilederIdent: String, appName: String) {
+        supervisorScope {
+            launch {
+                tilganger.forEach { (personident, tilgang) ->
+                    auditLog(
+                        CEF(
+                            suid = veilederIdent,
+                            duid = personident.value,
+                            event = AuditLogEvent.Access,
+                            permit = tilgang.erGodkjent,
+                            appName = appName,
+                        )
+                    )
+                }
+            }
         }
     }
 
