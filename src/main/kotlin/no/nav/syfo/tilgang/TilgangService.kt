@@ -296,7 +296,6 @@ class TilgangService(
         token: Token,
         personidenter: List<Personident>,
         callId: String,
-        appName: String,
     ): Map<Personident, Tilgang> {
         val veilederIdent = token.getNAVIdent()
         val cacheKeysToPersonident: Map<String, Personident> = personidenter.associateBy { personident ->
@@ -325,9 +324,7 @@ class TilgangService(
             }.awaitAll().toMap()
         }
 
-        return (cachedTilganger + hentetTilganger).also {
-            auditLog(tilganger = it, veilederIdent = veilederIdent, appName = appName)
-        }
+        return cachedTilganger + hentetTilganger
     }
 
     private suspend fun checkTilgangToPersonAndCache(
@@ -361,7 +358,6 @@ class TilgangService(
         callId: String,
         token: Token,
         personidenter: List<String>,
-        appName: String,
     ): List<String> {
         if (!hasAccessToSYFO(callId = callId, token = token)) {
             return emptyList()
@@ -369,7 +365,7 @@ class TilgangService(
         preloadOboTokens(callId = callId, token = token)
         val validPersonidenter = personidenter.filterValidPersonidenter()
 
-        return checkTilgangToPersons(token, validPersonidenter, callId, appName)
+        return checkTilgangToPersons(token, validPersonidenter, callId)
             .filter { (_, tilgang) -> tilgang.erGodkjent }
             .map { (personident, _) -> personident.value }
     }
@@ -406,24 +402,6 @@ class TilgangService(
                 callId = callId,
                 personident = personident,
             )
-        }
-    }
-
-    private suspend fun auditLog(tilganger: Map<Personident, Tilgang>, veilederIdent: String, appName: String) {
-        supervisorScope {
-            launch {
-                tilganger.forEach { (personident, tilgang) ->
-                    auditLog(
-                        CEF(
-                            suid = veilederIdent,
-                            duid = personident.value,
-                            event = AuditLogEvent.Access,
-                            permit = tilgang.erGodkjent,
-                            appName = appName,
-                        )
-                    )
-                }
-            }
         }
     }
 
