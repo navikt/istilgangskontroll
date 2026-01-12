@@ -1,4 +1,4 @@
-package no.nav.syfo.application.cache
+package no.nav.syfo.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import no.nav.syfo.tilgang.Tilgang

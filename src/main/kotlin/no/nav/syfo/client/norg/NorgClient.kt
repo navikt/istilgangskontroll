@@ -5,7 +5,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.GeografiskTilknytning

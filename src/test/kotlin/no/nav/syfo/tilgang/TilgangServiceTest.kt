@@ -3,7 +3,7 @@ package no.nav.syfo.tilgang
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO

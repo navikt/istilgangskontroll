@@ -2,7 +2,7 @@ package no.nav.syfo.testhelper
 
 import io.ktor.server.application.*
 import no.nav.syfo.application.api.apiModule
-import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient

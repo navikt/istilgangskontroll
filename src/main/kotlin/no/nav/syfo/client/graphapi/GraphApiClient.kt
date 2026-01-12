@@ -7,7 +7,7 @@ import com.microsoft.graph.serviceclient.GraphServiceClient
 import com.microsoft.kiota.ApiException
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.azuread.AzureAdToken
 import no.nav.syfo.tilgang.AdRolle
