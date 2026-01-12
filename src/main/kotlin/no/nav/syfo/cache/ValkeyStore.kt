@@ -1,6 +1,7 @@
 package no.nav.syfo.application.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import no.nav.syfo.tilgang.Tilgang
 import no.nav.syfo.util.configuredJacksonMapper
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.*
@@ -36,12 +37,12 @@ class ValkeyStore(
      *
      * @return A map where each entry is (key -> deserialized value) or (key -> null) on cache miss.
      */
-    inline fun <reified T> getObjects(keys: List<String>): Map<String, T?> {
+    fun getObjects(keys: List<String>): Map<String, Tilgang?> {
         if (keys.isEmpty()) return emptyMap()
         val values = mget(keys)
         return keys.zip(
             values.map { value ->
-                value?.let { objectMapper.readValue(it, T::class.java) }
+                value?.let { objectMapper.readValue(it, Tilgang::class.java) }
             }
         ).toMap()
     }

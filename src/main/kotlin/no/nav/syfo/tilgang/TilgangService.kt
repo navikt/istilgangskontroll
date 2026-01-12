@@ -369,9 +369,9 @@ class TilgangService(
         preloadOboTokens(callId = callId, token = token)
         val validPersonidenter = personidenter.filterValidPersonidenter()
 
-        return checkTilgangToPersons(token, validPersonidenter, callId, appName).filter { (personident, tilgang) ->
-            tilgang.erGodkjent
-        }.map { (personident, _) -> personident.value }
+        return checkTilgangToPersons(token, validPersonidenter, callId, appName)
+            .filter { (_, tilgang) -> tilgang.erGodkjent }
+            .map { (personident, _) -> personident.value }
     }
 
     private suspend fun preloadOboTokens(
