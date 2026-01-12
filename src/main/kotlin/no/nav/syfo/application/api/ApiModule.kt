@@ -8,7 +8,7 @@ import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.auth.JwtIssuer
 import no.nav.syfo.application.api.auth.JwtIssuerType
 import no.nav.syfo.application.api.auth.installJwtAuthentication
-import no.nav.syfo.application.cache.ValkeyStore
+import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.application.metric.registerMetricApi
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
