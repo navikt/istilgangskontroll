@@ -3,6 +3,7 @@ package no.nav.syfo.application.cache
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.tilgang.Tilgang
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
