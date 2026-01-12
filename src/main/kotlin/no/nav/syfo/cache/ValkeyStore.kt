@@ -1,6 +1,7 @@
 package no.nav.syfo.application.cache
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import no.nav.syfo.tilgang.Tilgang
 import no.nav.syfo.util.configuredJacksonMapper
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.*
@@ -31,6 +32,21 @@ class ValkeyStore(
         }
     }
 
+    /**
+     * Fetches values for [keys] with a single mget.
+     *
+     * @return A map where each entry is (key -> deserialized value) or (key -> null) on cache miss.
+     */
+    fun getObjects(keys: List<String>): Map<String, Tilgang?> {
+        if (keys.isEmpty()) return emptyMap()
+        val values = mget(keys)
+        return keys.zip(
+            values.map { value ->
+                value?.let { objectMapper.readValue(it, Tilgang::class.java) }
+            }
+        ).toMap()
+    }
+
     fun get(
         key: String,
     ): String? {
@@ -44,12 +60,10 @@ class ValkeyStore(
         }
     }
 
-    fun get(
-        keyList: List<String>,
-    ): List<String> {
+    fun mget(keys: List<String>): List<String?> {
         return try {
             jedisPool.resource.use { jedis ->
-                jedis.mget(*keyList.toTypedArray()).filterNotNull()
+                jedis.mget(*keys.toTypedArray())
             }
         } catch (e: JedisConnectionException) {
             log.warn("Got connection error when fetching from valkey! Continuing without cached value", e)
@@ -66,7 +80,7 @@ class ValkeyStore(
         set(key, valueJson, expireSeconds)
     }
 
-    fun set(
+    private fun set(
         key: String,
         value: String,
         expireSeconds: Long,

@@ -14,14 +14,13 @@ value class Personident(val value: String) {
     }
 }
 
-fun List<String>.removeInvalidPersonidenter(): List<String> {
-    return this.filter {
+fun List<String>.filterValidPersonidenter(): List<Personident> {
+    return this.mapNotNull {
         try {
             Personident(it)
-            true
         } catch (e: IllegalArgumentException) {
             log.error("Received invalid personident: $it")
-            false
+            null
         }
     }
 }

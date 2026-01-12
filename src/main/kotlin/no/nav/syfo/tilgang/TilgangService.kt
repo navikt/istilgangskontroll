@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.Counter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
@@ -21,8 +22,10 @@ import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
-import no.nav.syfo.domain.removeInvalidPersonidenter
+import no.nav.syfo.domain.filterValidPersonidenter
 import org.slf4j.LoggerFactory
+import kotlin.collections.component1
+import kotlin.collections.component2
 
 private const val MAX_BULK_SIZE_TILGANGSMASKIN = 1000
 
@@ -289,6 +292,44 @@ class TilgangService(
         return tilgang
     }
 
+    suspend fun checkTilgangToPersons(
+        token: Token,
+        personidenter: List<Personident>,
+        callId: String,
+        appName: String,
+    ): Map<Personident, Tilgang> {
+        val veilederIdent = token.getNAVIdent()
+        val cacheKeysToPersonident: Map<String, Personident> = personidenter.associate { personident ->
+            val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+            cacheKey to personident
+        }
+
+        val cacheKeysToValue: Map<String, Tilgang?> =
+            valkeyStore.getObjects(keys = cacheKeysToPersonident.keys.toList())
+
+        val (cachedEntries, missingEntries) = cacheKeysToValue.entries.partition { it.value != null }
+        val cachedTilganger: Map<Personident, Tilgang> =
+            cachedEntries.associate { entry ->
+                val personident = cacheKeysToPersonident[entry.key]!!
+                personident to entry.value!!
+            }
+        val uncachedPersonidenter: List<Personident> = missingEntries.map { entry -> cacheKeysToPersonident[entry.key]!! }
+
+        return supervisorScope {
+            val hentetTilganger = uncachedPersonidenter.map { personident ->
+                async(CHECK_PERSON_TILGANG_DISPATCHER) {
+                    val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+                    val tilgang = checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+                    personident to tilgang
+                }
+            }.awaitAll().toMap()
+
+            val alleTilganger = cachedTilganger + hentetTilganger
+            launch { auditLog(tilganger = alleTilganger, veilederIdent = veilederIdent, appName = appName) }
+            alleTilganger
+        }
+    }
+
     private suspend fun checkTilgangToPersonAndCache(
         callId: String,
         token: Token,
@@ -326,27 +367,11 @@ class TilgangService(
             return emptyList()
         }
         preloadOboTokens(callId = callId, token = token)
-        val validPersonidenter = personidenter.removeInvalidPersonidenter()
+        val validPersonidenter = personidenter.filterValidPersonidenter()
 
-        return supervisorScope {
-            validPersonidenter.map { personident ->
-                async(CHECK_PERSON_TILGANG_DISPATCHER) {
-                    val tilgang = checkTilgangToPerson(
-                        token = token,
-                        personident = Personident(personident),
-                        callId = callId,
-                        appName = appName,
-                        doAuditLog = false,
-                        bulk = true,
-                    )
-                    personident to tilgang
-                }
-            }
-                .awaitAll()
-                .mapNotNull { (personident, tilgang) ->
-                    personident.takeIf { tilgang.erGodkjent }
-                }
-        }
+        return checkTilgangToPersons(token, validPersonidenter, callId, appName)
+            .filter { (_, tilgang) -> tilgang.erGodkjent }
+            .map { (personident, _) -> personident.value }
     }
 
     private suspend fun preloadOboTokens(
@@ -380,6 +405,20 @@ class TilgangService(
             preloadPersonInfoCache(
                 callId = callId,
                 personident = personident,
+            )
+        }
+    }
+
+    private fun auditLog(tilganger: Map<Personident, Tilgang>, veilederIdent: String, appName: String) {
+        tilganger.forEach { (personident, tilgang) ->
+            auditLog(
+                CEF(
+                    suid = veilederIdent,
+                    duid = personident.value,
+                    event = AuditLogEvent.Access,
+                    permit = tilgang.erGodkjent,
+                    appName = appName,
+                )
             )
         }
     }

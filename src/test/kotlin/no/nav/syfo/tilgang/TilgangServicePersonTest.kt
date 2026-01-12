@@ -47,13 +47,13 @@ class TilgangServicePersonTest {
     private val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
     private val appName = "anyApp"
 
-    private fun verifyCacheSet(exactly: Int, key: String = "", harTilgang: Boolean = true) {
+    private fun verifyCacheSet(exactly: Int, key: String? = null, harTilgang: Boolean = true) {
         verify(exactly = exactly) {
             if (exactly == 0) {
-                valkeyStore.setObject<Any>(any(), any(), any())
+                valkeyStore.setObject<Any>(key ?: any(), any(), any())
             } else {
                 valkeyStore.setObject(
-                    key = key,
+                    key = key!!,
                     value = Tilgang(erGodkjent = harTilgang),
                     expireSeconds = TWELVE_HOURS_IN_SECONDS
                 )

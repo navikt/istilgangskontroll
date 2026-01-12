@@ -228,7 +228,10 @@ class TilgangServiceTest {
             val personidenter = listOf(personident.value, personidentSkjermet.value)
             val cacheKeyAccess = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
             val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
-            every { valkeyStore.getObject<Tilgang?>(any()) } returns null
+            every { valkeyStore.getObjects(any()) } returns mapOf(
+                cacheKeyAccess to null,
+                cacheKeySkjermet to null,
+            )
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
@@ -313,7 +316,12 @@ class TilgangServiceTest {
             val cacheKeyOtherEnhet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentOtherEnhet"
             val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
             val cacheKeyGradert = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentGradert"
-            every { valkeyStore.getObject<Tilgang?>(any()) } returns null
+            every { valkeyStore.getObjects(any()) } returns mapOf(
+                cacheKeyAccess to null,
+                cacheKeyOtherEnhet to null,
+                cacheKeySkjermet to null,
+                cacheKeyGradert to null,
+            )
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery {
@@ -425,7 +433,7 @@ class TilgangServiceTest {
             val invalidPersonident = "1234567890"
             val personidenter = listOf(validPersonident.value, invalidPersonident)
             val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
-            every { valkeyStore.getObject<Tilgang?>(any()) } returns null
+            every { valkeyStore.getObjects(any()) } returns mapOf(cacheKeyValidPersonident to null)
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
@@ -477,7 +485,7 @@ class TilgangServiceTest {
             val validPersonident = Personident(UserConstants.PERSONIDENT)
             val personidenter = listOf(validPersonident.value)
             val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
-            every { valkeyStore.getObject<Tilgang?>(any()) } returns null
+            every { valkeyStore.getObjects(any()) } returns mapOf(cacheKeyValidPersonident to null)
             coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } throws RuntimeException("Feil")
             coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
@@ -517,6 +525,43 @@ class TilgangServiceTest {
             }
             coVerify(exactly = 1) { pdlClient.getPerson(callId, validPersonident) }
             verifyCacheSet(exactly = 0, key = cacheKeyValidPersonident, harTilgang = false)
+        }
+
+        @Test
+        fun `checkTilgangToPersons fetches valkey in bulk and sets missing cache-values`() {
+            val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
+            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+            val personident = Personident(UserConstants.PERSONIDENT)
+            val otherPersonident = Personident(UserConstants.PERSONIDENT_GRADERT)
+            val otherPersonident2 = Personident(UserConstants.PERSONIDENT_OTHER_ENHET)
+            val personidenter = listOf(personident, otherPersonident, otherPersonident2)
+            val cacheKey1 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+            val cacheKey2 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$otherPersonident"
+            val cacheKey3 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$otherPersonident2"
+
+            every { valkeyStore.getObjects(listOf(cacheKey1, cacheKey2, cacheKey3)) } returns
+                mapOf(
+                    cacheKey1 to Tilgang(erGodkjent = false),
+                    cacheKey2 to null,
+                    cacheKey3 to null,
+                )
+
+            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
+            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
+
+            val tilgangMap = runBlocking { tilgangService.checkTilgangToPersons(validToken, personidenter, "callId", "appName") }
+
+            assertEquals(3, tilgangMap.size)
+            assertFalse(tilgangMap[personident]!!.erGodkjent)
+            assertTrue(tilgangMap[otherPersonident]!!.erGodkjent)
+            assertTrue(tilgangMap[otherPersonident2]!!.erGodkjent)
+
+            verify(exactly = 1) { valkeyStore.getObjects(keys = listOf(cacheKey1, cacheKey2, cacheKey3)) }
+
+            verifyCacheSet(exactly = 0, key = cacheKey1)
+            verifyCacheSet(exactly = 1, key = cacheKey2)
+            verifyCacheSet(exactly = 1, key = cacheKey3)
         }
     }
 
