@@ -157,15 +157,15 @@ fun Route.registerTilgangApi(
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No NAV ident in token")
             }
-            val appName = call.getAppname(preAuthorizedApps)
+            call.getAppname(preAuthorizedApps)
                 ?: throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No consumer clientId was found")
+
             val personidenter = call.receive<List<String>>()
 
             val personidenterVeilederHasAccessTo = tilgangService.filterIdenterByVeilederAccess(
                 callId = callId,
                 token = token,
                 personidenter = personidenter,
-                appName = appName,
             )
 
             call.respond(HttpStatusCode.OK, personidenterVeilederHasAccessTo)
