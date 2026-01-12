@@ -318,7 +318,7 @@ class TilgangService(
             missingEntries.map { missingEntry ->
                 async(CHECK_PERSON_TILGANG_DISPATCHER) {
                     val cacheKey = missingEntry.key
-                    val personident = cacheKeysToPersonident[missingEntry.key]!!
+                    val personident = cacheKeysToPersonident[cacheKey]!!
                     val tilgang = checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
                     personident to tilgang
                 }
