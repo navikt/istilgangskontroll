@@ -13,6 +13,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.client.azuread.AzureAdClient
+import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.util.NAV_CALL_ID_HEADER
 import no.nav.syfo.util.bearerHeader
@@ -21,7 +22,7 @@ class TilgangsmaskinClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
     private val clientId: String,
-    private val httpClient: HttpClient,
+    private val httpClient: HttpClient = httpClientProxy(),
 ) {
     private val tilgangsmaskinUrl: String = "$baseUrl/api/v1/komplett"
     private val tilgangsmaskinBulkUrl: String = "$baseUrl/api/v1/bulk/obo"

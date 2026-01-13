@@ -10,6 +10,7 @@ import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
+import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.domain.Personident
 import no.nav.syfo.util.*
 import org.slf4j.LoggerFactory
@@ -19,7 +20,7 @@ class BehandlendeEnhetClient(
     private val baseUrl: String,
     val clientId: String,
     private val valkeyStore: ValkeyStore,
-    private val httpClient: HttpClient,
+    private val httpClient: HttpClient = httpClientDefault(),
 ) {
     suspend fun getEnhetWithOboToken(
         callId: String,

@@ -11,11 +11,9 @@ import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
-import no.nav.syfo.client.commonHttpClient
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.client.norg.NorgClient
 import no.nav.syfo.client.pdl.PdlClient
-import no.nav.syfo.client.proxyHttpClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.client.wellknown.getWellKnown
@@ -56,7 +54,6 @@ fun main() {
     val azureAdClient = AzureAdClient(
         azureEnvironment = environment.azure,
         valkeyStore = valkeyStore,
-        proxyHttpClient = proxyHttpClient,
     )
 
     val graphApiClient = GraphApiClient(
@@ -71,7 +68,6 @@ fun main() {
         skjermedePersonerUrl = environment.clients.skjermedePersoner.baseUrl,
         valkeyStore = valkeyStore,
         clientId = environment.clients.skjermedePersoner.clientId,
-        httpClient = commonHttpClient,
     )
 
     val pdlClient = PdlClient(
@@ -79,7 +75,6 @@ fun main() {
         baseUrl = environment.clients.pdl.baseUrl,
         clientId = environment.clients.pdl.clientId,
         valkeyStore = valkeyStore,
-        httpClient = commonHttpClient,
     )
 
     val behandlendeEnhetClient = BehandlendeEnhetClient(
@@ -87,20 +82,17 @@ fun main() {
         baseUrl = environment.clients.behandlendeEnhet.baseUrl,
         clientId = environment.clients.behandlendeEnhet.clientId,
         valkeyStore = valkeyStore,
-        httpClient = commonHttpClient,
     )
 
     val norgClient = NorgClient(
         baseUrl = environment.clients.norgUrl,
         valkeyStore = valkeyStore,
-        httpClient = commonHttpClient,
     )
 
     val tilgangsmaskin = TilgangsmaskinClient(
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.tilgangsmaskin.baseUrl,
         clientId = environment.clients.tilgangsmaskin.clientId,
-        httpClient = commonHttpClient,
     )
 
     val wellKnownInternalAzureAD = getWellKnown(
