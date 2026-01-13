@@ -26,7 +26,7 @@ class AzureAdClientTest {
     private val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,
         valkeyStore = valkeyStore,
-        httpClient = mockHttpClient,
+        proxyHttpClient = mockHttpClient,
     )
 
     private val validToken = generateJWT(

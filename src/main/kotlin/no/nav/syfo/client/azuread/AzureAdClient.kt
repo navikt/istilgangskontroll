@@ -10,13 +10,12 @@ import io.ktor.http.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.cache.ValkeyStore
-import no.nav.syfo.client.httpClientProxy
 import org.slf4j.LoggerFactory
 
 class AzureAdClient(
     private val azureEnvironment: AzureEnvironment,
     private val valkeyStore: ValkeyStore,
-    private val httpClient: HttpClient = httpClientProxy()
+    private val proxyHttpClient: HttpClient,
 ) {
     suspend fun getOnBehalfOfToken(scopeClientId: String, token: Token, callId: String): AzureAdToken? =
         getOnBehalfOfToken(
@@ -106,7 +105,7 @@ class AzureAdClient(
         callId: String,
     ): AzureAdTokenResponse? =
         try {
-            val response: HttpResponse = httpClient.post(azureEnvironment.openidConfigTokenEndpoint) {
+            val response: HttpResponse = proxyHttpClient.post(azureEnvironment.openidConfigTokenEndpoint) {
                 accept(ContentType.Application.Json)
                 setBody(FormDataContent(formParameters))
             }
