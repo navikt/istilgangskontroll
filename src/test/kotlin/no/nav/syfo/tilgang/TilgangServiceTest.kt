@@ -199,7 +199,6 @@ class TilgangServiceTest {
                     callId = callId,
                     token = validToken,
                     personidenter = personidenter,
-                    appName = appName,
                 )
 
                 assertEquals(0, filteredPersonidenter.size)
@@ -252,7 +251,6 @@ class TilgangServiceTest {
                     callId = callId,
                     token = validToken,
                     personidenter = personidenter,
-                    appName = appName,
                 )
 
                 assertEquals(1, filteredPersonidenter.size)
@@ -360,7 +358,6 @@ class TilgangServiceTest {
                     callId = callId,
                     token = validToken,
                     personidenter = personidenter,
-                    appName = appName,
                 )
 
                 assertEquals(1, filteredPersonidenter.size)
@@ -451,7 +448,6 @@ class TilgangServiceTest {
                     callId = callId,
                     token = validToken,
                     personidenter = personidenter,
-                    appName = appName,
                 )
 
                 assertEquals(1, filteredPersonidenter.size)
@@ -503,7 +499,6 @@ class TilgangServiceTest {
                     callId = callId,
                     token = validToken,
                     personidenter = personidenter,
-                    appName = appName,
                 )
 
                 assertEquals(0, filteredPersonidenter.size)
@@ -550,7 +545,7 @@ class TilgangServiceTest {
             coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
 
-            val tilgangMap = runBlocking { tilgangService.checkTilgangToPersons(validToken, personidenter, "callId", "appName") }
+            val tilgangMap = runBlocking { tilgangService.checkTilgangToPersons(validToken, personidenter, "callId") }
 
             assertEquals(3, tilgangMap.size)
             assertFalse(tilgangMap[personident]!!.erGodkjent)
