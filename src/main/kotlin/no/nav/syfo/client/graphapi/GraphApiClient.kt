@@ -23,6 +23,8 @@ class GraphApiClient(
     private val valkeyStore: ValkeyStore,
     private val adRoller: AdRoller,
 ) {
+    // Mål om å flytte denne til tilgangsservice, og heller at den tar inn en liste med grupper den sjekker mot en AD-rolle
+    // Mener at noe som heter `hasAccess` tilhører i servicen heller enn clienten
     suspend fun hasAccess(
         adRolle: AdRolle,
         token: Token,
@@ -46,12 +48,14 @@ class GraphApiClient(
         return grupper.map { it.uuid }.contains(adRolle.id)
     }
 
+    // Skal flyttes
     suspend fun getEnheterForVeileder(token: Token, callId: String): List<Enhet> {
         return getGrupperForVeilederOgCache(token, callId)
             .mapNotNull { it.getEnhetNr() }
             .map { Enhet(it) }
     }
 
+    // Vil at denne clienten kun skal eksponere denne funksjonaliteten
     suspend fun getGrupperForVeilederOgCache(token: Token, callId: String): List<Gruppe> {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = cacheKeyVeilederGrupper(veilederIdent)
@@ -63,13 +67,13 @@ class GraphApiClient(
         }
 
         COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
-        return getGrupperForVeileder(token, callId).also {
-            val tilgangTilMinstEnEnhet = it.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
-            val harSyfoRolle = isRoleInUserGroupList(it, adRoller.SYFO)
+        return getGrupperForVeileder(token, callId).also { grupper ->
+            val tilgangTilMinstEnEnhet = grupper.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
+            val harSyfoRolle = grupper.map { it.uuid }.contains(adRoller.SYFO.id)
             if (harSyfoRolle && tilgangTilMinstEnEnhet) {
                 valkeyStore.setObject(
                     key = cacheKey,
-                    value = it,
+                    value = grupper,
                     expireSeconds = TWELVE_HOURS_IN_SECS,
                 )
             }
@@ -80,6 +84,7 @@ class GraphApiClient(
         }
     }
 
+    // Skal gjøres private
     suspend fun getGrupperForVeileder(token: Token, callId: String): List<Gruppe> {
         return try {
             getGroupsForVeilederRequest(token, callId)
@@ -97,13 +102,6 @@ class GraphApiClient(
             )
             emptyList()
         }
-    }
-
-    private fun Group.toGruppe(): Gruppe {
-        return Gruppe(
-            uuid = this.id,
-            adGruppenavn = this.displayName,
-        )
     }
 
     /**
@@ -142,7 +140,7 @@ class GraphApiClient(
         return groups
     }
 
-    fun createGraphServiceClient(azureAdToken: AzureAdToken): GraphServiceClient {
+    private fun createGraphServiceClient(azureAdToken: AzureAdToken): GraphServiceClient {
         val scopes = "$baseUrl/.default"
         return GraphServiceClient(azureAdToken.toTokenCredential(), scopes)
     }
@@ -153,4 +151,11 @@ class GraphApiClient(
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
         fun cacheKeyVeilederGrupper(veilederIdent: String) = "$MS_GRAPH_API_CACHE_VEILEDER_GRUPPER_PREFIX$veilederIdent"
     }
+}
+
+fun Group.toGruppe(): Gruppe {
+    return Gruppe(
+        uuid = this.id,
+        adGruppenavn = this.displayName,
+    )
 }
