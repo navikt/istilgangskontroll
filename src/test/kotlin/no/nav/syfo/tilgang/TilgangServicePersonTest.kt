@@ -15,7 +15,9 @@ import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
+import no.nav.syfo.domain.Veileder
 import no.nav.syfo.testhelper.*
+import no.nav.syfo.testhelper.UserConstants.VEILEDER_IDENT
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -65,7 +67,7 @@ class TilgangServicePersonTest {
         generateJWT(
             audience = externalMockEnvironment.environment.azure.appClientId,
             issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-            navIdent = UserConstants.VEILEDER_IDENT,
+            navIdent = VEILEDER_IDENT,
         )
     )
 
@@ -85,12 +87,11 @@ class TilgangServicePersonTest {
     @DisplayName("has geografisk access to person")
     inner class HasGeografiskAccessToPerson {
         val personident = Personident(UserConstants.PERSONIDENT)
-        val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+        val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
         val callId = "123"
 
         @BeforeEach
         fun beforeEach() {
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     any(),
@@ -103,76 +104,51 @@ class TilgangServicePersonTest {
 
         @Test
         fun `Return access if veileder has nasjonal tilgang`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.NASJONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.REGIONAL,
-                    any(),
-                    any(),
-                )
-            }
-            coVerify(exactly = 0) {
-                behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
-            }
-            coVerify(exactly = 0) { graphApiClient.getEnheterForVeileder(any(), any()) }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
+            coVerify(exactly = 1) { pdlClient.getPerson(any(), personident) }
+            coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
-        fun `Return no access if veileder doesn't have national or regional access and not access to innbyggers enhet`() {
+        fun `Return no access if veileder doesn't have nasjonal or regional access and not access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertFalse(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertFalse(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.NASJONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.REGIONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            coVerify(exactly = 0) {
-                behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.getEnheterForVeileder(
-                    callId = callId,
-                    token = validToken,
-                )
-            }
+            coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId = callId,
@@ -182,53 +158,39 @@ class TilgangServicePersonTest {
                     )
                 )
             }
+            coVerify(exactly = 1) { pdlClient.getPerson(any(), personident) }
             coVerify(exactly = 0) {
                 norgClient.getOverordnetEnhetListForNAVKontor(
                     any(),
                     any(),
                 )
             }
-            verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
+            verifyCacheSet(exactly = 0)
         }
 
         @Test
         fun `Return access if veileder doesn't have national access but has access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForEnhet(innbyggerEnhet.enhetNr),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.NASJONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.REGIONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
             coVerify(exactly = 0) {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.getEnheterForVeileder(
-                    callId = callId,
-                    token = validToken,
-                )
             }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
@@ -239,6 +201,8 @@ class TilgangServicePersonTest {
                     )
                 )
             }
+            coVerify(exactly = 2) { pdlClient.getPerson(any(), personident) }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             coVerify(exactly = 0) {
                 norgClient.getOverordnetEnhetListForNAVKontor(
                     any(),
@@ -257,11 +221,17 @@ class TilgangServicePersonTest {
                 ),
                 oppfolgingsenhetDTO = null,
             )
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForEnhet(innbyggerEnhet.geografiskEnhet.enhetId),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbyggerWithUtlandGT()
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery {
                 behandlendeEnhetClient.getEnhetWithOboToken(
                     any(),
@@ -270,27 +240,12 @@ class TilgangServicePersonTest {
                 )
             } returns innbyggerEnhet
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.NASJONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.REGIONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
             coVerify(exactly = 1) {
                 behandlendeEnhetClient.getEnhetWithOboToken(
                     callId = callId,
@@ -298,15 +253,9 @@ class TilgangServicePersonTest {
                     token = validToken,
                 )
             }
-            coVerify(exactly = 1) {
-                graphApiClient.getEnheterForVeileder(
-                    callId = callId,
-                    token = validToken,
-                )
-            }
-            coVerify(exactly = 0) {
-                norgClient.getNAVKontorForGT(any(), any())
-            }
+            coVerify(exactly = 0) { norgClient.getNAVKontorForGT(any(), any()) }
+            coVerify(exactly = 2) { pdlClient.getPerson(any(), personident) }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             coVerify(exactly = 0) {
                 norgClient.getOverordnetEnhetListForNAVKontor(
                     any(),
@@ -319,40 +268,31 @@ class TilgangServicePersonTest {
         @Test
         fun `Return access if veileder doesn't have national or local access but has regional access`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
+            val veiledersEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
             val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.REGIONAL),
+                createGruppeForEnhet(veiledersEnhet.enhetNr),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-            coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery { norgClient.getOverordnetEnhetListForNAVKontor(any(), any()) } returns listOf(
                 overordnetEnhet
             )
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.NASJONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
-            coVerify(exactly = 0) {
-                behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.getEnheterForVeileder(
-                    callId = callId,
-                    token = validToken,
-                )
-            }
+            coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) }
             coVerify(exactly = 1) {
                 norgClient.getOverordnetEnhetListForNAVKontor(
                     callId = callId,
@@ -374,18 +314,26 @@ class TilgangServicePersonTest {
                     enhet = Enhet(id = UserConstants.ENHET_VEILEDER_NO_ACCESS)
                 )
             }
+            coVerify(exactly = 2) { pdlClient.getPerson(any(), personident) }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
         fun `Return access if veileder doesn't have national or local access but has regional access and belongs to fylkeskontor`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_INNBYGGER)
-            val veiledersEnhet = Enhet(UserConstants.ENHET_OVERORDNET)
             val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.REGIONAL),
+                createGruppeForEnhet(overordnetEnhet.enhetNr),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns false
-            coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns true
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery {
                 norgClient.getOverordnetEnhetListForNAVKontor(
@@ -394,28 +342,14 @@ class TilgangServicePersonTest {
                 )
             } returns listOf(overordnetEnhet)
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.NASJONAL,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
             coVerify(exactly = 0) {
                 behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.getEnheterForVeileder(
-                    callId = callId,
-                    token = validToken,
-                )
             }
             coVerify(exactly = 1) {
                 norgClient.getOverordnetEnhetListForNAVKontor(
@@ -438,6 +372,8 @@ class TilgangServicePersonTest {
                     enhet = Enhet(id = UserConstants.ENHET_OVERORDNET)
                 )
             }
+            coVerify(exactly = 2) { pdlClient.getPerson(any(), personident) }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
     }
@@ -446,73 +382,76 @@ class TilgangServicePersonTest {
     @DisplayName("has access to skjermede personer")
     inner class HasAccessToSkjermedePersoner {
         val personident = Personident(UserConstants.PERSONIDENT)
-        val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+        val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
         val callId = "123"
 
         @BeforeEach
         fun beforeEach() {
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
             coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbygger()
         }
 
         @Test
         fun `Return no access if person is skjermet and veileder doesn't have correct AdRolle`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns true
-            coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertFalse(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertFalse(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     callId = callId,
-                    personIdent = personident,
+                    personident = personident,
                     token = validToken
                 )
             }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.EGEN_ANSATT,
-                    token = validToken,
-                    callId = callId
-                )
-            }
+            coVerify(exactly = 0) { pdlClient.getPerson(any(), personident) }
             verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
         }
 
         @Test
         fun `return godkjent access if person is skjermet and veileder has correct AdRolle`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.EGEN_ANSATT),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns true
-            coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns true
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     callId = callId,
-                    personIdent = personident,
+                    personident = personident,
                     token = validToken
                 )
             }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.EGEN_ANSATT,
-                    token = validToken,
-                    callId = callId
-                )
-            }
+            coVerify(exactly = 1) { pdlClient.getPerson(any(), personident) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
     }
@@ -521,19 +460,13 @@ class TilgangServicePersonTest {
     @DisplayName("has access to adressebeskyttede personer")
     inner class HasAccessToAdressebeskyttedePersoner {
         val personident = Personident(UserConstants.PERSONIDENT)
-        val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+        val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
         val callId = "123"
 
         @BeforeEach
         fun beforeEach() {
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
             coEvery {
-                skjermedePersonerPipClient.getIsSkjermetWithOboToken(
-                    any(),
-                    personident,
-                    any()
-                )
+                skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any())
             } returns false
         }
 
@@ -551,35 +484,29 @@ class TilgangServicePersonTest {
                 geografiskTilknytning = null,
                 identer = PipIdenter(emptyList()),
             )
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { pdlClient.getPerson(any(), personident) } returns personWithKode6
-            coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertFalse(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertFalse(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 pdlClient.getPerson(
                     callId = callId,
                     personident = personident,
-                )
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE6,
-                    token = validToken,
-                    callId = callId
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE7,
-                    token = validToken,
-                    callId = callId
                 )
             }
             verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
@@ -587,16 +514,24 @@ class TilgangServicePersonTest {
 
         @Test
         fun `Return no access if person is kode7 and veileder doesn't have correct AdRolle`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { pdlClient.getPerson(any(), personident) } returns getInnbyggerWithKode7()
-            coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns false
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertFalse(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertFalse(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 pdlClient.getPerson(
@@ -604,35 +539,31 @@ class TilgangServicePersonTest {
                     personident = personident,
                 )
             }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE6,
-                    token = validToken,
-                    callId = callId
-                )
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE7,
-                    token = validToken,
-                    callId = callId
-                )
-            }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
         }
 
         @Test
         fun `return godkjent access if person is kode6 and veileder has correct AdRolle`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.KODE6),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { pdlClient.getPerson(any(), personident) } returns getinnbyggerWithKode6()
-            coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns true
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 pdlClient.getPerson(
@@ -640,35 +571,31 @@ class TilgangServicePersonTest {
                     personident = personident,
                 )
             }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE6,
-                    token = validToken,
-                    callId = callId
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE7,
-                    token = validToken,
-                    callId = callId
-                )
-            }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
         fun `return godkjent access if person is kode7 and veileder has correct AdRolle`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.KODE7),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { pdlClient.getPerson(any(), personident) } returns getInnbyggerWithKode7()
-            coEvery { graphApiClient.hasAccess(adRoller.KODE7, any(), any()) } returns true
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 pdlClient.getPerson(
@@ -676,53 +603,35 @@ class TilgangServicePersonTest {
                     personident = personident,
                 )
             }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE6,
-                    token = validToken,
-                    callId = callId
-                )
-            }
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE7,
-                    token = validToken,
-                    callId = callId
-                )
-            }
+            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
         fun `return godkjent access if person doesn't have adressebeskyttelse`() {
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbygger()
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 1) {
                 pdlClient.getPerson(
                     callId = callId,
                     personident = personident,
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE6,
-                    token = validToken,
-                    callId = callId
-                )
-            }
-            coVerify(exactly = 0) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.KODE7,
-                    token = validToken,
-                    callId = callId
                 )
             }
             verifyCacheSet(exactly = 1, key = cacheKey)
@@ -732,70 +641,78 @@ class TilgangServicePersonTest {
     @Test
     fun `return result from cache hit`() {
         val personident = Personident(UserConstants.PERSONIDENT)
-        val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
+        val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
         val callId = "123"
+        val grupper = listOf(
+            createGruppeForRole(adRoller.SYFO),
+            createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+        )
+        val veileder = Veileder(
+            veilederident = VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper,
+        )
         every { valkeyStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
-        runBlocking {
-            val tilgang = tilgangService.checkTilgangToPerson(validToken, personident, callId, appName)
-
-            assertTrue(tilgang.erGodkjent)
+        val tilgang = runBlocking {
+            tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
         }
 
+        assertTrue(tilgang.erGodkjent)
         verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
         coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
-        coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
+        coVerify(exactly = 0) { pdlClient.getPerson(any(), personident) }
         verifyCacheSet(exactly = 0)
     }
 
     @Nested
     @DisplayName("check access to papirsykmelding person")
     inner class CheckAccessToPapirsykmeldingPerson {
+        val personident = Personident(UserConstants.PERSONIDENT)
+        val callId = "123"
+
         @Test
         fun `gives cached persontilgang to veileder with Papirsykmelding AD group`() {
-            val personident = Personident(UserConstants.PERSONIDENT)
-            val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
-            val callId = "123"
+            val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.PAPIRSYKMELDING),
+                createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
-            coEvery { graphApiClient.hasAccess(adRoller.PAPIRSYKMELDING, any(), any()) } returns true
 
-            runBlocking {
-                val tilgang =
-                    tilgangService.checkTilgangToPersonWithPapirsykmelding(validToken, personident, callId, appName)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPersonWithPapirsykmelding(personident, veileder, callId, appName)
             }
 
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.PAPIRSYKMELDING,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
+            coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
+            coVerify(exactly = 0) { pdlClient.getPerson(any(), personident) }
         }
 
         @Test
         fun `denies access for veileder without Papirsykmelding AD group`() {
-            val personident = Personident(UserConstants.PERSONIDENT)
-            val callId = "123"
-            coEvery { graphApiClient.hasAccess(adRoller.PAPIRSYKMELDING, any(), any()) } returns false
-
-            runBlocking {
-                val tilgang =
-                    tilgangService.checkTilgangToPersonWithPapirsykmelding(validToken, personident, callId, appName)
-
-                assertFalse(tilgang.erGodkjent)
+            val grupper = listOf(
+                createGruppeForRole(adRoller.SYFO),
+            )
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToPersonWithPapirsykmelding(personident, veileder, callId, appName)
             }
 
-            coVerify(exactly = 1) {
-                graphApiClient.hasAccess(
-                    adRolle = adRoller.PAPIRSYKMELDING,
-                    token = validToken,
-                    callId = callId,
-                )
-            }
+            assertFalse(tilgang.erGodkjent)
+            coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
+            coVerify(exactly = 0) { pdlClient.getPerson(any(), personident) }
             verifyCacheSet(exactly = 0)
         }
     }

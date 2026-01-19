@@ -13,8 +13,8 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.spyk
 import no.nav.syfo.client.graphapi.GraphApiClient
-import no.nav.syfo.client.graphapi.Gruppe
 import no.nav.syfo.testhelper.*
+import no.nav.syfo.testhelper.UserConstants.ENHET_VEILEDER
 import no.nav.syfo.util.NAV_CALL_ID_HEADER
 import no.nav.syfo.util.NAV_PERSONIDENT_HEADER
 import no.nav.syfo.util.configure
@@ -48,13 +48,8 @@ class TilgangApiTest {
         navIdent = UserConstants.VEILEDER_IDENT_NO_PAPIRSYKMELDING_ACCESS,
     )
 
-    private val enhet = UserConstants.ENHET_VEILEDER
     private val enhetWithoutTilgang = UserConstants.ENHET_VEILEDER_NO_ACCESS
-    private val syfoGruppe = Gruppe(uuid = "syfoId", adGruppenavn = "0000-GA-SYFO-SENSITIV")
-    private val papirsykmeldingGruppe = Gruppe(
-        uuid = "papirsykmeldingId",
-        adGruppenavn = "0000-GA-papirsykmelding"
-    )
+    private val adRoller = AdRoller(externalMockEnvironment.environment)
 
     private fun ApplicationTestBuilder.setupApi(graphApiClient: GraphApiClient? = null): HttpClient {
         application {
@@ -88,13 +83,17 @@ class TilgangApiTest {
         fun `Allows access to veileder with SYFO-tilgang`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(syfoGruppe)
+                coEvery {
+                    graphApiClientMock.getGrupperForVeilederOgCache(any(), any())
+                } returns listOf(createGruppeForRole(adRoller.SYFO))
+
                 val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/syfo") {
                     bearerAuth(validToken)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.OK, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erGodkjent)
@@ -105,11 +104,13 @@ class TilgangApiTest {
         fun `Forbids access to veileder without SYFO-tilgang`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/syfo") {
                     bearerAuth(validTokenNoSyfotilgang)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -124,16 +125,21 @@ class TilgangApiTest {
         @Test
         fun `Allows access to veileder with correct enhet`() {
             testApplication {
-                val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(syfoGruppe)
-                coEvery { graphApiClientMock.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery {
+                    graphApiClientMock.getGrupperForVeilederOgCache(any(), any())
+                } returns listOf(
+                    createGruppeForRole(adRoller.SYFO),
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+
                 val client = setupApi(graphApiClientMock)
-                val response = client.get("$tilgangApiBasePath/navident/enhet/$enhet") {
+                val response = client.get("$tilgangApiBasePath/navident/enhet/$ENHET_VEILEDER") {
                     bearerAuth(validToken)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.OK, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erGodkjent)
@@ -144,11 +150,13 @@ class TilgangApiTest {
         fun `Forbids access to veileder without correct enhet`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/enhet/$enhetWithoutTilgang") {
                     bearerAuth(validToken)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -159,11 +167,13 @@ class TilgangApiTest {
         fun `Forbid access to veileder who has tilgang to enhet but not syfo`() {
             testApplication {
                 val client = setupApi()
-                val response = client.get("$tilgangApiBasePath/navident/enhet/$enhet") {
+
+                val response = client.get("$tilgangApiBasePath/navident/enhet/$ENHET_VEILEDER") {
                     bearerAuth(validTokenNoSyfotilgang)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -178,17 +188,21 @@ class TilgangApiTest {
         @Test
         fun `Allows access to person with SYFO access, correct local enhet, and no special permissions needed`() {
             testApplication {
-                val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(syfoGruppe)
-                coEvery { graphApiClientMock.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(
+                        createGruppeForRole(adRoller.SYFO),
+                        createGruppeForEnhet(ENHET_VEILEDER)
+                    )
                 val client = setupApi(graphApiClientMock)
+
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validToken)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.OK, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erGodkjent)
@@ -199,12 +213,14 @@ class TilgangApiTest {
         fun `Forbid access to person if no SYFO access`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validTokenNoSyfotilgang)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -215,12 +231,14 @@ class TilgangApiTest {
         fun `Forbid access to person if no geografisk access`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validTokenNoEnhetAccess)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -231,12 +249,14 @@ class TilgangApiTest {
         fun `Forbid access to person if no access to skjermet person`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validTokenNoEnhetAccess)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_SKJERMET)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -247,12 +267,14 @@ class TilgangApiTest {
         fun `Forbid access to person if no access to adressebeskyttet person`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validTokenNoEnhetAccess)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
@@ -267,13 +289,12 @@ class TilgangApiTest {
         @Test
         fun `approve access for veileder with correct AD group for 'normal' person`() {
             testApplication {
-                val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    papirsykmeldingGruppe,
-                    syfoGruppe
+                    createGruppeForRole(adRoller.SYFO),
+                    createGruppeForRole(adRoller.PAPIRSYKMELDING),
+                    createGruppeForEnhet(ENHET_VEILEDER)
                 )
-                coEvery { graphApiClientMock.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
                 val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/person/papirsykmelding") {
                     bearerAuth(validToken)
@@ -291,12 +312,14 @@ class TilgangApiTest {
         fun `deny access for veileder without correct AD group for 'normal' person`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.get("$tilgangApiBasePath/navident/person/papirsykmelding") {
                     bearerAuth(validTokenWithoutPapirsykmeldingGroup)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertFalse(tilgang.erGodkjent)
@@ -319,12 +342,14 @@ class TilgangApiTest {
         fun `return OK after loading cache`() {
             testApplication {
                 val client = setupApi()
+
                 val response = client.post(apiUrl) {
                     bearerAuth(validSystemToken)
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     header(NAV_CALL_ID_HEADER, "123")
                     setBody(requestBody)
                 }
+
                 assertEquals(HttpStatusCode.OK, response.status)
             }
         }
@@ -338,12 +363,14 @@ class TilgangApiTest {
             )
             testApplication {
                 val client = setupApi()
+
                 val response = client.post(apiUrl) {
                     bearerAuth(invalidSystemToken)
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     header(NAV_CALL_ID_HEADER, "123")
                     setBody(requestBody)
                 }
+
                 assertEquals(HttpStatusCode.Forbidden, response.status)
             }
         }
