@@ -82,27 +82,6 @@ class TilgangServicePersonTest {
     }
 
     @Nested
-    @DisplayName("has access to SYFO")
-    inner class HasAccessToSyfo {
-        val personident = Personident(UserConstants.PERSONIDENT)
-        val cacheKey = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
-        val callId = "123"
-
-        @BeforeEach
-        fun beforeEach() {
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
-            coEvery {
-                skjermedePersonerPipClient.getIsSkjermetWithOboToken(
-                    any(),
-                    personident,
-                    any()
-                )
-            } returns false
-            coEvery { pdlClient.getPerson(any(), personident) } returns getUgradertInnbygger()
-        }
-    }
-
-    @Nested
     @DisplayName("has geografisk access to person")
     inner class HasGeografiskAccessToPerson {
         val personident = Personident(UserConstants.PERSONIDENT)
