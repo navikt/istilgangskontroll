@@ -326,8 +326,7 @@ class TilgangService(
                 }
             }.awaitAll().toMap()
         }
-        val godkjente = cachedTilganger + hentetTilganger
-        return godkjente
+        return cachedTilganger + hentetTilganger
     }
 
     private suspend fun checkTilgangToPersonAndCache(
