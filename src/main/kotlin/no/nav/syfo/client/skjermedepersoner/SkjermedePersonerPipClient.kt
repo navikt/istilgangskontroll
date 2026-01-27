@@ -24,29 +24,29 @@ class SkjermedePersonerPipClient(
 
     suspend fun getIsSkjermetWithOboToken(
         callId: String,
-        personIdent: Personident,
+        personident: Personident,
         token: Token?,
     ) = isSkjermet(
         callId = callId,
-        personIdent = personIdent,
+        personident = personident,
         token = token,
     )
 
     suspend fun getIsSkjermetWithSystemToken(
         callId: String,
-        personIdent: Personident,
+        personident: Personident,
     ) = isSkjermet(
         callId = callId,
-        personIdent = personIdent,
+        personident = personident,
         token = null,
     )
 
     private suspend fun isSkjermet(
         callId: String,
-        personIdent: Personident,
+        personident: Personident,
         token: Token?,
     ): Boolean {
-        val cacheKey = "$SKJERMEDE_PERSONER_CACHE_KEY-$personIdent"
+        val cacheKey = "$SKJERMEDE_PERSONER_CACHE_KEY-$personident"
         val cachedSkjerming = getCachedSkjerming(cacheKey)
 
         return if (cachedSkjerming != null) {
@@ -56,7 +56,7 @@ class SkjermedePersonerPipClient(
             COUNT_CALL_SKJERMEDE_PERSONER_CACHE_MISS.increment()
             val skjermet = getSkjermingFromSkjermedePersoner(
                 callId = callId,
-                personIdent = personIdent,
+                personIdent = personident,
                 token = token,
             )
 

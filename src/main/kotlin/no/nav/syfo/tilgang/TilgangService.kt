@@ -21,6 +21,7 @@ import no.nav.syfo.client.pdl.*
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
+import no.nav.syfo.domain.Veileder
 import no.nav.syfo.domain.filterValidPersonidenter
 import org.slf4j.LoggerFactory
 import kotlin.collections.component1
@@ -39,68 +40,63 @@ class TilgangService(
     val valkeyStore: ValkeyStore,
     val tilgangsmaskin: TilgangsmaskinClient,
 ) {
-    suspend fun hasAccessToSYFO(token: Token, callId: String): Boolean {
-        return graphApiClient.hasAccess(
-            adRolle = adRoller.SYFO,
+    suspend fun getVeileder(
+        token: Token,
+        callId: String,
+    ): Veileder {
+        val veilederident = token.getNAVIdent()
+        val veiledergrupper = graphApiClient.getGrupperForVeilederOgCache(
             token = token,
             callId = callId,
         )
+        return Veileder(
+            veilederident = veilederident,
+            token = token,
+            adGrupper = veiledergrupper,
+        )
     }
 
-    suspend fun checkTilgangToSyfo(token: Token, callId: String): Tilgang {
-        val veilederIdent = token.getNAVIdent()
-        val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederIdent"
+    fun checkTilgangToSyfo(veileder: Veileder): Tilgang {
+        // Hvis tilgangen for veileder var cachet, så blir det egentlig et unødvendig kall til graph-api-cachen når vi nå tvinger inn veileder
+        val veilederident = veileder.veilederident
+        val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederident"
         val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
-        if (cachedTilgang != null) {
-            return cachedTilgang
+        return if (cachedTilgang != null) {
+            cachedTilgang
+        } else {
+            Tilgang(
+                erGodkjent = veileder.hasAccessToRole(adRoller.SYFO)
+            ).also { tilgang ->
+                if (tilgang.erGodkjent) {
+                    valkeyStore.setObject(
+                        key = cacheKey,
+                        value = tilgang,
+                        expireSeconds = TWELVE_HOURS_IN_SECS
+                    )
+                }
+            }
         }
-
-        val tilgang = Tilgang(
-            erGodkjent = hasAccessToSYFO(
-                token = token,
-                callId = callId,
-            )
-        )
-        if (tilgang.erGodkjent) {
-            valkeyStore.setObject(
-                key = cacheKey,
-                value = tilgang,
-                expireSeconds = TWELVE_HOURS_IN_SECS
-            )
-        }
-        return tilgang
     }
 
-    suspend fun checkTilgangToEnhet(token: Token, callId: String, enhet: Enhet): Tilgang {
-        val veilederIdent = token.getNAVIdent()
-        val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederIdent-$enhet"
+    fun checkTilgangToEnhet(veileder: Veileder, enhet: Enhet): Tilgang {
+        val veilederident = veileder.veilederident
+        val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederident-$enhet"
         val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
-        if (cachedTilgang != null) {
-            return cachedTilgang
+        return if (cachedTilgang != null) {
+            cachedTilgang
+        } else {
+            Tilgang(erGodkjent = veileder.hasAccessToEnhet(enhet)).also { tilgang ->
+                if (tilgang.erGodkjent) {
+                    valkeyStore.setObject(
+                        key = cacheKey,
+                        value = tilgang,
+                        expireSeconds = TWELVE_HOURS_IN_SECS
+                    )
+                }
+            }
         }
-        val enheter = graphApiClient.getEnheterForVeileder(token = token, callId = callId)
-        val tilgang = Tilgang(
-            erGodkjent = enheter.map { it.id }.contains(enhet.id)
-        )
-
-        if (tilgang.erGodkjent) {
-            valkeyStore.setObject(
-                key = cacheKey,
-                value = tilgang,
-                expireSeconds = TWELVE_HOURS_IN_SECS
-            )
-        }
-        return tilgang
-    }
-
-    private suspend fun hasNasjonalAccess(token: Token, callId: String): Boolean {
-        return graphApiClient.hasAccess(adRolle = adRoller.NASJONAL, token = token, callId = callId)
-    }
-
-    private suspend fun hasRegionalAccess(token: Token, callId: String): Boolean {
-        return graphApiClient.hasAccess(adRolle = adRoller.REGIONAL, token = token, callId = callId)
     }
 
     private suspend fun veiledersEnheterOgOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
@@ -124,9 +120,9 @@ class TilgangService(
     private suspend fun isGeografiskAccessGodkjent(
         callId: String,
         personident: Personident,
-        token: Token,
+        veileder: Veileder,
     ): Boolean {
-        if (hasNasjonalAccess(token = token, callId = callId)) {
+        if (veileder.hasAccessToRole(adRoller.NASJONAL)) {
             return true
         }
 
@@ -145,25 +141,22 @@ class TilgangService(
                 callId = callId,
                 personident = personident,
                 geografiskTilknytning = geografiskTilknytning,
-                token = token,
+                token = veileder.token,
             )
         } catch (exc: Exception) {
-            log.warn("Didn't get enhet for innbygger, unable to check geografisk access callId=$callId")
+            log.warn("Didn't get enhet for innbygger, unable to check geografisk access callId=$callId", exc)
             return false
         }
 
         val behandlendeEnhet = Enhet(innbyggersEnhetNr)
 
-        val veiledersEnheter = graphApiClient.getEnheterForVeileder(token = token, callId = callId)
-        val hasAccessToLokalEnhet = veiledersEnheter.map { it.id }.contains(behandlendeEnhet.id)
-
-        if (hasAccessToLokalEnhet) {
+        if (veileder.hasAccessToEnhet(behandlendeEnhet)) {
             return true
         }
 
-        if (hasRegionalAccess(token = token, callId = callId)) {
+        if (veileder.hasAccessToRole(adRoller.REGIONAL)) {
             val veiledersEnheterOgOverordnedeEnheter =
-                veiledersEnheterOgOverordnedeEnheter(enheter = veiledersEnheter, callId = callId)
+                veiledersEnheterOgOverordnedeEnheter(enheter = veileder.enheter, callId = callId)
             val innbyggersOverordnedeEnheter = innbyggersOverordnedeEnheter(enhet = behandlendeEnhet, callId = callId)
 
             return innbyggersOverordnedeEnheter.any { it in veiledersEnheterOgOverordnedeEnheter }
@@ -193,61 +186,53 @@ class TilgangService(
         }
     }
 
-    private suspend fun isKode6AccessAvslatt(token: Token, callId: String): Boolean {
-        return !graphApiClient.hasAccess(adRolle = adRoller.KODE6, token = token, callId = callId)
-    }
-
-    private suspend fun isKode7AccessAvslatt(token: Token, callId: String): Boolean {
-        return !graphApiClient.hasAccess(adRolle = adRoller.KODE7, token = token, callId = callId)
-    }
-
     private suspend fun isAdressebeskyttelseAccessGodkjent(
         callId: String,
         personident: Personident,
-        token: Token,
+        veileder: Veileder,
     ): Boolean {
         val person = pdlClient.getPerson(
             callId = callId,
             personident = personident,
         )
 
-        return if (person.isKode6() && isKode6AccessAvslatt(token = token, callId = callId)) {
+        return if (person.isKode6() && !veileder.hasAccessToRole(adRoller.KODE6)) {
             false
-        } else if (person.isKode7() && isKode7AccessAvslatt(token = token, callId = callId)) {
+        } else if (person.isKode7() && !veileder.hasAccessToRole(adRoller.KODE7)) {
             false
         } else {
             true
         }
     }
 
-    private suspend fun isSkjermetAccessGodkjent(callId: String, personident: Personident, token: Token): Boolean {
+    private suspend fun isSkjermetAccessGodkjent(
+        callId: String,
+        personident: Personident,
+        veileder: Veileder,
+    ): Boolean {
         val personIsSkjermet = skjermedePersonerPipClient.getIsSkjermetWithOboToken(
             callId = callId,
-            personIdent = personident,
-            token = token,
+            personident = personident,
+            token = veileder.token,
         )
 
         return if (!personIsSkjermet) {
             true
         } else {
-            graphApiClient.hasAccess(
-                adRolle = adRoller.EGEN_ANSATT,
-                token = token,
-                callId = callId,
-            )
+            veileder.hasAccessToRole(adRoller.EGEN_ANSATT)
         }
     }
 
     suspend fun checkTilgangToPersonWithPapirsykmelding(
-        token: Token,
         personident: Personident,
+        veileder: Veileder,
         callId: String,
         appName: String,
     ): Tilgang {
-        return if (hasAccessToPapirsykmelding(token = token, callId = callId)) {
+        return if (veileder.hasAccessToRole(adRoller.PAPIRSYKMELDING)) {
             checkTilgangToPerson(
-                token = token,
                 personident = personident,
+                veileder = veileder,
                 callId = callId,
                 appName = appName,
             )
@@ -256,31 +241,32 @@ class TilgangService(
         }
     }
 
-    private suspend fun hasAccessToPapirsykmelding(token: Token, callId: String): Boolean {
-        return graphApiClient.hasAccess(
-            adRolle = adRoller.PAPIRSYKMELDING,
-            token = token,
-            callId = callId,
-        )
-    }
-
     suspend fun checkTilgangToPerson(
-        token: Token,
         personident: Personident,
+        veileder: Veileder,
         callId: String,
         appName: String,
         doAuditLog: Boolean = true,
         bulk: Boolean = false,
     ): Tilgang {
-        val veilederIdent = token.getNAVIdent()
-        val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
+        val veilederident = veileder.veilederident
+        val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederident-$personident"
         val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
-        val tilgang = cachedTilgang ?: checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+        val tilgang = if (cachedTilgang != null) {
+            cachedTilgang
+        } else {
+            checkTilgangToPersonAndCache(
+                personident = personident,
+                veileder = veileder,
+                cacheKey = cacheKey,
+                callId = callId,
+            )
+        }
         if (doAuditLog) {
             auditLog(
                 CEF(
-                    suid = veilederIdent,
+                    suid = veilederident,
                     duid = personident.value,
                     event = AuditLogEvent.Access,
                     permit = tilgang.erGodkjent,
@@ -292,11 +278,11 @@ class TilgangService(
     }
 
     suspend fun checkTilgangToPersons(
-        token: Token,
         personidenter: List<Personident>,
+        veileder: Veileder,
         callId: String,
     ): Map<Personident, Tilgang> {
-        val veilederIdent = token.getNAVIdent()
+        val veilederIdent = veileder.veilederident
         val cacheKeysToPersonident: Map<String, Personident> = personidenter.associateBy { personident ->
             "$TILGANG_TIL_PERSON_PREFIX$veilederIdent-$personident"
         }
@@ -317,7 +303,12 @@ class TilgangService(
                 async(CHECK_PERSON_TILGANG_DISPATCHER) {
                     val cacheKey = missingEntry.key
                     val personident = cacheKeysToPersonident[cacheKey]!!
-                    val tilgang = checkTilgangToPersonAndCache(callId, token, personident, cacheKey)
+                    val tilgang = checkTilgangToPersonAndCache(
+                        personident = personident,
+                        veileder = veileder,
+                        cacheKey = cacheKey,
+                        callId = callId,
+                    )
                     personident to tilgang
                 }
             }.awaitAll().toMap()
@@ -327,30 +318,36 @@ class TilgangService(
     }
 
     private suspend fun checkTilgangToPersonAndCache(
-        callId: String,
-        token: Token,
         personident: Personident,
+        veileder: Veileder,
         cacheKey: String,
+        callId: String,
     ): Tilgang {
-        val erGodkjent = if (!isGeografiskAccessGodkjent(callId = callId, personident = personident, token = token)) {
+        val erGodkjent = if (
+            !isGeografiskAccessGodkjent(
+                callId = callId,
+                personident = personident,
+                veileder = veileder,
+            )
+        ) {
             false
-        } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, token = token)) {
+        } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, veileder = veileder)) {
             false
-        } else if (!isAdressebeskyttelseAccessGodkjent(callId = callId, personident = personident, token = token)) {
+        } else if (!isAdressebeskyttelseAccessGodkjent(callId = callId, personident = personident, veileder = veileder)) {
             false
         } else {
             true
         }
-        val tilgang = Tilgang(erGodkjent = erGodkjent)
 
-        if (tilgang.erGodkjent) {
-            valkeyStore.setObject(
-                key = cacheKey,
-                value = tilgang,
-                expireSeconds = TWELVE_HOURS_IN_SECS
-            )
+        return Tilgang(erGodkjent = erGodkjent).also { tilgang ->
+            if (tilgang.erGodkjent) {
+                valkeyStore.setObject(
+                    key = cacheKey,
+                    value = tilgang,
+                    expireSeconds = TWELVE_HOURS_IN_SECS
+                )
+            }
         }
-        return tilgang
     }
 
     suspend fun filterIdenterByVeilederAccess(
@@ -358,13 +355,19 @@ class TilgangService(
         token: Token,
         personidenter: List<String>,
     ): List<String> {
-        if (!hasAccessToSYFO(callId = callId, token = token)) {
+        val veileder = getVeileder(token, callId)
+
+        if (!veileder.hasAccessToRole(adRoller.SYFO)) {
             return emptyList()
         }
-        preloadOboTokens(callId = callId, token = token)
+        preloadOboTokens(callId = callId, token = veileder.token)
         val validPersonidenter = personidenter.filterValidPersonidenter()
 
-        return checkTilgangToPersons(token, validPersonidenter, callId)
+        return checkTilgangToPersons(
+            personidenter = validPersonidenter,
+            veileder = veileder,
+            callId = callId,
+        )
             .filter { (_, tilgang) -> tilgang.erGodkjent }
             .map { (personident, _) -> personident.value }
     }
@@ -376,14 +379,14 @@ class TilgangService(
         azureAdClient.getOnBehalfOfToken(skjermedePersonerPipClient.clientId, token, callId)
         azureAdClient.getOnBehalfOfToken(behandlendeEnhetClient.clientId, token, callId)
         // pdlClient bruker system token, så trenger ingen OBO-token preloading
-        // graphApiClient har implisitt cachet obo-token via hasAccessToSYFO-kallet
+        // graphApiClient har implisitt cachet obo-token via getGrupperForVeilederOgCache-kallet
     }
 
     private suspend fun preloadPersonInfoCache(callId: String, personident: Personident) {
         try {
             skjermedePersonerPipClient.getIsSkjermetWithSystemToken(
                 callId = callId,
-                personIdent = personident,
+                personident = personident,
             )
 
             pdlClient.getPerson(

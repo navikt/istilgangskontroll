@@ -27,10 +27,11 @@ fun Route.registerTilgangApi(
                 throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No NAV ident in token")
             }
 
-            val tilgang = tilgangService.checkTilgangToSyfo(
+            val veileder = tilgangService.getVeileder(
                 token = token,
                 callId = callId,
             )
+            val tilgang = tilgangService.checkTilgangToSyfo(veileder)
 
             if (tilgang.erGodkjent) {
                 call.respond(tilgang)
@@ -53,17 +54,17 @@ fun Route.registerTilgangApi(
             val enhetNr = call.parameters[enhetNr] ?: throw IllegalArgumentException("No EnhetNr found in path param")
             val enhet = Enhet(enhetNr)
 
-            val syfoTilgang = tilgangService.checkTilgangToSyfo(
+            val veileder = tilgangService.getVeileder(
                 token = token,
                 callId = callId,
             )
+            val syfoTilgang = tilgangService.checkTilgangToSyfo(veileder)
 
             val tilgang = if (syfoTilgang.erAvslatt) {
                 syfoTilgang
             } else {
                 tilgangService.checkTilgangToEnhet(
-                    token = token,
-                    callId = callId,
+                    veileder = veileder,
                     enhet = enhet,
                 )
             }
@@ -80,7 +81,7 @@ fun Route.registerTilgangApi(
 
         get("/navident/person") {
             val callId = call.getCallId()
-            val requestedPersonIdent = call.getPersonidentHeader()
+            val requestedPersonident = call.getPersonidentHeader()
                 ?: throw IllegalArgumentException("Did not find a PersonIdent in request headers")
             val token = call.getBearerHeader()
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No Authorization header supplied")
@@ -90,7 +91,12 @@ fun Route.registerTilgangApi(
             val appName = call.getAppname(preAuthorizedApps)
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found")
 
-            if (!tilgangService.hasAccessToSYFO(callId = callId, token = token)) {
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
+
+            if (!tilgangService.checkTilgangToSyfo(veileder).erGodkjent) {
                 return@get call.respond(
                     status = HttpStatusCode.Forbidden,
                     message = Tilgang(erGodkjent = false)
@@ -98,8 +104,8 @@ fun Route.registerTilgangApi(
             }
 
             val tilgang = tilgangService.checkTilgangToPerson(
-                token = token,
-                personident = requestedPersonIdent,
+                personident = requestedPersonident,
+                veileder = veileder,
                 callId = callId,
                 appName = appName,
             )
@@ -116,7 +122,7 @@ fun Route.registerTilgangApi(
 
         get("/navident/person/papirsykmelding") {
             val callId = call.getCallId()
-            val requestedPersonIdent = call.getPersonidentHeader()
+            val requestedPersonident = call.getPersonidentHeader()
                 ?: throw IllegalArgumentException("Did not find a PersonIdent in request headers, papirsykmelding")
             val token = call.getBearerHeader()
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No Authorization header supplied, papirsykmelding")
@@ -126,7 +132,12 @@ fun Route.registerTilgangApi(
             val appName = call.getAppname(preAuthorizedApps)
                 ?: throw IllegalArgumentException("Failed to check tilgang to person for veileder. No consumer clientId was found, papirsykmelding")
 
-            if (!tilgangService.hasAccessToSYFO(callId = callId, token = token)) {
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
+
+            if (!tilgangService.checkTilgangToSyfo(veileder).erGodkjent) {
                 return@get call.respond(
                     status = HttpStatusCode.Forbidden,
                     message = Tilgang(erGodkjent = false)
@@ -134,8 +145,8 @@ fun Route.registerTilgangApi(
             }
 
             val tilgang = tilgangService.checkTilgangToPersonWithPapirsykmelding(
-                token = token,
-                personident = requestedPersonIdent,
+                personident = requestedPersonident,
+                veileder = veileder,
                 callId = callId,
                 appName = appName,
             )

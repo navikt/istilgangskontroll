@@ -16,7 +16,9 @@ import no.nav.syfo.client.pdl.PdlClient
 import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.domain.Personident
+import no.nav.syfo.domain.Veileder
 import no.nav.syfo.testhelper.*
+import no.nav.syfo.testhelper.UserConstants.VEILEDER_IDENT
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
@@ -63,7 +65,7 @@ class TilgangServiceTest {
         generateJWT(
             audience = externalMockEnvironment.environment.azure.appClientId,
             issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-            navIdent = UserConstants.VEILEDER_IDENT,
+            navIdent = VEILEDER_IDENT,
         )
     )
 
@@ -82,35 +84,63 @@ class TilgangServiceTest {
     @Nested
     @DisplayName("Check if veileder has access to SYFO")
     inner class CheckVeilederAccessToSyfo {
-        private val cacheKey = "tilgang-til-tjenesten-${UserConstants.VEILEDER_IDENT}"
+        private val cacheKey = "tilgang-til-tjenesten-$VEILEDER_IDENT"
 
         @Test
-        fun `return result from cache hit`() {
-            val callId = "123"
+        fun `return result from cache hit with tilgang`() {
+            val grupper = listOf(createGruppeForRole(adRoller.SYFO), createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns Tilgang(erGodkjent = true)
 
-            runBlocking {
-                tilgangService.checkTilgangToSyfo(validToken, callId)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToSyfo(veileder)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
             verifyCacheSet(exactly = 0)
         }
 
         @Test
-        fun `cache response from GraphApiClient on cache miss`() {
-            val callId = "123"
+        fun `cache tilgang on cache miss`() {
+            val grupper = listOf(createGruppeForRole(adRoller.SYFO), createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
-            runBlocking {
-                tilgangService.checkTilgangToSyfo(validToken, callId)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToSyfo(veileder)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
             verifyCacheSet(exactly = 1, key = cacheKey)
+        }
+
+        @Test
+        fun `does not cache when no syfo-tilgang`() {
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
+            every { valkeyStore.getObject<Tilgang?>(any()) } returns null
+
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToSyfo(veileder)
+            }
+
+            assertFalse(tilgang.erGodkjent)
+            verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
+            verifyCacheSet(exactly = 0)
         }
     }
 
@@ -119,61 +149,65 @@ class TilgangServiceTest {
     inner class CheckVeilederAccessToEnhet {
 
         @Test
-        fun `return has access if enhet is in veileders list from Microsoft Graph API`() {
+        fun `return has access if enhet is in veileders list`() {
             val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
-            val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$veiledersEnhet"
-            val callId = "123"
+            val cacheKey = "tilgang-til-enhet-$VEILEDER_IDENT-$veiledersEnhet"
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER), createGruppeForRole(adRoller.SYFO))
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
-            coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns true
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, veiledersEnhet)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToEnhet(veileder, veiledersEnhet)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) { graphApiClient.getEnheterForVeileder(validToken, callId) }
             verifyCacheSet(exactly = 1, key = cacheKey)
         }
 
         @Test
-        fun `return no access if enhet is not in veileders list from Microsoft Graph API`() {
+        fun `return no access if enhet is not in veileders enheter, does not cache`() {
             val wantedEnhet = Enhet(UserConstants.ENHET_VEILEDER)
-            val actualEnhet = Enhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
-            val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$wantedEnhet"
-            val callId = "123"
+            val cacheKey = "tilgang-til-enhet-$VEILEDER_IDENT-$wantedEnhet"
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER_NO_ACCESS), createGruppeForRole(adRoller.SYFO))
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.getEnheterForVeileder(validToken, callId) } returns listOf(actualEnhet)
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, wantedEnhet)
-
-                assertFalse(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToEnhet(veileder, wantedEnhet)
             }
 
+            assertFalse(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 1) { graphApiClient.getEnheterForVeileder(validToken, callId) }
-            verifyCacheSet(exactly = 0, key = cacheKey, harTilgang = false)
+            verifyCacheSet(exactly = 0)
         }
 
         @Test
         fun `return result from cache hit`() {
             val enhet = Enhet(UserConstants.ENHET_VEILEDER)
-            val cacheKey = "tilgang-til-enhet-${UserConstants.VEILEDER_IDENT}-$enhet"
-            val callId = "123"
+            val cacheKey = "tilgang-til-enhet-$VEILEDER_IDENT-$enhet"
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER), createGruppeForRole(adRoller.SYFO))
+            val veileder = Veileder(
+                veilederident = VEILEDER_IDENT,
+                token = validToken,
+                adGrupper = grupper,
+            )
             every { valkeyStore.getObject<Tilgang?>(cacheKey) } returns Tilgang(erGodkjent = true)
 
-            runBlocking {
-                val tilgang = tilgangService.checkTilgangToEnhet(validToken, callId, enhet)
-
-                assertTrue(tilgang.erGodkjent)
+            val tilgang = runBlocking {
+                tilgangService.checkTilgangToEnhet(veileder, enhet)
             }
 
+            assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 0) { graphApiClient.hasAccess(any(), any(), any()) }
-            coVerify(exactly = 0) { graphApiClient.getEnheterForVeileder(any(), any()) }
             verifyCacheSet(exactly = 0)
         }
     }
@@ -185,14 +219,14 @@ class TilgangServiceTest {
         @Test
         fun `remove all identer if veileder is missing SYFO access`() {
             val callId = "123"
-            val appName = "anyApp"
             val personident1 = Personident(UserConstants.PERSONIDENT)
             val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
             val personidenter = listOf(personident1.value, personident2.value)
-            val cacheKey1 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident1"
-            val cacheKey2 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident2"
+            val cacheKey1 = "tilgang-til-person-$VEILEDER_IDENT-$personident1"
+            val cacheKey2 = "tilgang-til-person-$VEILEDER_IDENT-$personident2"
+            val grupperUtenSyfo = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { graphApiClient.hasAccess(any(), any(), any()) } returns false
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns grupperUtenSyfo
 
             runBlocking {
                 val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
@@ -204,7 +238,7 @@ class TilgangServiceTest {
                 assertEquals(0, filteredPersonidenter.size)
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getGrupperForVeilederOgCache(validToken, callId) }
             coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident1, any()) }
             coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident2, any()) }
             coVerify(exactly = 0) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident1, any()) }
@@ -218,22 +252,22 @@ class TilgangServiceTest {
         @Test
         fun `remove skjermet innbygger when veileder is missing access`() {
             val callId = "123"
-            val appName = "anyApp"
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val personident = Personident(UserConstants.PERSONIDENT)
             val personidentSkjermet = Personident(UserConstants.PERSONIDENT_GRADERT)
             val personidenter = listOf(personident.value, personidentSkjermet.value)
-            val cacheKeyAccess = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
-            val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
+            val cacheKeyAccess = "tilgang-til-person-$VEILEDER_IDENT-$personident"
+            val cacheKeySkjermet = "tilgang-til-person-$VEILEDER_IDENT-$personidentSkjermet"
             every { valkeyStore.getObjects(any()) } returns mapOf(
                 cacheKeyAccess to null,
                 cacheKeySkjermet to null,
             )
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
@@ -244,7 +278,6 @@ class TilgangServiceTest {
             } returns true
             coEvery { pdlClient.getPerson(any(), personident) } returns ugradertInnbygger
             coEvery { pdlClient.getPerson(any(), personidentSkjermet) } returns ugradertInnbygger
-            coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
 
             runBlocking {
                 val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
@@ -257,7 +290,7 @@ class TilgangServiceTest {
                 assertEquals(personident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getGrupperForVeilederOgCache(validToken, callId) }
             coVerify(exactly = 2) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -287,7 +320,6 @@ class TilgangServiceTest {
         @Test
         fun `remove innbyggere when veileder is missing correct access`() {
             val callId = "123"
-            val appName = "anyApp"
             val otherBehandlendeEnhet = BehandlendeEnhetDTO(
                 geografiskEnhet = EnhetDTO(
                     enhetId = UserConstants.ENHET_VEILEDER_NO_ACCESS,
@@ -295,7 +327,6 @@ class TilgangServiceTest {
                 ),
                 oppfolgingsenhetDTO = null,
             )
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val kode6Innbygger = getinnbyggerWithKode6()
@@ -310,17 +341,20 @@ class TilgangServiceTest {
                 personidentSkjermet.value,
                 personidentGradert.value
             )
-            val cacheKeyAccess = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
-            val cacheKeyOtherEnhet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentOtherEnhet"
-            val cacheKeySkjermet = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentSkjermet"
-            val cacheKeyGradert = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personidentGradert"
+            val cacheKeyAccess = "tilgang-til-person-$VEILEDER_IDENT-$personident"
+            val cacheKeyOtherEnhet = "tilgang-til-person-$VEILEDER_IDENT-$personidentOtherEnhet"
+            val cacheKeySkjermet = "tilgang-til-person-$VEILEDER_IDENT-$personidentSkjermet"
+            val cacheKeyGradert = "tilgang-til-person-$VEILEDER_IDENT-$personidentGradert"
             every { valkeyStore.getObjects(any()) } returns mapOf(
                 cacheKeyAccess to null,
                 cacheKeyOtherEnhet to null,
                 cacheKeySkjermet to null,
                 cacheKeyGradert to null,
             )
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
             coEvery {
                 behandlendeEnhetClient.getEnhetWithOboToken(
@@ -329,8 +363,6 @@ class TilgangServiceTest {
                     any()
                 )
             } returns otherBehandlendeEnhet
-            coEvery { graphApiClient.hasAccess(adRoller.REGIONAL, any(), any()) } returns false
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) } returns false
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
@@ -350,8 +382,6 @@ class TilgangServiceTest {
             coEvery { pdlClient.getPerson(any(), personidentSkjermet) } returns ugradertInnbygger
             coEvery { pdlClient.getPerson(any(), personidentOtherEnhet) } returns utlandGTInnbygger
             coEvery { pdlClient.getPerson(any(), personidentGradert) } returns kode6Innbygger
-            coEvery { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, any(), any()) } returns false
-            coEvery { graphApiClient.hasAccess(adRoller.KODE6, any(), any()) } returns false
 
             runBlocking {
                 val filteredPersonidenter = tilgangService.filterIdenterByVeilederAccess(
@@ -364,10 +394,7 @@ class TilgangServiceTest {
                 assertEquals(personident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.REGIONAL, validToken, callId) }
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.EGEN_ANSATT, validToken, callId) }
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.KODE6, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getGrupperForVeilederOgCache(validToken, callId) }
             coVerify(exactly = 1) {
                 behandlendeEnhetClient.getEnhetWithOboToken(
                     callId,
@@ -422,18 +449,18 @@ class TilgangServiceTest {
         @Test
         fun `Remove invalid personidenter`() {
             val callId = "123"
-            val appName = "anyApp"
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val validPersonident = Personident(UserConstants.PERSONIDENT)
             val invalidPersonident = "1234567890"
             val personidenter = listOf(validPersonident.value, invalidPersonident)
-            val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
+            val cacheKeyValidPersonident = "tilgang-til-person-$VEILEDER_IDENT-$validPersonident"
             every { valkeyStore.getObjects(any()) } returns mapOf(cacheKeyValidPersonident to null)
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     any(),
@@ -454,7 +481,7 @@ class TilgangServiceTest {
                 assertEquals(validPersonident.value, filteredPersonidenter[0])
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getGrupperForVeilederOgCache(validToken, callId) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -475,16 +502,16 @@ class TilgangServiceTest {
         @Test
         fun `Remove personidenter with missing enhet`() {
             val callId = "123"
-            val appName = "anyApp"
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val ugradertInnbygger = getUgradertInnbygger()
             val validPersonident = Personident(UserConstants.PERSONIDENT)
             val personidenter = listOf(validPersonident.value)
-            val cacheKeyValidPersonident = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$validPersonident"
+            val cacheKeyValidPersonident = "tilgang-til-person-$VEILEDER_IDENT-$validPersonident"
             every { valkeyStore.getObjects(any()) } returns mapOf(cacheKeyValidPersonident to null)
-            coEvery { graphApiClient.hasAccess(adRoller.SYFO, any(), any()) } returns true
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } throws RuntimeException("Feil")
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
             coEvery {
                 skjermedePersonerPipClient.getIsSkjermetWithOboToken(
                     any(),
@@ -504,7 +531,7 @@ class TilgangServiceTest {
                 assertEquals(0, filteredPersonidenter.size)
             }
 
-            coVerify(exactly = 1) { graphApiClient.hasAccess(adRoller.SYFO, validToken, callId) }
+            coVerify(exactly = 1) { graphApiClient.getGrupperForVeilederOgCache(validToken, callId) }
             coVerify(exactly = 1) {
                 norgClient.getNAVKontorForGT(
                     callId,
@@ -525,14 +552,13 @@ class TilgangServiceTest {
         @Test
         fun `checkTilgangToPersons fetches valkey in bulk and sets missing cache-values`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val personident = Personident(UserConstants.PERSONIDENT)
             val otherPersonident = Personident(UserConstants.PERSONIDENT_GRADERT)
             val otherPersonident2 = Personident(UserConstants.PERSONIDENT_OTHER_ENHET)
             val personidenter = listOf(personident, otherPersonident, otherPersonident2)
-            val cacheKey1 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$personident"
-            val cacheKey2 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$otherPersonident"
-            val cacheKey3 = "tilgang-til-person-${UserConstants.VEILEDER_IDENT}-$otherPersonident2"
+            val cacheKey1 = "tilgang-til-person-$VEILEDER_IDENT-$personident"
+            val cacheKey2 = "tilgang-til-person-$VEILEDER_IDENT-$otherPersonident"
+            val cacheKey3 = "tilgang-til-person-$VEILEDER_IDENT-$otherPersonident2"
 
             every { valkeyStore.getObjects(listOf(cacheKey1, cacheKey2, cacheKey3)) } returns
                 mapOf(
@@ -541,11 +567,16 @@ class TilgangServiceTest {
                     cacheKey3 to null,
                 )
 
-            coEvery { graphApiClient.hasAccess(adRoller.NASJONAL, any(), any()) } returns true
-            coEvery { graphApiClient.getEnheterForVeileder(any(), any()) } returns listOf(veiledersEnhet)
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.NASJONAL),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
 
-            val tilgangMap = runBlocking { tilgangService.checkTilgangToPersons(validToken, personidenter, "callId") }
+            val tilgangMap = runBlocking {
+                val veileder = tilgangService.getVeileder(validToken, "callId")
+                tilgangService.checkTilgangToPersons(personidenter, veileder, "callId")
+            }
 
             assertEquals(3, tilgangMap.size)
             assertFalse(tilgangMap[personident]!!.erGodkjent)

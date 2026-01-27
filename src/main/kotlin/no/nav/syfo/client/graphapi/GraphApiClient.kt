@@ -10,9 +10,7 @@ import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.azuread.AzureAdToken
-import no.nav.syfo.tilgang.AdRolle
 import no.nav.syfo.tilgang.AdRoller
-import no.nav.syfo.tilgang.Enhet
 import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -23,39 +21,7 @@ class GraphApiClient(
     private val valkeyStore: ValkeyStore,
     private val adRoller: AdRoller,
 ) {
-    // Mål om å flytte denne til tilgangsservice, og heller at den tar inn en liste med grupper den sjekker mot en AD-rolle
-    // Mener at noe som heter `hasAccess` tilhører i servicen heller enn clienten
-    suspend fun hasAccess(
-        adRolle: AdRolle,
-        token: Token,
-        callId: String,
-    ): Boolean {
-        val grupper = getGrupperForVeilederOgCache(
-            token = token,
-            callId = callId,
-        )
 
-        return isRoleInUserGroupList(
-            grupper = grupper,
-            adRolle = adRolle,
-        )
-    }
-
-    private fun isRoleInUserGroupList(
-        grupper: List<Gruppe>,
-        adRolle: AdRolle,
-    ): Boolean {
-        return grupper.map { it.uuid }.contains(adRolle.id)
-    }
-
-    // Skal flyttes
-    suspend fun getEnheterForVeileder(token: Token, callId: String): List<Enhet> {
-        return getGrupperForVeilederOgCache(token, callId)
-            .mapNotNull { it.getEnhetNr() }
-            .map { Enhet(it) }
-    }
-
-    // Vil at denne clienten kun skal eksponere denne funksjonaliteten
     suspend fun getGrupperForVeilederOgCache(token: Token, callId: String): List<Gruppe> {
         val veilederIdent = token.getNAVIdent()
         val cacheKey = cacheKeyVeilederGrupper(veilederIdent)
@@ -84,8 +50,7 @@ class GraphApiClient(
         }
     }
 
-    // Skal gjøres private
-    suspend fun getGrupperForVeileder(token: Token, callId: String): List<Gruppe> {
+    private suspend fun getGrupperForVeileder(token: Token, callId: String): List<Gruppe> {
         return try {
             getGroupsForVeilederRequest(token, callId)
                 .map { it.toGruppe() }
