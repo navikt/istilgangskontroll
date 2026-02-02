@@ -265,28 +265,6 @@ class TilgangService(
                 callId = callId,
             )
         }
-        if (cachedTilgang == null) {
-            backgroundScope.launch() {
-                try {
-                    val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personident, callId)
-                    if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
-                        COUNT_TILGANGSMASKIN_DIFF.increment()
-                        log.info(
-                            "Tilgangsmaskin gir annet resultat (ikke ok: ${'$'}{tilgangsmaskinTilgang.problemDetailResponse?.begrunnelse}) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ok): ${'$'}callId"
-                        )
-                    } else if (tilgangsmaskinTilgang.hasAccess && !tilgang.erGodkjent) {
-                        COUNT_TILGANGSMASKIN_DIFF.increment()
-                        log.info(
-                            "Tilgangsmaskin gir annet resultat (ok) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ikke ok): ${'$'}callId"
-                        )
-                    } else {
-                        COUNT_TILGANGSMASKIN_OK.increment()
-                    }
-                } catch (e: Exception) {
-                    log.warn("Tilgangsmaskin-sjekk feilet (ignoreres): callId=${'$'}callId", e)
-                }
-            }
-        }
         auditLog(
             CEF(
                 suid = veilederident,
@@ -296,7 +274,30 @@ class TilgangService(
                 appName = appName,
             )
         )
-        return tilgang
+        return tilgang.also {
+            if (cachedTilgang == null) {
+                backgroundScope.launch() {
+                    try {
+                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personident, callId)
+                        if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment()
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ikke ok: ${'$'}{tilgangsmaskinTilgang.problemDetailResponse?.begrunnelse}) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ok): ${'$'}callId"
+                            )
+                        } else if (tilgangsmaskinTilgang.hasAccess && !tilgang.erGodkjent) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment()
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ok) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ikke ok): ${'$'}callId"
+                            )
+                        } else {
+                            COUNT_TILGANGSMASKIN_OK.increment()
+                        }
+                    } catch (e: Exception) {
+                        log.warn("Tilgangsmaskin-sjekk feilet (ignoreres): callId=${'$'}callId", e)
+                    }
+                }
+            }
+        }
     }
 
     suspend fun checkTilgangToPersons(
@@ -392,35 +393,36 @@ class TilgangService(
             .filter { (_, tilgang) -> tilgang.erGodkjent }
             .map { (personident, _) -> personident.value }
 
-        if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
-            backgroundScope.launch() {
-                try {
-                    val personidenterToCheck = validPersonidenter.map { it.value }
-                    val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
-                    val baseLineDenied = personidenterToCheck - godkjente
-                    val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
-                    val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
-                    val diffDeniedByBaseline = baseLineDenied - agreeDenied
-                    val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
-                    if (diffDeniedByBaseline.isNotEmpty()) {
-                        COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
-                        log.info(
-                            "Tilgangsmaskin gir annet resultat (ok for ${'$'}{diffDeniedByBaseline.size} forekomster) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ikke ok): ${'$'}callId"
-                        )
+        return godkjente.also {
+            if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
+                backgroundScope.launch() {
+                    try {
+                        val personidenterToCheck = validPersonidenter.map { it.value }
+                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
+                        val baseLineDenied = personidenterToCheck - godkjente
+                        val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
+                        val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
+                        val diffDeniedByBaseline = baseLineDenied - agreeDenied
+                        val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
+                        if (diffDeniedByBaseline.isNotEmpty()) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ok for ${'$'}{diffDeniedByBaseline.size} forekomster) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ikke ok): ${'$'}callId"
+                            )
+                        }
+                        if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ikke ok for ${'$'}{diffDeniedByTilgangsmaskin.size} forekomster) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ok): ${'$'}callId"
+                            )
+                        }
+                        COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
+                    } catch (e: Exception) {
+                        log.warn("Tilgangsmaskin bulk-sjekk feilet (ignoreres): callId=${'$'}callId", e)
                     }
-                    if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
-                        COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
-                        log.info(
-                            "Tilgangsmaskin gir annet resultat (ikke ok for ${'$'}{diffDeniedByTilgangsmaskin.size} forekomster) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ok): ${'$'}callId"
-                        )
-                    }
-                    COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
-                } catch (e: Exception) {
-                    log.warn("Tilgangsmaskin bulk-sjekk feilet (ignoreres): callId=${'$'}callId", e)
                 }
             }
         }
-        return godkjente
     }
 
     private suspend fun preloadOboTokens(
