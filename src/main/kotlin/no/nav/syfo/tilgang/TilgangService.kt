@@ -263,7 +263,7 @@ class TilgangService(
                 callId = callId,
             )
         }
-        if (doAuditLog) {
+        if (doAuditLog && tilgang.erGodkjent) {
             auditLog(
                 CEF(
                     suid = veilederident,
