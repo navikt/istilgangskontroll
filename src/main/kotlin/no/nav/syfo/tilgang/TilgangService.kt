@@ -1,9 +1,12 @@
 package no.nav.syfo.tilgang
 
 import io.micrometer.core.instrument.Counter
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
@@ -39,6 +42,7 @@ class TilgangService(
     val adRoller: AdRoller,
     val valkeyStore: ValkeyStore,
     val tilgangsmaskin: TilgangsmaskinClient,
+    private val backgroundScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     suspend fun getVeileder(
         token: Token,
@@ -246,8 +250,6 @@ class TilgangService(
         veileder: Veileder,
         callId: String,
         appName: String,
-        doAuditLog: Boolean = true,
-        bulk: Boolean = false,
     ): Tilgang {
         val veilederident = veileder.veilederident
         val cacheKey = "$TILGANG_TIL_PERSON_PREFIX$veilederident-$personident"
@@ -263,18 +265,39 @@ class TilgangService(
                 callId = callId,
             )
         }
-        if (doAuditLog && tilgang.erGodkjent) {
-            auditLog(
-                CEF(
-                    suid = veilederident,
-                    duid = personident.value,
-                    event = AuditLogEvent.Access,
-                    permit = tilgang.erGodkjent,
-                    appName = appName,
-                )
+        auditLog(
+            CEF(
+                suid = veilederident,
+                duid = personident.value,
+                event = AuditLogEvent.Access,
+                permit = tilgang.erGodkjent,
+                appName = appName,
             )
+        )
+        return tilgang.also {
+            if (cachedTilgang == null) {
+                backgroundScope.launch() {
+                    try {
+                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personident, callId)
+                        if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment()
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ikke ok: ${'$'}{tilgangsmaskinTilgang.problemDetailResponse?.begrunnelse}) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ok): ${'$'}callId"
+                            )
+                        } else if (tilgangsmaskinTilgang.hasAccess && !tilgang.erGodkjent) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment()
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ok) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ikke ok): ${'$'}callId"
+                            )
+                        } else {
+                            COUNT_TILGANGSMASKIN_OK.increment()
+                        }
+                    } catch (e: Exception) {
+                        log.warn("Tilgangsmaskin-sjekk feilet (ignoreres): callId=${'$'}callId", e)
+                    }
+                }
+            }
         }
-        return tilgang
     }
 
     suspend fun checkTilgangToPersons(
@@ -313,7 +336,6 @@ class TilgangService(
                 }
             }.awaitAll().toMap()
         }
-
         return cachedTilganger + hentetTilganger
     }
 
@@ -363,13 +385,44 @@ class TilgangService(
         preloadOboTokens(callId = callId, token = veileder.token)
         val validPersonidenter = personidenter.filterValidPersonidenter()
 
-        return checkTilgangToPersons(
+        val godkjente = checkTilgangToPersons(
             personidenter = validPersonidenter,
             veileder = veileder,
             callId = callId,
         )
             .filter { (_, tilgang) -> tilgang.erGodkjent }
             .map { (personident, _) -> personident.value }
+
+        return godkjente.also {
+            if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
+                backgroundScope.launch() {
+                    try {
+                        val personidenterToCheck = validPersonidenter.map { it.value }
+                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
+                        val baseLineDenied = personidenterToCheck - godkjente
+                        val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
+                        val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
+                        val diffDeniedByBaseline = baseLineDenied - agreeDenied
+                        val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
+                        if (diffDeniedByBaseline.isNotEmpty()) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ok for ${'$'}{diffDeniedByBaseline.size} forekomster) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ikke ok): ${'$'}callId"
+                            )
+                        }
+                        if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ikke ok for ${'$'}{diffDeniedByTilgangsmaskin.size} forekomster) for ${'$'}{veileder.veilederident} enn istilgangskontroll (ok): ${'$'}callId"
+                            )
+                        }
+                        COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
+                    } catch (e: Exception) {
+                        log.warn("Tilgangsmaskin bulk-sjekk feilet (ignoreres): callId=${'$'}callId", e)
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun preloadOboTokens(
