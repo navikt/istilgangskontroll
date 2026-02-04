@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import no.nav.syfo.application.api.auth.Token
@@ -396,33 +395,31 @@ class TilgangService(
 
         return godkjente.also {
             if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
-                coroutineScope {
-                    launch() {
-                        try {
-                            val personidenterToCheck = validPersonidenter.map { it.value }
-                            val tilgangsmaskinTilgang =
-                                tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
-                            val baseLineDenied = personidenterToCheck - godkjente
-                            val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
-                            val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
-                            val diffDeniedByBaseline = baseLineDenied - agreeDenied
-                            val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
-                            if (diffDeniedByBaseline.isNotEmpty()) {
-                                COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
-                                log.info(
-                                    "Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for ${veileder.veilederident} enn istilgangskontroll (ikke ok): $callId"
-                                )
-                            }
-                            if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
-                                COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
-                                log.info(
-                                    "Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for ${veileder.veilederident} enn istilgangskontroll (ok): $callId"
-                                )
-                            }
-                            COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
-                        } catch (e: Exception) {
-                            log.warn("Tilgangsmaskin bulk-sjekk feilet (ignoreres): callId=$callId", e)
+                backgroundScope.launch() {
+                    try {
+                        val personidenterToCheck = validPersonidenter.map { it.value }
+                        val tilgangsmaskinTilgang =
+                            tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
+                        val baseLineDenied = personidenterToCheck - godkjente
+                        val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
+                        val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
+                        val diffDeniedByBaseline = baseLineDenied - agreeDenied
+                        val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
+                        if (diffDeniedByBaseline.isNotEmpty()) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for ${veileder.veilederident} enn istilgangskontroll (ikke ok): $callId"
+                            )
                         }
+                        if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
+                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
+                            log.info(
+                                "Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for ${veileder.veilederident} enn istilgangskontroll (ok): $callId"
+                            )
+                        }
+                        COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
+                    } catch (e: Exception) {
+                        log.warn("Tilgangsmaskin bulk-sjekk feilet (ignoreres): callId=$callId", e)
                     }
                 }
             }
