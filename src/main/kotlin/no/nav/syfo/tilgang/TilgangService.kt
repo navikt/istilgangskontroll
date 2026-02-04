@@ -275,6 +275,8 @@ class TilgangService(
                     appName = appName,
                 )
             )
+        } else {
+            log.info("Veileder har ikke tilgang til person, ingen audit-logg opprettes.")
         }
 
         return tilgang.also {
