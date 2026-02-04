@@ -398,8 +398,7 @@ class TilgangService(
                 backgroundScope.launch() {
                     try {
                         val personidenterToCheck = validPersonidenter.map { it.value }
-                        val tilgangsmaskinTilgang =
-                            tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
+                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
                         val baseLineDenied = personidenterToCheck - godkjente
                         val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
                         val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
