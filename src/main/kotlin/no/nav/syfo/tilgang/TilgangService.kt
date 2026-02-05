@@ -265,15 +265,20 @@ class TilgangService(
                 callId = callId,
             )
         }
-        auditLog(
-            CEF(
-                suid = veilederident,
-                duid = personident.value,
-                event = AuditLogEvent.Access,
-                permit = tilgang.erGodkjent,
-                appName = appName,
+        if (tilgang.erGodkjent) {
+            auditLog(
+                CEF(
+                    suid = veilederident,
+                    duid = personident.value,
+                    event = AuditLogEvent.Access,
+                    permit = tilgang.erGodkjent,
+                    appName = appName,
+                )
             )
-        )
+        } else {
+            log.info("Veileder har ikke tilgang til person, ingen audit-logg opprettes.")
+        }
+
         return tilgang.also {
             if (cachedTilgang == null) {
                 backgroundScope.launch() {
