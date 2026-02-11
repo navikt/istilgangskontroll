@@ -5,7 +5,6 @@ import no.nav.syfo.cache.ValkeyConfig
 import no.nav.syfo.client.azuread.AzureEnvironment
 import no.nav.syfo.client.azuread.PreAuthorizedApp
 import java.net.URI
-import kotlin.String
 
 fun testEnvironment() = Environment(
     azure = AzureEnvironment(
