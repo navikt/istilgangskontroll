@@ -85,7 +85,7 @@ class TilgangApiTest {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery {
                     graphApiClientMock.getGrupperForVeilederOgCache(any(), any())
-                } returns listOf(createGruppeForRole(adRoller.SYFO))
+                } returns listOf(createGruppeForRole(adRoller.SYFO_LEGACY))
 
                 val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/syfo") {
@@ -129,7 +129,7 @@ class TilgangApiTest {
                 coEvery {
                     graphApiClientMock.getGrupperForVeilederOgCache(any(), any())
                 } returns listOf(
-                    createGruppeForRole(adRoller.SYFO),
+                    createGruppeForRole(adRoller.SYFO_LEGACY),
                     createGruppeForEnhet(ENHET_VEILEDER)
                 )
 
@@ -191,7 +191,7 @@ class TilgangApiTest {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
                     listOf(
-                        createGruppeForRole(adRoller.SYFO),
+                        createGruppeForRole(adRoller.SYFO_LEGACY),
                         createGruppeForEnhet(ENHET_VEILEDER)
                     )
                 val client = setupApi(graphApiClientMock)
@@ -291,7 +291,7 @@ class TilgangApiTest {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForRole(adRoller.SYFO),
+                    createGruppeForRole(adRoller.SYFO_LEGACY),
                     createGruppeForRole(adRoller.PAPIRSYKMELDING),
                     createGruppeForEnhet(ENHET_VEILEDER)
                 )

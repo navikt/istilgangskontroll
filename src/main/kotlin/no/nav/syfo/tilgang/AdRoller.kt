@@ -21,10 +21,25 @@ class AdRoller(
         id = env.kode7Id,
         rolle = "0000-GA-Fortrolig_Adresse"
     )
-    val SYFO = AdRolle(
+    val SYFO_LEGACY = AdRolle(
         name = "SYFO",
-        id = env.syfoId,
+        id = env.legacySyfoId,
         rolle = "0000-GA-SYFO-SENSITIV",
+    )
+    val SYFO_FULL = AdRolle(
+        name = "SYFO_FULL",
+        id = env.syfoFullId,
+        rolle = "0000-CA-MODIA-SYFO-VEILEDER",
+    )
+    val SYFO_LES = AdRolle(
+        name = "SYFO_FULL",
+        id = env.syfoLesId,
+        rolle = "0000-CA-MODIA-SYFO-LESETILGANG",
+    )
+    val FINNFASTLEGE = AdRolle(
+        name = "FINNFASTLEGE",
+        id = env.finnfastlegeId,
+        rolle = "0000-CA-FINNFASTLEGE",
     )
     val EGEN_ANSATT = AdRolle(
         name = "EGEN_ANSATT",
@@ -46,16 +61,4 @@ class AdRoller(
         id = env.papirsykmeldingId,
         rolle = "0000-GA-papirsykmelding",
     )
-
-    fun toList(): List<AdRolle> {
-        return listOf(
-            KODE6,
-            KODE7,
-            SYFO,
-            EGEN_ANSATT,
-            NASJONAL,
-            REGIONAL,
-            PAPIRSYKMELDING,
-        )
-    }
 }

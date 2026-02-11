@@ -35,7 +35,9 @@ class GraphApiClient(
         COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
         return getGrupperForVeileder(token, callId).also { grupper ->
             val tilgangTilMinstEnEnhet = grupper.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
-            val harSyfoRolle = grupper.map { it.uuid }.contains(adRoller.SYFO.id)
+            val harSyfoRolle = grupper.map { it.uuid }.any {
+                it == adRoller.SYFO_LEGACY.id || it == adRoller.SYFO_FULL.id || it == adRoller.SYFO_LES.id || it == adRoller.FINNFASTLEGE.id
+            }
             if (harSyfoRolle && tilgangTilMinstEnEnhet) {
                 valkeyStore.setObject(
                     key = cacheKey,

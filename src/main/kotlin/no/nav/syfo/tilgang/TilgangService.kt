@@ -70,7 +70,7 @@ class TilgangService(
             cachedTilgang
         } else {
             Tilgang(
-                erGodkjent = veileder.hasAccessToRole(adRoller.SYFO)
+                erGodkjent = veileder.hasAccessToRole(adRoller.SYFO_LEGACY) || veileder.hasAccessToRole(adRoller.SYFO_FULL) || veileder.hasAccessToRole(adRoller.SYFO_LES)
             ).also { tilgang ->
                 if (tilgang.erGodkjent) {
                     valkeyStore.setObject(
@@ -384,7 +384,7 @@ class TilgangService(
     ): List<String> {
         val veileder = getVeileder(token, callId)
 
-        if (!veileder.hasAccessToRole(adRoller.SYFO)) {
+        if (!veileder.hasAccessToRole(adRoller.SYFO_LEGACY) && !veileder.hasAccessToRole(adRoller.SYFO_FULL) && !veileder.hasAccessToRole(adRoller.SYFO_LES)) {
             return emptyList()
         }
         preloadOboTokens(callId = callId, token = veileder.token)

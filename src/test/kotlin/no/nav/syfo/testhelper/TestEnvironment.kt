@@ -1,10 +1,12 @@
 package no.nav.syfo.testhelper
 
 import no.nav.syfo.application.*
+import no.nav.syfo.application.getEnvVar
 import no.nav.syfo.cache.ValkeyConfig
 import no.nav.syfo.client.azuread.AzureEnvironment
 import no.nav.syfo.client.azuread.PreAuthorizedApp
 import java.net.URI
+import kotlin.String
 
 fun testEnvironment() = Environment(
     azure = AzureEnvironment(
@@ -25,7 +27,12 @@ fun testEnvironment() = Environment(
 
     kode6Id = "kode6Id",
     kode7Id = "kode7Id",
-    syfoId = "syfoId",
+
+    legacySyfoId = "legacySyfoId",
+    syfoFullId = "syfoFullId",
+    syfoLesId = "syfoLesId",
+    finnfastlegeId = "finnfastlegeId",
+
     skjermingId = "skjermingId",
     nasjonalId = "nasjonalId",
     regionalId = "regionalId",

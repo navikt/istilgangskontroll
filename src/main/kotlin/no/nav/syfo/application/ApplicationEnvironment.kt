@@ -25,7 +25,12 @@ data class Environment(
 
     val kode6Id: String = getEnvVar("ROLE_KODE6_ID"),
     val kode7Id: String = getEnvVar("ROLE_KODE7_ID"),
-    val syfoId: String = getEnvVar("ROLE_SYFO_ID"),
+
+    val legacySyfoId: String = getEnvVar("ROLE_SYFO_ID"),
+    val syfoFullId: String = getEnvVar("ROLE_MODIA_SYFO_VEILEDER_ID"),
+    val syfoLesId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_ID"),
+    val finnfastlegeId: String = getEnvVar("ROLE_FINNFASTLEGE_ID"),
+
     val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
     val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),
     val regionalId: String = getEnvVar("ROLE_REGIONAL_ID"),
@@ -52,7 +57,7 @@ data class Environment(
         norgUrl = getEnvVar("NORG2_URL"),
     ),
 
-)
+    )
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
     System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")
