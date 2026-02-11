@@ -56,8 +56,7 @@ data class Environment(
         ),
         norgUrl = getEnvVar("NORG2_URL"),
     ),
-
-    )
+)
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
     System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")

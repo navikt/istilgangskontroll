@@ -1,7 +1,6 @@
 package no.nav.syfo.testhelper
 
 import no.nav.syfo.application.*
-import no.nav.syfo.application.getEnvVar
 import no.nav.syfo.cache.ValkeyConfig
 import no.nav.syfo.client.azuread.AzureEnvironment
 import no.nav.syfo.client.azuread.PreAuthorizedApp

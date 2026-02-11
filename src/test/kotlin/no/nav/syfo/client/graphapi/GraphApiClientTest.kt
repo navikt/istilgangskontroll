@@ -66,7 +66,7 @@ class GraphApiClientTest {
 
     @Test
     fun `Returns syfo role and one enhet - Stores in cache`() {
-        val syfoGroup = createGroup(groupId = "syfoId", displayName = "0000-GA-SYFO-SENSITIV")
+        val syfoGroup = createGroup(groupId = adRoller.SYFO_FULL.id, displayName = "0000-CA-MODIA-SYFO-VEILEDER")
         val enhetGroup = createGroup(groupId = "enhetId", displayName = "0000-GA-ENHET_1234")
         val graphApiClientMock = spyk(graphApiClient)
         coEvery { graphApiClientMock.getGroupsForVeilederRequest(any(), any()) } returns listOf(syfoGroup, enhetGroup)
