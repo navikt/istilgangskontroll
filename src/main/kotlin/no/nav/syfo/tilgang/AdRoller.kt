@@ -27,12 +27,12 @@ class AdRoller(
         rolle = "0000-GA-SYFO-SENSITIV",
     )
     val SYFO_FULL = AdRolle(
-        name = "SYFO_FULL",
+        name = "MODIA-SYFO-VEILEDER",
         id = env.syfoFullId,
         rolle = "0000-CA-MODIA-SYFO-VEILEDER",
     )
     val SYFO_LES = AdRolle(
-        name = "SYFO_FULL",
+        name = "MODIA-SYFO-LESETILGANG",
         id = env.syfoLesId,
         rolle = "0000-CA-MODIA-SYFO-LESETILGANG",
     )
