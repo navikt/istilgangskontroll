@@ -60,17 +60,49 @@ class TilgangService(
         )
     }
 
-    fun checkTilgangToSyfo(veileder: Veileder): Tilgang {
-        // Hvis tilgangen for veileder var cachet, så blir det egentlig et unødvendig kall til graph-api-cachen når vi nå tvinger inn veileder
+    fun checkTilgangToSyfo(veileder: Veileder) =
+        checkTilgangWithCache(
+            veileder = veileder,
+            cachePrefix = TILGANG_TIL_TJENESTEN_PREFIX,
+            checkAccess = {
+                it.hasAccessToRole(adRoller.SYFO_LEGACY) || it.hasAccessToRole(adRoller.SYFO_FULL) ||
+                    it.hasAccessToRole(adRoller.SYFO_LES)
+            }
+        )
+
+    fun checkTilgangToSyfoFull(veileder: Veileder) =
+        checkTilgangWithCache(
+            veileder = veileder,
+            cachePrefix = FULL_TILGANG_TIL_TJENESTEN_PREFIX,
+            checkAccess = {
+                it.hasAccessToRole(adRoller.SYFO_FULL) || it.hasAccessToRole(adRoller.SYFO_LEGACY)
+            }
+        )
+
+    fun checkTilgangToFinnfastelege(veileder: Veileder) =
+        checkTilgangWithCache(
+            veileder = veileder,
+            cachePrefix = TILGANG_TIL_FINN_FASTLEGE_PREFIX,
+            checkAccess = {
+                it.hasAccessToRole(adRoller.FINNFASTLEGE) || it.hasAccessToRole(adRoller.SYFO_LEGACY) ||
+                    it.hasAccessToRole(adRoller.SYFO_FULL) || it.hasAccessToRole(adRoller.SYFO_LES)
+            }
+        )
+
+    private fun checkTilgangWithCache(
+        veileder: Veileder,
+        cachePrefix: String,
+        checkAccess: (Veileder) -> Boolean
+    ): Tilgang {
         val veilederident = veileder.veilederident
-        val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederident"
+        val cacheKey = "$cachePrefix$veilederident"
         val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
 
         return if (cachedTilgang != null) {
             cachedTilgang
         } else {
             Tilgang(
-                erGodkjent = veileder.hasAccessToRole(adRoller.SYFO_LEGACY) || veileder.hasAccessToRole(adRoller.SYFO_FULL) || veileder.hasAccessToRole(adRoller.SYFO_LES)
+                erGodkjent = checkAccess(veileder)
             ).also { tilgang ->
                 if (tilgang.erGodkjent) {
                     valkeyStore.setObject(
@@ -469,6 +501,8 @@ class TilgangService(
         private val log = LoggerFactory.getLogger(TilgangService::class.java)
         private val CHECK_PERSON_TILGANG_DISPATCHER = Dispatchers.IO.limitedParallelism(20)
 
+        const val FULL_TILGANG_TIL_TJENESTEN_PREFIX = "full-tilgang-til-tjenesten-"
+        const val TILGANG_TIL_FINN_FASTLEGE_PREFIX = "tilgang-til-finnfastlege-"
         const val TILGANG_TIL_TJENESTEN_PREFIX = "tilgang-til-tjenesten-"
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"
         const val TILGANG_TIL_PERSON_PREFIX = "tilgang-til-person-"

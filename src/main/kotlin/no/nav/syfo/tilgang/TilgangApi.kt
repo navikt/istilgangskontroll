@@ -8,6 +8,7 @@ import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
 import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
 import no.nav.syfo.client.azuread.PreAuthorizedApp
+import no.nav.syfo.domain.Veileder
 import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
@@ -20,27 +21,27 @@ fun Route.registerTilgangApi(
 ) {
     route(tilgangApiBasePath) {
         get("/navident/syfo") {
-            val callId = call.getCallId()
-            val token = call.getBearerHeader()
-                ?: throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No Authorization header supplied")
-            if (token.isMissingNAVIdent()) {
-                throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No NAV ident in token")
-            }
-
-            val veileder = tilgangService.getVeileder(
-                token = token,
-                callId = callId,
+            handleVeilederTilgangCheck(
+                tilgangService = tilgangService,
+                tilgangType = "syfo tilgang",
+                checkTilgang = { service, veileder -> service.checkTilgangToSyfo(veileder) }
             )
-            val tilgang = tilgangService.checkTilgangToSyfo(veileder)
+        }
 
-            if (tilgang.erGodkjent) {
-                call.respond(tilgang)
-            } else {
-                call.respond(
-                    status = HttpStatusCode.Forbidden,
-                    message = tilgang
-                )
-            }
+        get("/navident/syfofull") {
+            handleVeilederTilgangCheck(
+                tilgangService = tilgangService,
+                tilgangType = "syfo full tilgang",
+                checkTilgang = { service, veileder -> service.checkTilgangToSyfoFull(veileder) }
+            )
+        }
+
+        get("/navident/finnfastlege") {
+            handleVeilederTilgangCheck(
+                tilgangService = tilgangService,
+                tilgangType = "finnfastlege tilgang",
+                checkTilgang = { service, veileder -> service.checkTilgangToFinnfastelege(veileder) }
+            )
         }
 
         get("/navident/enhet/{$enhetNr}") {
@@ -210,4 +211,32 @@ private fun ApplicationCall.getAppname(
 ): String? {
     val consumerClientId = this.getConsumerClientId() ?: ""
     return preAuthorizedApps.find { it.clientId == consumerClientId }?.getAppnavn()
+}
+
+private suspend fun RoutingContext.handleVeilederTilgangCheck(
+    tilgangService: TilgangService,
+    tilgangType: String,
+    checkTilgang: (TilgangService, Veileder) -> Tilgang
+) {
+    val callId = call.getCallId()
+    val token = call.getBearerHeader()
+        ?: throw IllegalArgumentException("Failed to check $tilgangType for veileder. No Authorization header supplied")
+    if (token.isMissingNAVIdent()) {
+        throw IllegalArgumentException("Failed to check $tilgangType for veileder. No NAV ident in token")
+    }
+
+    val veileder = tilgangService.getVeileder(
+        token = token,
+        callId = callId,
+    )
+    val tilgang = checkTilgang(tilgangService, veileder)
+
+    if (tilgang.erGodkjent) {
+        call.respond(tilgang)
+    } else {
+        call.respond(
+            status = HttpStatusCode.Forbidden,
+            message = tilgang
+        )
+    }
 }
