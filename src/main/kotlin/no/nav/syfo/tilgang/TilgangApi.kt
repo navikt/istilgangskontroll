@@ -21,26 +21,53 @@ fun Route.registerTilgangApi(
 ) {
     route(tilgangApiBasePath) {
         get("/navident/syfo") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check syfo tilgangfor veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No NAV ident in token")
+            }
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
             handleVeilederTilgangCheck(
-                tilgangService = tilgangService,
-                tilgangType = "syfo tilgang",
-                checkTilgang = { service, veileder -> service.checkTilgangToSyfo(veileder) }
+                veileder = veileder,
+                checkTilgang = { veileder -> tilgangService.checkTilgangToSyfo(veileder) }
             )
         }
 
         get("/navident/syfofull") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check syfo full tilgang for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check syfo full tilgang for veileder. No NAV ident in token")
+            }
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
             handleVeilederTilgangCheck(
-                tilgangService = tilgangService,
-                tilgangType = "syfo full tilgang",
-                checkTilgang = { service, veileder -> service.checkTilgangToSyfoFull(veileder) }
+                veileder = veileder,
+                checkTilgang = { veileder -> tilgangService.checkTilgangToSyfoFull(veileder) }
             )
         }
 
         get("/navident/finnfastlege") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check finnfastlege tilgang for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check finnfastlege tilgang for veileder. No NAV ident in token")
+            }
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
             handleVeilederTilgangCheck(
-                tilgangService = tilgangService,
-                tilgangType = "finnfastlege tilgang",
-                checkTilgang = { service, veileder -> service.checkTilgangToFinnfastelege(veileder) }
+                veileder = veileder,
+                checkTilgang = { veileder -> tilgangService.checkTilgangToFinnfastelege(veileder) }
             )
         }
 
@@ -214,23 +241,10 @@ private fun ApplicationCall.getAppname(
 }
 
 private suspend fun RoutingContext.handleVeilederTilgangCheck(
-    tilgangService: TilgangService,
-    tilgangType: String,
-    checkTilgang: (TilgangService, Veileder) -> Tilgang
+    veileder: Veileder,
+    checkTilgang: (Veileder) -> Tilgang
 ) {
-    val callId = call.getCallId()
-    val token = call.getBearerHeader()
-        ?: throw IllegalArgumentException("Failed to check $tilgangType for veileder. No Authorization header supplied")
-    if (token.isMissingNAVIdent()) {
-        throw IllegalArgumentException("Failed to check $tilgangType for veileder. No NAV ident in token")
-    }
-
-    val veileder = tilgangService.getVeileder(
-        token = token,
-        callId = callId,
-    )
-    val tilgang = checkTilgang(tilgangService, veileder)
-
+    val tilgang = checkTilgang(veileder)
     if (tilgang.erGodkjent) {
         call.respond(tilgang)
     } else {
