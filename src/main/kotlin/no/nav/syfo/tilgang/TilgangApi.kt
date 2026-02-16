@@ -23,7 +23,7 @@ fun Route.registerTilgangApi(
         get("/navident/syfo") {
             val callId = call.getCallId()
             val token = call.getBearerHeader()
-                ?: throw IllegalArgumentException("Failed to check syfo tilgangfor veileder. No Authorization header supplied")
+                ?: throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No Authorization header supplied")
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No NAV ident in token")
             }
