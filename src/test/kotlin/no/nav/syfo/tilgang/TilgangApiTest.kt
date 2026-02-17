@@ -97,6 +97,8 @@ class TilgangApiTest {
                 assertEquals(HttpStatusCode.OK, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erGodkjent)
+                assertTrue(tilgang.fullTilgang)
+                assertTrue(tilgang.finnfastlege)
             }
         }
 
