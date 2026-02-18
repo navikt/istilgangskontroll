@@ -55,7 +55,7 @@ class TilgangServiceTest {
         verify(exactly = exactly) {
             valkeyStore.setObject(
                 key = key,
-                value = Tilgang(erGodkjent = harTilgang),
+                value = Tilgang(erGodkjent = harTilgang, fullTilgang = true, finnfastlege = true),
                 expireSeconds = TWELVE_HOURS_IN_SECONDS
             )
         }
@@ -568,6 +568,7 @@ class TilgangServiceTest {
                 )
 
             coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
             )

@@ -7,6 +7,7 @@ data class Tilgang(
     val erAvslatt: Boolean = !erGodkjent,
     val fullTilgang: Boolean = false,
     val finnfastlege: Boolean = false,
+    val legacy: Boolean = true,
 )
 
 fun Tilgang.utvidMedTilganger(
@@ -16,6 +17,6 @@ fun Tilgang.utvidMedTilganger(
     this.copy(
         fullTilgang = veileder.hasAccessToRole(adRoller.SYFO_FULL) || veileder.hasAccessToRole(adRoller.SYFO_LEGACY),
         finnfastlege = veileder.hasAccessToRole(adRoller.FINNFASTLEGE) || veileder.hasAccessToRole(adRoller.SYFO_LEGACY) ||
-                veileder.hasAccessToRole(adRoller.SYFO_FULL) || veileder.hasAccessToRole(adRoller.SYFO_LES),
+            veileder.hasAccessToRole(adRoller.SYFO_FULL) || veileder.hasAccessToRole(adRoller.SYFO_LES),
+        legacy = veileder.hasAccessToRole(adRoller.SYFO_LEGACY) && !(veileder.hasAccessToRole(adRoller.SYFO_FULL) || veileder.hasAccessToRole(adRoller.SYFO_LES)),
     )
-

@@ -70,7 +70,7 @@ class TilgangService(
         } else {
             Tilgang(
                 erGodkjent = veileder.hasAccessToRole(adRoller.SYFO_LEGACY) || veileder.hasAccessToRole(adRoller.SYFO_FULL) ||
-                        veileder.hasAccessToRole(adRoller.SYFO_LES)
+                    veileder.hasAccessToRole(adRoller.SYFO_LES)
             ).utvidMedTilganger(
                 veileder = veileder,
                 adRoller = adRoller,

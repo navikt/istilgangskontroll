@@ -8,7 +8,6 @@ import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
 import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
 import no.nav.syfo.client.azuread.PreAuthorizedApp
-import no.nav.syfo.domain.Veileder
 import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
