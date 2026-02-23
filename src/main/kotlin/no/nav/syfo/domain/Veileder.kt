@@ -3,6 +3,7 @@ package no.nav.syfo.domain
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.client.graphapi.Gruppe
 import no.nav.syfo.tilgang.AdRolle
+import no.nav.syfo.tilgang.AdRoller
 import no.nav.syfo.tilgang.Enhet
 
 /**
@@ -22,6 +23,17 @@ data class Veileder(
 ) {
     val enheter: List<Enhet> =
         this.adGrupper.mapNotNull { gruppe -> gruppe.getEnhetNr()?.let { Enhet(it) } }
+
+    fun hasFullTilgang(adRoller: AdRoller): Boolean =
+        hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LEGACY)
+
+    fun hasFinnfastlegeTilgang(adRoller: AdRoller): Boolean =
+        hasAccessToRole(adRoller.FINNFASTLEGE) || hasAccessToRole(adRoller.SYFO_LEGACY) ||
+            hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LES)
+
+    fun hasLegacyOnlyTilgang(adRoller: AdRoller): Boolean =
+        hasAccessToRole(adRoller.SYFO_LEGACY) &&
+            !(hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LES))
 
     fun hasAccessToRole(adRolle: AdRolle): Boolean =
         this.adGrupper.any { it.uuid == adRolle.id }

@@ -55,7 +55,7 @@ class TilgangServiceTest {
         verify(exactly = exactly) {
             valkeyStore.setObject(
                 key = key,
-                value = Tilgang(erGodkjent = harTilgang, fullTilgang = true, finnfastlege = true),
+                value = Tilgang(erGodkjent = harTilgang, fullTilgang = true, finnfastlege = true, legacy = true),
                 expireSeconds = TWELVE_HOURS_IN_SECONDS
             )
         }
