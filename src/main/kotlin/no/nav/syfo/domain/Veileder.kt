@@ -31,8 +31,7 @@ data class Veileder(
         hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LEGACY)
 
     fun hasFinnfastlegeTilgang(adRoller: AdRoller): Boolean =
-        hasAccessToRole(adRoller.FINNFASTLEGE) || hasAccessToRole(adRoller.SYFO_LEGACY) ||
-            hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LES)
+        hasSyfoTilgang(adRoller) || hasAccessToRole(adRoller.FINNFASTLEGE)
 
     fun hasLegacyOnlyTilgang(adRoller: AdRoller): Boolean =
         hasAccessToRole(adRoller.SYFO_LEGACY) &&
