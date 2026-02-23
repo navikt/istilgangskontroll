@@ -24,6 +24,9 @@ data class Veileder(
     val enheter: List<Enhet> =
         this.adGrupper.mapNotNull { gruppe -> gruppe.getEnhetNr()?.let { Enhet(it) } }
 
+    fun hasSyfoTilgang(adRoller: AdRoller): Boolean =
+        hasFullTilgang(adRoller) || hasAccessToRole(adRoller.SYFO_LES)
+
     fun hasFullTilgang(adRoller: AdRoller): Boolean =
         hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LEGACY)
 

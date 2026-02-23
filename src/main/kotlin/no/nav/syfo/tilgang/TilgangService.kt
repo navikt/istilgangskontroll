@@ -69,8 +69,7 @@ class TilgangService(
             cachedTilgang
         } else {
             Tilgang(
-                erGodkjent = veileder.hasAccessToRole(adRoller.SYFO_LEGACY) || veileder.hasAccessToRole(adRoller.SYFO_FULL) ||
-                    veileder.hasAccessToRole(adRoller.SYFO_LES)
+                erGodkjent = veileder.hasSyfoTilgang(adRoller),
             ).utvidMedTilganger(
                 veileder = veileder,
                 adRoller = adRoller,
@@ -397,7 +396,7 @@ class TilgangService(
     ): List<String> {
         val veileder = getVeileder(token, callId)
 
-        if (!veileder.hasAccessToRole(adRoller.SYFO_LEGACY) && !veileder.hasAccessToRole(adRoller.SYFO_FULL) && !veileder.hasAccessToRole(adRoller.SYFO_LES)) {
+        if (!veileder.hasSyfoTilgang(adRoller)) {
             return emptyList()
         }
         preloadOboTokens(callId = callId, token = veileder.token)
