@@ -26,10 +26,10 @@ fun testEnvironment() = Environment(
     kode6Id = "kode6Id",
     kode7Id = "kode7Id",
 
-    legacySyfoId = "legacySyfoId",
-    syfoFullId = "syfoFullId",
-    syfoLesId = "syfoLesId",
-    finnfastlegeId = "finnfastlegeId",
+    legacySyfoTilgangGroupId = "legacySyfoTilgangGroupId",
+    syfoFullTilgangGroupId = "syfoFullTilgangGroupId",
+    syfoLeseTilgangGroupId = "syfoLeseTilgangGroupId",
+    finnfastlegeTilgangGroupId = "finnfastlegeTilgangGroupId",
 
     skjermingId = "skjermingId",
     nasjonalId = "nasjonalId",

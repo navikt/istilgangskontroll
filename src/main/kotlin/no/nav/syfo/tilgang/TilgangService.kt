@@ -69,7 +69,7 @@ class TilgangService(
             cachedTilgang
         } else {
             Tilgang(
-                erGodkjent = veileder.hasSyfoTilgang(adRoller),
+                erGodkjent = veileder.hasFullEllerLesTilgang(adRoller),
             ).utvidMedTilganger(
                 veileder = veileder,
                 adRoller = adRoller,
@@ -396,7 +396,7 @@ class TilgangService(
     ): List<String> {
         val veileder = getVeileder(token, callId)
 
-        if (!veileder.hasSyfoTilgang(adRoller)) {
+        if (!veileder.hasFullEllerLesTilgang(adRoller)) {
             return emptyList()
         }
         preloadOboTokens(callId = callId, token = veileder.token)
