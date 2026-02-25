@@ -23,22 +23,22 @@ class AdRoller(
     )
     val SYFO_LEGACY = AdRolle(
         name = "SYFO",
-        id = env.legacySyfoId,
+        id = env.legacySyfoTilgangGroupId,
         rolle = "0000-GA-SYFO-SENSITIV",
     )
     val SYFO_FULL = AdRolle(
         name = "MODIA-SYFO-VEILEDER",
-        id = env.syfoFullId,
+        id = env.syfoFullTilgangGroupId,
         rolle = "0000-CA-MODIA-SYFO-VEILEDER",
     )
     val SYFO_LES = AdRolle(
         name = "MODIA-SYFO-LESETILGANG",
-        id = env.syfoLesId,
+        id = env.syfoLeseTilgangGroupId,
         rolle = "0000-CA-MODIA-SYFO-LESETILGANG",
     )
     val FINNFASTLEGE = AdRolle(
         name = "FINNFASTLEGE",
-        id = env.finnfastlegeId,
+        id = env.finnfastlegeTilgangGroupId,
         rolle = "0000-CA-FINNFASTLEGE",
     )
     val EGEN_ANSATT = AdRolle(

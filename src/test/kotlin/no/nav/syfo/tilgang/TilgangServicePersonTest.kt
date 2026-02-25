@@ -56,7 +56,12 @@ class TilgangServicePersonTest {
             } else {
                 valkeyStore.setObject(
                     key = key!!,
-                    value = Tilgang(erGodkjent = harTilgang, fullTilgang = true, finnfastlege = true, legacy = true),
+                    value = Tilgang(
+                        erGodkjent = harTilgang,
+                        fullTilgang = true,
+                        finnfastlegeTilgang = true,
+                        legacyTilgang = true
+                    ),
                     expireSeconds = TWELVE_HOURS_IN_SECONDS
                 )
             }

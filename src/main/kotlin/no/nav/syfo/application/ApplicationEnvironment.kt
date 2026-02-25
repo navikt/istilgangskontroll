@@ -26,10 +26,10 @@ data class Environment(
     val kode6Id: String = getEnvVar("ROLE_KODE6_ID"),
     val kode7Id: String = getEnvVar("ROLE_KODE7_ID"),
 
-    val legacySyfoId: String = getEnvVar("ROLE_SYFO_ID"),
-    val syfoFullId: String = getEnvVar("ROLE_MODIA_SYFO_VEILEDER_ID"),
-    val syfoLesId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_ID"),
-    val finnfastlegeId: String = getEnvVar("ROLE_FINNFASTLEGE_ID"),
+    val legacySyfoTilgangGroupId: String = getEnvVar("ROLE_SYFO_ID"),
+    val syfoFullTilgangGroupId: String = getEnvVar("ROLE_MODIA_SYFO_VEILEDER_ID"),
+    val syfoLeseTilgangGroupId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_ID"),
+    val finnfastlegeTilgangGroupId: String = getEnvVar("ROLE_FINNFASTLEGE_ID"),
 
     val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
     val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),

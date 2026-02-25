@@ -98,7 +98,7 @@ class TilgangApiTest {
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erGodkjent)
                 assertTrue(tilgang.fullTilgang)
-                assertTrue(tilgang.finnfastlege)
+                assertTrue(tilgang.finnfastlegeTilgang)
             }
         }
 
