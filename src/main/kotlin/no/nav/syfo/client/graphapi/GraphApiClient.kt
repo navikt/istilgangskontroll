@@ -15,7 +15,6 @@ import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.LoggerFactory
 import java.util.*
 
-
 class GraphApiClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,

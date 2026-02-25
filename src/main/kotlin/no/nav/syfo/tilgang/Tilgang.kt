@@ -2,7 +2,6 @@ package no.nav.syfo.tilgang
 
 import no.nav.syfo.domain.Veileder
 
-
 data class Tilgang(
     val erGodkjent: Boolean = false,
     val erAvslatt: Boolean = !erGodkjent,
