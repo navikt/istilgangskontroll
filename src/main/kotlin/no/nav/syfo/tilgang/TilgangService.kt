@@ -61,7 +61,6 @@ class TilgangService(
     }
 
     fun checkTilgangToSyfo(veileder: Veileder): Tilgang {
-        // Hvis tilgangen for veileder var cachet, så blir det egentlig et unødvendig kall til graph-api-cachen når vi nå tvinger inn veileder
         val veilederident = veileder.veilederident
         val cacheKey = "$TILGANG_TIL_TJENESTEN_PREFIX$veilederident"
         val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
@@ -70,7 +69,10 @@ class TilgangService(
             cachedTilgang
         } else {
             Tilgang(
-                erGodkjent = veileder.hasAccessToRole(adRoller.SYFO)
+                erGodkjent = veileder.hasFullEllerLesTilgang(adRoller),
+            ).utvidMedTilganger(
+                veileder = veileder,
+                adRoller = adRoller,
             ).also { tilgang ->
                 if (tilgang.erGodkjent) {
                     valkeyStore.setObject(
@@ -91,7 +93,12 @@ class TilgangService(
         return if (cachedTilgang != null) {
             cachedTilgang
         } else {
-            Tilgang(erGodkjent = veileder.hasAccessToEnhet(enhet)).also { tilgang ->
+            Tilgang(
+                erGodkjent = veileder.hasAccessToEnhet(enhet),
+            ).utvidMedTilganger(
+                veileder = veileder,
+                adRoller = adRoller,
+            ).also { tilgang ->
                 if (tilgang.erGodkjent) {
                     valkeyStore.setObject(
                         key = cacheKey,
@@ -366,7 +373,12 @@ class TilgangService(
             true
         }
 
-        return Tilgang(erGodkjent = erGodkjent).also { tilgang ->
+        return Tilgang(
+            erGodkjent = erGodkjent,
+        ).utvidMedTilganger(
+            veileder = veileder,
+            adRoller = adRoller,
+        ).also { tilgang ->
             if (tilgang.erGodkjent) {
                 valkeyStore.setObject(
                     key = cacheKey,
@@ -384,7 +396,7 @@ class TilgangService(
     ): List<String> {
         val veileder = getVeileder(token, callId)
 
-        if (!veileder.hasAccessToRole(adRoller.SYFO)) {
+        if (!veileder.hasFullEllerLesTilgang(adRoller)) {
             return emptyList()
         }
         preloadOboTokens(callId = callId, token = veileder.token)

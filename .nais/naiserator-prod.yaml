@@ -156,12 +156,19 @@ spec:
     - name: SKJERMEDE_PERSONER_URL
       value: "http://skjermede-personer-pip.nom"
 
+    - name: ROLE_SYFO_ID
+      value: "100e88eb-79af-4136-8bfe-f79b32021f43" # 0000-GA-SYFO-SENSITIV
+    - name: ROLE_MODIA_SYFO_VEILEDER_ID
+      value: "13fda54d-7a79-482e-acd4-8f73900851a3" # 0000-CA-MODIA-SYFO-VEILEDER
+    - name: ROLE_MODIA_SYFO_LESETILGANG_ID
+      value: "29752195-6a14-4e94-be8a-bea32886cf85" # 0000-CA-MODIA-SYFO-LESETILGANG
+    - name: ROLE_FINNFASTLEGE_ID
+      value: "7af062b9-cd74-4c6a-89b2-8674a3d22fd1" # 0000-CA-FINNFASTLEGE
+
     - name: ROLE_KODE6_ID
       value: "ad7b87a6-9180-467c-affc-20a566b0fec0" # 0000-GA-Strengt_Fortrolig_Adresse
     - name: ROLE_KODE7_ID
       value: "9ec6487d-f37a-4aad-a027-cd221c1ac32b" # 0000-GA-Fortrolig_Adresse
-    - name: ROLE_SYFO_ID
-      value: "100e88eb-79af-4136-8bfe-f79b32021f43" # 0000-GA-SYFO-SENSITIV
     - name: ROLE_SKJERMING_ID
       value: "e750ceb5-b70b-4d94-b4fa-9d22467b786b" # 0000-GA-Egne_ansatte
     - name: ROLE_NASJONAL_ID

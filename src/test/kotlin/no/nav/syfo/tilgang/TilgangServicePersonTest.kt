@@ -56,7 +56,12 @@ class TilgangServicePersonTest {
             } else {
                 valkeyStore.setObject(
                     key = key!!,
-                    value = Tilgang(erGodkjent = harTilgang),
+                    value = Tilgang(
+                        erGodkjent = harTilgang,
+                        fullTilgang = true,
+                        finnfastlegeTilgang = true,
+                        legacyTilgang = true
+                    ),
                     expireSeconds = TWELVE_HOURS_IN_SECONDS
                 )
             }
@@ -105,7 +110,7 @@ class TilgangServicePersonTest {
         @Test
         fun `Return access if veileder has nasjonal tilgang`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER),
             )
@@ -132,7 +137,7 @@ class TilgangServicePersonTest {
         fun `Return no access if veileder doesn't have nasjonal or regional access and not access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
             )
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
@@ -172,7 +177,7 @@ class TilgangServicePersonTest {
         fun `Return access if veileder doesn't have national access but has access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForEnhet(innbyggerEnhet.enhetNr),
             )
             val veileder = Veileder(
@@ -222,7 +227,7 @@ class TilgangServicePersonTest {
                 oppfolgingsenhetDTO = null,
             )
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForEnhet(innbyggerEnhet.geografiskEnhet.enhetId),
             )
             val veileder = Veileder(
@@ -271,7 +276,7 @@ class TilgangServicePersonTest {
             val veiledersEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
             val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.REGIONAL),
                 createGruppeForEnhet(veiledersEnhet.enhetNr),
             )
@@ -324,7 +329,7 @@ class TilgangServicePersonTest {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_INNBYGGER)
             val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.REGIONAL),
                 createGruppeForEnhet(overordnetEnhet.enhetNr),
             )
@@ -393,7 +398,7 @@ class TilgangServicePersonTest {
         @Test
         fun `Return no access if person is skjermet and veileder doesn't have correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
             )
@@ -425,7 +430,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person is skjermet and veileder has correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.EGEN_ANSATT),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
@@ -485,7 +490,7 @@ class TilgangServicePersonTest {
                 identer = PipIdenter(emptyList()),
             )
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
             )
@@ -515,7 +520,7 @@ class TilgangServicePersonTest {
         @Test
         fun `Return no access if person is kode7 and veileder doesn't have correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
             )
@@ -546,7 +551,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person is kode6 and veileder has correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.KODE6),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
@@ -578,7 +583,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person is kode7 and veileder has correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.KODE7),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
@@ -610,7 +615,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person doesn't have adressebeskyttelse`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
             )
@@ -644,7 +649,7 @@ class TilgangServicePersonTest {
         val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
         val callId = "123"
         val grupper = listOf(
-            createGruppeForRole(adRoller.SYFO),
+            createGruppeForRole(adRoller.SYFO_LEGACY),
             createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
         )
         val veileder = Veileder(
@@ -675,7 +680,7 @@ class TilgangServicePersonTest {
         fun `gives cached persontilgang to veileder with Papirsykmelding AD group`() {
             val cacheKey = "tilgang-til-person-$VEILEDER_IDENT-$personident"
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.PAPIRSYKMELDING),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
             )
@@ -699,7 +704,7 @@ class TilgangServicePersonTest {
         @Test
         fun `denies access for veileder without Papirsykmelding AD group`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
             )
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,

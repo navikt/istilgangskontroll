@@ -21,6 +21,12 @@ class GraphApiClient(
     private val valkeyStore: ValkeyStore,
     private val adRoller: AdRoller,
 ) {
+    val syfoTilgangAdGrupper = setOf(
+        adRoller.SYFO_LEGACY.id,
+        adRoller.SYFO_FULL.id,
+        adRoller.SYFO_LES.id,
+        adRoller.FINNFASTLEGE.id
+    )
 
     suspend fun getGrupperForVeilederOgCache(token: Token, callId: String): List<Gruppe> {
         val veilederIdent = token.getNAVIdent()
@@ -34,9 +40,11 @@ class GraphApiClient(
 
         COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
         return getGrupperForVeileder(token, callId).also { grupper ->
-            val tilgangTilMinstEnEnhet = grupper.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
-            val harSyfoRolle = grupper.map { it.uuid }.contains(adRoller.SYFO.id)
-            if (harSyfoRolle && tilgangTilMinstEnEnhet) {
+            val harTilgangTilMinstEnEnhet = grupper.mapNotNull { gruppe -> gruppe.getEnhetNr() }.isNotEmpty()
+
+            val harEnSyfoTilgang = grupper.any { gruppe -> gruppe.uuid in syfoTilgangAdGrupper }
+
+            if (harEnSyfoTilgang && harTilgangTilMinstEnEnhet) {
                 valkeyStore.setObject(
                     key = cacheKey,
                     value = grupper,
@@ -44,7 +52,7 @@ class GraphApiClient(
                 )
             }
 
-            if (harSyfoRolle && !tilgangTilMinstEnEnhet) {
+            if (harEnSyfoTilgang && !harTilgangTilMinstEnEnhet) {
                 log.error("Veileder doesn't have access to any enheter, callId=$callId")
             }
         }

@@ -55,7 +55,12 @@ class TilgangServiceTest {
         verify(exactly = exactly) {
             valkeyStore.setObject(
                 key = key,
-                value = Tilgang(erGodkjent = harTilgang),
+                value = Tilgang(
+                    erGodkjent = harTilgang,
+                    fullTilgang = true,
+                    finnfastlegeTilgang = true,
+                    legacyTilgang = true
+                ),
                 expireSeconds = TWELVE_HOURS_IN_SECONDS
             )
         }
@@ -88,7 +93,7 @@ class TilgangServiceTest {
 
         @Test
         fun `return result from cache hit with tilgang`() {
-            val grupper = listOf(createGruppeForRole(adRoller.SYFO), createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
+            val grupper = listOf(createGruppeForRole(adRoller.SYFO_LEGACY), createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
                 token = validToken,
@@ -107,7 +112,7 @@ class TilgangServiceTest {
 
         @Test
         fun `cache tilgang on cache miss`() {
-            val grupper = listOf(createGruppeForRole(adRoller.SYFO), createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
+            val grupper = listOf(createGruppeForRole(adRoller.SYFO_LEGACY), createGruppeForEnhet(UserConstants.ENHET_VEILEDER))
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
                 token = validToken,
@@ -152,7 +157,7 @@ class TilgangServiceTest {
         fun `return has access if enhet is in veileders list`() {
             val veiledersEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val cacheKey = "tilgang-til-enhet-$VEILEDER_IDENT-$veiledersEnhet"
-            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER), createGruppeForRole(adRoller.SYFO))
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER), createGruppeForRole(adRoller.SYFO_LEGACY))
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
                 token = validToken,
@@ -173,7 +178,7 @@ class TilgangServiceTest {
         fun `return no access if enhet is not in veileders enheter, does not cache`() {
             val wantedEnhet = Enhet(UserConstants.ENHET_VEILEDER)
             val cacheKey = "tilgang-til-enhet-$VEILEDER_IDENT-$wantedEnhet"
-            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER_NO_ACCESS), createGruppeForRole(adRoller.SYFO))
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER_NO_ACCESS), createGruppeForRole(adRoller.SYFO_LEGACY))
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
                 token = validToken,
@@ -194,7 +199,7 @@ class TilgangServiceTest {
         fun `return result from cache hit`() {
             val enhet = Enhet(UserConstants.ENHET_VEILEDER)
             val cacheKey = "tilgang-til-enhet-$VEILEDER_IDENT-$enhet"
-            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER), createGruppeForRole(adRoller.SYFO))
+            val grupper = listOf(createGruppeForEnhet(UserConstants.ENHET_VEILEDER), createGruppeForRole(adRoller.SYFO_LEGACY))
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
                 token = validToken,
@@ -264,7 +269,7 @@ class TilgangServiceTest {
                 cacheKeySkjermet to null,
             )
             coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
             )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
@@ -352,7 +357,7 @@ class TilgangServiceTest {
                 cacheKeyGradert to null,
             )
             coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
             )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
@@ -457,7 +462,7 @@ class TilgangServiceTest {
             val cacheKeyValidPersonident = "tilgang-til-person-$VEILEDER_IDENT-$validPersonident"
             every { valkeyStore.getObjects(any()) } returns mapOf(cacheKeyValidPersonident to null)
             coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
             )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
@@ -508,7 +513,7 @@ class TilgangServiceTest {
             val cacheKeyValidPersonident = "tilgang-til-person-$VEILEDER_IDENT-$validPersonident"
             every { valkeyStore.getObjects(any()) } returns mapOf(cacheKeyValidPersonident to null)
             coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                createGruppeForRole(adRoller.SYFO),
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
             )
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } throws RuntimeException("Feil")
@@ -568,6 +573,7 @@ class TilgangServiceTest {
                 )
 
             coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_LEGACY),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
             )

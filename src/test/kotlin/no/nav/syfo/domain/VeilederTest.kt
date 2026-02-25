@@ -24,7 +24,7 @@ class VeilederTest {
 
     @Test
     fun `hasAccessToRole returns true when role ID is in adGrupper`() {
-        val rolle = adRoller.SYFO
+        val rolle = adRoller.SYFO_LEGACY
         val grupper = listOf(Gruppe(uuid = rolle.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"))
         val veileder = Veileder(
             veilederident = UserConstants.VEILEDER_IDENT,
@@ -38,7 +38,7 @@ class VeilederTest {
     @Test
     fun `hasAccessToRole returns false when role ID is not in adGrupper`() {
         val rolle = adRoller.KODE6
-        val grupper = listOf(Gruppe(uuid = adRoller.SYFO.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"))
+        val grupper = listOf(Gruppe(uuid = adRoller.SYFO_LEGACY.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"))
         val veileder = Veileder(
             veilederident = UserConstants.VEILEDER_IDENT,
             token = validToken,
@@ -78,7 +78,7 @@ class VeilederTest {
         val grupper = listOf(
             Gruppe(uuid = "123", adGruppenavn = "0000-GA-ENHET_1234"),
             Gruppe(uuid = "123", adGruppenavn = "0000-GA-ENHET_5678"),
-            Gruppe(uuid = adRoller.SYFO.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"),
+            Gruppe(uuid = adRoller.SYFO_LEGACY.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"),
         )
         val veileder = Veileder(
             veilederident = UserConstants.VEILEDER_IDENT,
@@ -93,7 +93,7 @@ class VeilederTest {
 
     @Test
     fun `enheter property returns empty list when no valid enhet groups`() {
-        val grupper = listOf(Gruppe(uuid = adRoller.SYFO.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"))
+        val grupper = listOf(Gruppe(uuid = adRoller.SYFO_LEGACY.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"))
         val veileder = Veileder(
             veilederident = UserConstants.VEILEDER_IDENT,
             token = validToken,
@@ -106,7 +106,8 @@ class VeilederTest {
     @Test
     fun `veileder can have multiple roles`() {
         val grupper = listOf(
-            Gruppe(uuid = adRoller.SYFO.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"),
+            Gruppe(uuid = adRoller.SYFO_LEGACY.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"),
+            Gruppe(uuid = adRoller.SYFO_FULL.id, adGruppenavn = "0000-CA-MODIA-SYFO-VEILEDER"),
             Gruppe(uuid = adRoller.NASJONAL.id, adGruppenavn = "0000-GA-GOSYS_NASJONAL"),
             Gruppe(uuid = adRoller.KODE6.id, adGruppenavn = "0000-GA-Strengt_Fortrolig_Adresse"),
         )
@@ -116,7 +117,8 @@ class VeilederTest {
             adGrupper = grupper
         )
 
-        assertTrue(veileder.hasAccessToRole(adRoller.SYFO))
+        assertTrue(veileder.hasAccessToRole(adRoller.SYFO_LEGACY))
+        assertTrue(veileder.hasAccessToRole(adRoller.SYFO_FULL))
         assertTrue(veileder.hasAccessToRole(adRoller.NASJONAL))
         assertTrue(veileder.hasAccessToRole(adRoller.KODE6))
         assertFalse(veileder.hasAccessToRole(adRoller.KODE7))

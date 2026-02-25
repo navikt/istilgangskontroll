@@ -26,13 +26,11 @@ fun Route.registerTilgangApi(
             if (token.isMissingNAVIdent()) {
                 throw IllegalArgumentException("Failed to check syfo tilgang for veileder. No NAV ident in token")
             }
-
             val veileder = tilgangService.getVeileder(
                 token = token,
                 callId = callId,
             )
             val tilgang = tilgangService.checkTilgangToSyfo(veileder)
-
             if (tilgang.erGodkjent) {
                 call.respond(tilgang)
             } else {
