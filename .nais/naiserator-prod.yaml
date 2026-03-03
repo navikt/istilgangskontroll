@@ -166,9 +166,9 @@ spec:
       value: "7af062b9-cd74-4c6a-89b2-8674a3d22fd1" # 0000-CA-FINNFASTLEGE
 
     - name: ROLE_KODE6_ID
-      value: "ad7b87a6-9180-467c-affc-20a566b0fec0" # 0000-GA-Strengt_Fortrolig_Adresse
+      value: "2931da41-8b8e-42cd-99c0-04a169ddae40" # 0000-GA-Strengt_Fortrolig_Adresse
     - name: ROLE_KODE7_ID
-      value: "9ec6487d-f37a-4aad-a027-cd221c1ac32b" # 0000-GA-Fortrolig_Adresse
+      value: "e98efc34-12d1-401f-b059-f17e62834065" # 0000-GA-Fortrolig_Adresse
     - name: ROLE_SKJERMING_ID
       value: "e750ceb5-b70b-4d94-b4fa-9d22467b786b" # 0000-GA-Egne_ansatte
     - name: ROLE_NASJONAL_ID
