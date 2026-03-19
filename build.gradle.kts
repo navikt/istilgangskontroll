@@ -57,13 +57,14 @@ dependencies {
 
     // (De-)serialization
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonDataType")
-    implementation("tools.jackson.core:jackson-databind:${jacksonDatabindVersion}")
+    implementation("tools.jackson.core:jackson-databind:$jacksonDatabindVersion")
 
     // Tests
     testImplementation("io.ktor:ktor-server-test-host:$ktor")
     testImplementation("io.mockk:mockk:$mockk")
     testImplementation("io.ktor:ktor-client-mock:$ktor")
     testImplementation("com.nimbusds:nimbus-jose-jwt:$nimbusJoseJwt")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation(kotlin("test"))
 }
 
