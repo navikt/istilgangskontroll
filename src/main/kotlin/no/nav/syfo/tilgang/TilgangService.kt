@@ -85,6 +85,31 @@ class TilgangService(
         }
     }
 
+    fun checkTilgangToFinnfastlege(veileder: Veileder): Tilgang {
+        val veilederident = veileder.veilederident
+        val cacheKey = "$TILGANG_TIL_FINNFASTLEGE_PREFIX$veilederident"
+        val cachedTilgang: Tilgang? = valkeyStore.getObject(key = cacheKey)
+
+        return if (cachedTilgang != null) {
+            cachedTilgang
+        } else {
+            Tilgang(
+                erGodkjent = veileder.hasFinnfastlegeTilgang(adRoller),
+            ).utvidMedTilganger(
+                veileder = veileder,
+                adRoller = adRoller,
+            ).also { tilgang ->
+                if (tilgang.erGodkjent) {
+                    valkeyStore.setObject(
+                        key = cacheKey,
+                        value = tilgang,
+                        expireSeconds = TWELVE_HOURS_IN_SECS
+                    )
+                }
+            }
+        }
+    }
+
     fun checkTilgangToEnhet(veileder: Veileder, enhet: Enhet): Tilgang {
         val veilederident = veileder.veilederident
         val cacheKey = "$TILGANG_TIL_ENHET_PREFIX$veilederident-$enhet"
@@ -482,6 +507,7 @@ class TilgangService(
         private val CHECK_PERSON_TILGANG_DISPATCHER = Dispatchers.IO.limitedParallelism(20)
 
         const val TILGANG_TIL_TJENESTEN_PREFIX = "tilgang-til-tjenesten-"
+        const val TILGANG_TIL_FINNFASTLEGE_PREFIX = "tilgang-til-finnfastlege-"
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"
         const val TILGANG_TIL_PERSON_PREFIX = "tilgang-til-person-"
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L

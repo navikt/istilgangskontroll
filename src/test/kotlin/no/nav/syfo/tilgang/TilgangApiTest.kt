@@ -47,6 +47,11 @@ class TilgangApiTest {
         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
         navIdent = UserConstants.VEILEDER_IDENT_NO_PAPIRSYKMELDING_ACCESS,
     )
+    private val validTokenNoFinnfastlegeAccess = generateJWT(
+        audience = externalMockEnvironment.environment.azure.appClientId,
+        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+        navIdent = UserConstants.VEILEDER_IDENT_NO_FINNFASTLEGE_ACCESS,
+    )
 
     private val enhetWithoutTilgang = UserConstants.ENHET_VEILEDER_NO_ACCESS
     private val adRoller = AdRoller(externalMockEnvironment.environment)
@@ -272,6 +277,120 @@ class TilgangApiTest {
 
                 val response = client.get("$tilgangApiBasePath/navident/person") {
                     bearerAuth(validTokenNoEnhetAccess)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Fastlege person access")
+    inner class FastlegePersonAccess {
+
+        @Test
+        fun `Allows access to person with FINNFASTLEGE access and correct local enhet`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForRole(adRoller.FINNFASTLEGE),
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
+                    bearerAuth(validToken)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erGodkjent)
+            }
+        }
+
+        @Test
+        fun `Forbid access to person if no FINNFASTLEGE access`() {
+            testApplication {
+                val client = setupApi()
+
+                val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
+                    bearerAuth(validTokenNoFinnfastlegeAccess)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
+        fun `Forbid access to person if no geografisk access`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForRole(adRoller.FINNFASTLEGE)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
+                    bearerAuth(validToken)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
+        fun `Forbid access to skjermet person without EGEN_ANSATT role`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForRole(adRoller.FINNFASTLEGE),
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
+                    bearerAuth(validToken)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_SKJERMET)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
+        fun `Forbid access to adressebeskyttet person without KODE6 or KODE7 role`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForRole(adRoller.FINNFASTLEGE),
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
+                    bearerAuth(validToken)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
