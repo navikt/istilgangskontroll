@@ -60,7 +60,7 @@ class TilgangServicePersonTest {
                         erGodkjent = harTilgang,
                         fullTilgang = true,
                         finnfastlegeTilgang = true,
-                        legacyTilgang = true
+                        legacyTilgang = false,
                     ),
                     expireSeconds = TWELVE_HOURS_IN_SECONDS
                 )
@@ -110,7 +110,7 @@ class TilgangServicePersonTest {
         @Test
         fun `Return access if veileder has nasjonal tilgang`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_VEILEDER),
             )
@@ -177,7 +177,7 @@ class TilgangServicePersonTest {
         fun `Return access if veileder doesn't have national access but has access to innbyggers enhet`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForEnhet(innbyggerEnhet.enhetNr),
             )
             val veileder = Veileder(
@@ -227,7 +227,7 @@ class TilgangServicePersonTest {
                 oppfolgingsenhetDTO = null,
             )
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForEnhet(innbyggerEnhet.geografiskEnhet.enhetId),
             )
             val veileder = Veileder(
@@ -274,7 +274,7 @@ class TilgangServicePersonTest {
         fun `Return access if veileder doesn't have national or local access but has GEO access`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForGeo(UserConstants.ENHET_VEILEDER_GT_KOMMUNEKODE),
             )
             val veileder = Veileder(
@@ -347,7 +347,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person is skjermet and veileder has correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForRole(adRoller.EGEN_ANSATT),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
@@ -468,7 +468,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person is kode6 and veileder has correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForRole(adRoller.KODE6),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
@@ -500,7 +500,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person is kode7 and veileder has correct AdRolle`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForRole(adRoller.KODE7),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
@@ -532,7 +532,7 @@ class TilgangServicePersonTest {
         @Test
         fun `return godkjent access if person doesn't have adressebeskyttelse`() {
             val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
+                createGruppeForRole(adRoller.SYFO_FULL),
                 createGruppeForRole(adRoller.NASJONAL),
                 createGruppeForEnhet(UserConstants.ENHET_INNBYGGER),
             )
