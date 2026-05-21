@@ -20,9 +20,6 @@ val commonConfig: HttpClientConfig<out HttpClientEngineConfig>.() -> Unit = {
         }
         constantDelay(500L)
     }
-    install(HttpTimeout) {
-        requestTimeoutMillis = 5000
-    }
     expectSuccess = true
 }
 
