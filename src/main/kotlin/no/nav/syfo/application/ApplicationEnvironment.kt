@@ -59,5 +59,3 @@ data class Environment(
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
     System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")
-
-val Application.envKind get() = environment.config.property("ktor.environment").getString()
