@@ -149,12 +149,12 @@ class TilgangService(
             personident = personident,
         ).geografiskTilknytning?.geografiskTilknytning()
 
-        if (geografiskTilknytning == null) {
+        if (geografiskTilknytning?.value == null) {
             log.warn("Didn't get GT for innbygger, unable to check geografisk access callId=$callId")
             return false
         }
 
-        if (!geografiskTilknytning.isUtlandOrWithoutGT() && veileder.hasAccessToGeo(geografiskTilknytning.kommunekode())) {
+        if (!geografiskTilknytning.isUtlandOrWithoutGT() && veileder.hasAccessToGeo(geografiskTilknytning.value)) {
             return true
         }
 

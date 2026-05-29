@@ -45,6 +45,8 @@ class GruppeTest {
             "0000-GA-GEO_0123, 0123",
             "0000-GA-GEO_0301, 0301",
             "0000-GA-GEO_1234, 1234",
+            "0000-GA-GEO_030101, 030101",
+            "0000-GA-GEO_010203, 010203",
         ]
     )
     fun `DisplayName med riktig format for GEO-gruppe`(displayName: String, expectedGeoKode: String) {
@@ -61,7 +63,9 @@ class GruppeTest {
             "0000-GA-ENHET_0123",
             "PREFIX_0000-GA-GEO_0123",
             "0000-GA-GEO_0123_POSTFIX",
-            "0000-GA-GEO_ABCD"
+            "0000-GA-GEO_ABCD",
+            "0000-GA-GEO_01234",
+            "0000-GA-GEO_0123456",
         ]
     )
     fun `DisplayName som ikke inneholder geoKode`(displayName: String?) {

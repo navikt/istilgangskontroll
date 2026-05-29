@@ -16,9 +16,9 @@ data class Gruppe(
 
     companion object {
         const val ENHETSNAVN_PREFIX = "0000-GA-ENHET_"
-        const val GEO_ENHETSNAVN_PREFIX = "0000-GA-GEO_"
+        const val GEO_PREFIX = "0000-GA-GEO_"
 
         val enhetRegex = """^$ENHETSNAVN_PREFIX(\d{4})$""".toRegex()
-        val geoRegex = """^$GEO_ENHETSNAVN_PREFIX(\d{4})$""".toRegex()
+        val geoRegex = """^$GEO_PREFIX(\d{4}|\d{6})$""".toRegex()
     }
 }

@@ -46,6 +46,6 @@ data class Veileder(
     fun hasAccessToEnhet(enhet: Enhet): Boolean =
         this.enheter.any { it.id == enhet.id }
 
-    fun hasAccessToGeo(kommunekode: String): Boolean =
-        this.geoKoder.any { it == kommunekode }
+    fun hasAccessToGeo(gtValue: String): Boolean =
+        this.geoKoder.any { gtValue.startsWith(it) }
 }

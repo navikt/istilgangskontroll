@@ -155,6 +155,42 @@ class VeilederTest {
     }
 
     @Test
+    fun `hasAccessToGeo returns true when bydel GT starts with 4-digit GEO gruppe kode`() {
+        val grupper = listOf(Gruppe(uuid = "123", adGruppenavn = "0000-GA-GEO_0123"))
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertTrue(veileder.hasAccessToGeo("012301"))
+    }
+
+    @Test
+    fun `hasAccessToGeo returns true when bydel GT matches 6-digit GEO gruppe kode`() {
+        val grupper = listOf(Gruppe(uuid = "123", adGruppenavn = "0000-GA-GEO_012301"))
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertTrue(veileder.hasAccessToGeo("012301"))
+    }
+
+    @Test
+    fun `hasAccessToGeo returns false when 6-digit GEO gruppe kode does not match bydel GT`() {
+        val grupper = listOf(Gruppe(uuid = "123", adGruppenavn = "0000-GA-GEO_012301"))
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertFalse(veileder.hasAccessToGeo("012302"))
+    }
+
+    @Test
     fun `hasAccessToGeo returns false when kommunekode does not match any GEO gruppe`() {
         val grupper = listOf(Gruppe(uuid = "123", adGruppenavn = "0000-GA-GEO_0123"))
         val veileder = Veileder(
