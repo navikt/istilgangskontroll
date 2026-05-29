@@ -61,11 +61,3 @@ fun getEnvVar(varName: String, defaultValue: String? = null) =
     System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")
 
 val Application.envKind get() = environment.config.property("ktor.environment").getString()
-
-fun Application.isDev(block: () -> Unit) {
-    if (envKind == "dev") block()
-}
-
-fun Application.isProd(block: () -> Unit) {
-    if (envKind == "production") block()
-}
