@@ -25,7 +25,7 @@ data class Veileder(
         this.adGrupper.mapNotNull { gruppe -> gruppe.getEnhetNr()?.let { Enhet(it) } }
 
     fun hasFullEllerLesTilgang(adRoller: AdRoller): Boolean =
-        hasFullTilgang(adRoller) || hasAccessToRole(adRoller.SYFO_LES)
+        hasFullTilgang(adRoller) || hasAccessToRole(adRoller.SYFO_LES) || hasAccessToRole(adRoller.SYFO_LES_MIDLERTIDIG)
 
     fun hasFullTilgang(adRoller: AdRoller): Boolean =
         hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LEGACY)
@@ -35,7 +35,7 @@ data class Veileder(
 
     fun hasLegacyOnlyTilgang(adRoller: AdRoller): Boolean =
         hasAccessToRole(adRoller.SYFO_LEGACY) &&
-            !(hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LES))
+            !(hasAccessToRole(adRoller.SYFO_FULL) || hasAccessToRole(adRoller.SYFO_LES) || hasAccessToRole(adRoller.SYFO_LES_MIDLERTIDIG))
 
     fun hasAccessToRole(adRolle: AdRolle): Boolean =
         this.adGrupper.any { it.uuid == adRolle.id }

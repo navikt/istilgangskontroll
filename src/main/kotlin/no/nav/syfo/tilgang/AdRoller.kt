@@ -36,6 +36,11 @@ class AdRoller(
         id = env.syfoLeseTilgangGroupId,
         rolle = "0000-CA-MODIA-SYFO-LESETILGANG",
     )
+    val SYFO_LES_MIDLERTIDIG = AdRolle(
+        name = "MODIA-SYFO-LESETILGANG-MIDLERTIDIG",
+        id = env.syfoLeseTilgangMidlertidigGroupId,
+        rolle = "0000-CA-MODIA-SYFO-LESETILGANG-MIDLERTIDIG",
+    )
     val FINNFASTLEGE = AdRolle(
         name = "FINNFASTLEGE",
         id = env.finnfastlegeTilgangGroupId,
