@@ -134,13 +134,9 @@ fun main() {
                 applicationState.ready = true
                 logger.info("Application is ready, running Java VM ${Runtime.version()}")
             }
-        }
-    )
-
-    Runtime.getRuntime().addShutdownHook(
-        Thread {
-            applicationState.ready = false
-            server.stop(10, 10, TimeUnit.SECONDS)
+            monitor.subscribe(ApplicationStopPreparing) {
+                applicationState.ready = false
+            }
         }
     )
 
