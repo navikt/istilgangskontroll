@@ -33,7 +33,6 @@ fun testEnvironment() = Environment(
 
     skjermingId = "skjermingId",
     nasjonalId = "nasjonalId",
-    regionalId = "regionalId",
     papirsykmeldingId = "papirsykmeldingId",
 
     clients = ClientsEnvironment(

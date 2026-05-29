@@ -33,7 +33,6 @@ data class Environment(
 
     val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
     val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),
-    val regionalId: String = getEnvVar("ROLE_REGIONAL_ID"),
     val papirsykmeldingId: String = getEnvVar("ROLE_PAPIRSYKMELDING_ID"),
 
     val clients: ClientsEnvironment = ClientsEnvironment(

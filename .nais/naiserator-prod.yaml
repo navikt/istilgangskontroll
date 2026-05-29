@@ -172,8 +172,6 @@ spec:
     - name: ROLE_SKJERMING_ID
       value: "e750ceb5-b70b-4d94-b4fa-9d22467b786b" # 0000-GA-Egne_ansatte
     - name: ROLE_NASJONAL_ID
-      value: "3063daf5-24c6-409c-9139-2d843cb4327b" # 0000-GA-GOSYS_NASJONAL
-    - name: ROLE_REGIONAL_ID
-      value: "422852aa-aad5-4601-a8c8-917ef42b6601" # 0000-GA-GOSYS_REGIONAL
+      value: "3063daf5-24c6-409c-9139-2d843cb4327b" # 0000-GA-GEO_NASJONAL (TODO: oppdater UUID når gruppen er klar i Azure AD)
     - name: ROLE_PAPIRSYKMELDING_ID
       value: "dfde2123-1969-4cd2-8977-bdf19721e76d" # 0000-GA-papirsykmelding

@@ -135,24 +135,6 @@ class TilgangService(
         }
     }
 
-    private suspend fun veiledersEnheterOgOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
-        val veiledersEnheter = enheter.toMutableList()
-        val overordnedeEnheter = enheter.map {
-            norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = it)
-                .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
-        }.flatten()
-        veiledersEnheter.addAll(overordnedeEnheter)
-
-        return veiledersEnheter
-    }
-
-    private suspend fun innbyggersOverordnedeEnheter(enhet: Enhet, callId: String): List<Enhet> {
-        val overordnedeEnheter = norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = enhet)
-            .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
-
-        return overordnedeEnheter
-    }
-
     private suspend fun isGeografiskAccessGodkjent(
         callId: String,
         personident: Personident,
@@ -172,6 +154,10 @@ class TilgangService(
             return false
         }
 
+        if (!geografiskTilknytning.isUtlandOrWithoutGT() && veileder.hasAccessToGeo(geografiskTilknytning.kommunekode())) {
+            return true
+        }
+
         val innbyggersEnhetNr = try {
             getInnbyggersEnhet(
                 callId = callId,
@@ -185,20 +171,7 @@ class TilgangService(
         }
 
         val behandlendeEnhet = Enhet(innbyggersEnhetNr)
-
-        if (veileder.hasAccessToEnhet(behandlendeEnhet)) {
-            return true
-        }
-
-        if (veileder.hasAccessToRole(adRoller.REGIONAL)) {
-            val veiledersEnheterOgOverordnedeEnheter =
-                veiledersEnheterOgOverordnedeEnheter(enheter = veileder.enheter, callId = callId)
-            val innbyggersOverordnedeEnheter = innbyggersOverordnedeEnheter(enhet = behandlendeEnhet, callId = callId)
-
-            return innbyggersOverordnedeEnheter.any { it in veiledersEnheterOgOverordnedeEnheter }
-        }
-
-        return false
+        return veileder.hasAccessToEnhet(behandlendeEnhet)
     }
 
     private suspend fun getInnbyggersEnhet(

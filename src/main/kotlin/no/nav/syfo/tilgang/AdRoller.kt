@@ -49,12 +49,7 @@ class AdRoller(
     val NASJONAL = AdRolle(
         name = "NASJONAL",
         id = env.nasjonalId,
-        rolle = "0000-GA-GOSYS_NASJONAL",
-    )
-    val REGIONAL = AdRolle(
-        name = "REGIONAL",
-        id = env.regionalId,
-        rolle = "0000-GA-GOSYS_REGIONAL",
+        rolle = "0000-GA-GEO_NASJONAL",
     )
     val PAPIRSYKMELDING = AdRolle(
         name = "PAPIRSYKMELDING",
