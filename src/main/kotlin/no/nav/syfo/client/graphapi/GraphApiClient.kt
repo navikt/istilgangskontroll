@@ -25,7 +25,8 @@ class GraphApiClient(
         adRoller.SYFO_LEGACY.id,
         adRoller.SYFO_FULL.id,
         adRoller.SYFO_LES.id,
-        adRoller.FINNFASTLEGE.id
+        adRoller.SYFO_LES_MIDLERTIDIG,
+        adRoller.FINNFASTLEGE.id,
     )
 
     suspend fun getGrupperForVeilederOgCache(token: Token, callId: String): List<Gruppe> {
@@ -54,7 +55,9 @@ class GraphApiClient(
                 )
             }
 
-            if (harEnSyfoTilgang && !harEnhetEllerGeoTilgang) {
+            val hasNasjonalTilgang = grupper.any { gruppe -> gruppe.uuid == adRoller.NASJONAL.id }
+
+            if (harEnSyfoTilgang && !harEnhetEllerGeoTilgang && !hasNasjonalTilgang) {
                 log.error("Veileder doesn't have access to any enheter, callId=$callId")
             }
         }
