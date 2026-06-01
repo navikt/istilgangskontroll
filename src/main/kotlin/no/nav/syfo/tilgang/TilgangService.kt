@@ -154,7 +154,7 @@ class TilgangService(
             return false
         }
 
-        if (!geografiskTilknytning.isUtlandOrWithoutGT() && veileder.hasAccessToGeo(geografiskTilknytning.value)) {
+        if (geografiskTilknytning.isKommuneOrBydel() && veileder.hasAccessToGeo(geografiskTilknytning.value)) {
             return true
         }
 
