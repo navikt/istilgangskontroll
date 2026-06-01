@@ -201,4 +201,75 @@ class VeilederTest {
 
         assertFalse(veileder.hasAccessToGeo("9999"))
     }
+
+    @Test
+    fun `hasFullEllerLesTilgang returns true when veileder has SYFO_LES_MIDLERTIDIG`() {
+        val grupper = listOf(
+            Gruppe(uuid = adRoller.SYFO_LES_MIDLERTIDIG.id, adGruppenavn = "0000-CA-MODIA-SYFO-LESETILGANG-MIDLERTIDIG")
+        )
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertTrue(veileder.hasFullEllerLesTilgang(adRoller))
+    }
+
+    @Test
+    fun `hasFullEllerLesTilgang returns false when veileder has no syfo role`() {
+        val grupper = listOf(
+            Gruppe(uuid = adRoller.KODE6.id, adGruppenavn = "0000-GA-Strengt_Fortrolig_Adresse")
+        )
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertFalse(veileder.hasFullEllerLesTilgang(adRoller))
+    }
+
+    @Test
+    fun `hasFinnfastlegeTilgang returns true when veileder has SYFO_LES_MIDLERTIDIG`() {
+        val grupper = listOf(
+            Gruppe(uuid = adRoller.SYFO_LES_MIDLERTIDIG.id, adGruppenavn = "0000-CA-MODIA-SYFO-LESETILGANG-MIDLERTIDIG")
+        )
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertTrue(veileder.hasFinnfastlegeTilgang(adRoller))
+    }
+
+    @Test
+    fun `hasLegacyOnlyTilgang returns false when veileder has SYFO_LEGACY and SYFO_LES_MIDLERTIDIG`() {
+        val grupper = listOf(
+            Gruppe(uuid = adRoller.SYFO_LEGACY.id, adGruppenavn = "0000-GA-SYFO-SENSITIV"),
+            Gruppe(uuid = adRoller.SYFO_LES_MIDLERTIDIG.id, adGruppenavn = "0000-CA-MODIA-SYFO-LESETILGANG-MIDLERTIDIG"),
+        )
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertFalse(veileder.hasLegacyOnlyTilgang(adRoller))
+    }
+
+    @Test
+    fun `hasLegacyOnlyTilgang returns true when veileder only has SYFO_LEGACY`() {
+        val grupper = listOf(
+            Gruppe(uuid = adRoller.SYFO_LEGACY.id, adGruppenavn = "0000-GA-SYFO-SENSITIV")
+        )
+        val veileder = Veileder(
+            veilederident = UserConstants.VEILEDER_IDENT,
+            token = validToken,
+            adGrupper = grupper
+        )
+
+        assertTrue(veileder.hasLegacyOnlyTilgang(adRoller))
+    }
 }

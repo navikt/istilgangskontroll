@@ -29,6 +29,7 @@ data class Environment(
     val legacySyfoTilgangGroupId: String = getEnvVar("ROLE_SYFO_ID"),
     val syfoFullTilgangGroupId: String = getEnvVar("ROLE_MODIA_SYFO_VEILEDER_ID"),
     val syfoLeseTilgangGroupId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_ID"),
+    val syfoLeseTilgangMidlertidigGroupId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_MIDLERTIDIG_ID"),
     val finnfastlegeTilgangGroupId: String = getEnvVar("ROLE_FINNFASTLEGE_ID"),
 
     val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
