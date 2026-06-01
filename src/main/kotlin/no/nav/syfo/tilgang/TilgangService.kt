@@ -135,24 +135,6 @@ class TilgangService(
         }
     }
 
-    private suspend fun veiledersEnheterOgOverordnedeEnheter(enheter: List<Enhet>, callId: String): List<Enhet> {
-        val veiledersEnheter = enheter.toMutableList()
-        val overordnedeEnheter = enheter.map {
-            norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = it)
-                .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
-        }.flatten()
-        veiledersEnheter.addAll(overordnedeEnheter)
-
-        return veiledersEnheter
-    }
-
-    private suspend fun innbyggersOverordnedeEnheter(enhet: Enhet, callId: String): List<Enhet> {
-        val overordnedeEnheter = norgClient.getOverordnetEnhetListForNAVKontor(callId = callId, enhet = enhet)
-            .map { overordnetEnhet -> Enhet(overordnetEnhet.enhetNr) }
-
-        return overordnedeEnheter
-    }
-
     private suspend fun isGeografiskAccessGodkjent(
         callId: String,
         personident: Personident,
@@ -167,9 +149,13 @@ class TilgangService(
             personident = personident,
         ).geografiskTilknytning?.geografiskTilknytning()
 
-        if (geografiskTilknytning == null) {
+        if (geografiskTilknytning?.value == null) {
             log.warn("Didn't get GT for innbygger, unable to check geografisk access callId=$callId")
             return false
+        }
+
+        if (geografiskTilknytning.isKommuneOrBydel() && veileder.hasAccessToGeo(geografiskTilknytning.value)) {
+            return true
         }
 
         val innbyggersEnhetNr = try {
@@ -185,20 +171,7 @@ class TilgangService(
         }
 
         val behandlendeEnhet = Enhet(innbyggersEnhetNr)
-
-        if (veileder.hasAccessToEnhet(behandlendeEnhet)) {
-            return true
-        }
-
-        if (veileder.hasAccessToRole(adRoller.REGIONAL)) {
-            val veiledersEnheterOgOverordnedeEnheter =
-                veiledersEnheterOgOverordnedeEnheter(enheter = veileder.enheter, callId = callId)
-            val innbyggersOverordnedeEnheter = innbyggersOverordnedeEnheter(enhet = behandlendeEnhet, callId = callId)
-
-            return innbyggersOverordnedeEnheter.any { it in veiledersEnheterOgOverordnedeEnheter }
-        }
-
-        return false
+        return veileder.hasAccessToEnhet(behandlendeEnhet)
     }
 
     private suspend fun getInnbyggersEnhet(

@@ -24,6 +24,9 @@ data class Veileder(
     val enheter: List<Enhet> =
         this.adGrupper.mapNotNull { gruppe -> gruppe.getEnhetNr()?.let { Enhet(it) } }
 
+    val geoKoder: List<String> =
+        this.adGrupper.mapNotNull { gruppe -> gruppe.getGeoKode() }
+
     fun hasFullEllerLesTilgang(adRoller: AdRoller): Boolean =
         hasFullTilgang(adRoller) || hasAccessToRole(adRoller.SYFO_LES) || hasAccessToRole(adRoller.SYFO_LES_MIDLERTIDIG)
 
@@ -42,4 +45,7 @@ data class Veileder(
 
     fun hasAccessToEnhet(enhet: Enhet): Boolean =
         this.enheter.any { it.id == enhet.id }
+
+    fun hasAccessToGeo(gtValue: String): Boolean =
+        this.geoKoder.any { gtValue.startsWith(it) }
 }

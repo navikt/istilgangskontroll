@@ -271,14 +271,11 @@ class TilgangServicePersonTest {
         }
 
         @Test
-        fun `Return access if veileder doesn't have national or local access but has regional access`() {
+        fun `Return access if veileder doesn't have national or local access but has GEO access`() {
             val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER)
-            val veiledersEnhet = createNorgEnhet(UserConstants.ENHET_VEILEDER_NO_ACCESS)
-            val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
             val grupper = listOf(
                 createGruppeForRole(adRoller.SYFO_LEGACY),
-                createGruppeForRole(adRoller.REGIONAL),
-                createGruppeForEnhet(veiledersEnhet.enhetNr),
+                createGruppeForGeo(UserConstants.ENHET_VEILEDER_GT_KOMMUNEKODE),
             )
             val veileder = Veileder(
                 veilederident = VEILEDER_IDENT,
@@ -287,9 +284,6 @@ class TilgangServicePersonTest {
             )
             every { valkeyStore.getObject<Tilgang?>(any()) } returns null
             coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery { norgClient.getOverordnetEnhetListForNAVKontor(any(), any()) } returns listOf(
-                overordnetEnhet
-            )
 
             val tilgang = runBlocking {
                 tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
@@ -298,85 +292,8 @@ class TilgangServicePersonTest {
             assertTrue(tilgang.erGodkjent)
             verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
             coVerify(exactly = 0) { behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any()) }
-            coVerify(exactly = 1) {
-                norgClient.getOverordnetEnhetListForNAVKontor(
-                    callId = callId,
-                    enhet = Enhet(id = UserConstants.ENHET_VEILEDER)
-                )
-            }
-            coVerify(exactly = 1) {
-                norgClient.getNAVKontorForGT(
-                    callId = callId,
-                    geografiskTilknytning = GeografiskTilknytning(
-                        GeografiskTilknytningType.BYDEL,
-                        UserConstants.ENHET_VEILEDER_GT
-                    )
-                )
-            }
-            coVerify(exactly = 1) {
-                norgClient.getOverordnetEnhetListForNAVKontor(
-                    callId = callId,
-                    enhet = Enhet(id = UserConstants.ENHET_VEILEDER_NO_ACCESS)
-                )
-            }
-            coVerify(exactly = 2) { pdlClient.getPerson(any(), personident) }
-            coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
-            verifyCacheSet(exactly = 1, key = cacheKey)
-        }
-
-        @Test
-        fun `Return access if veileder doesn't have national or local access but has regional access and belongs to fylkeskontor`() {
-            val innbyggerEnhet = createNorgEnhet(UserConstants.ENHET_INNBYGGER)
-            val overordnetEnhet = createNorgEnhet(UserConstants.ENHET_OVERORDNET)
-            val grupper = listOf(
-                createGruppeForRole(adRoller.SYFO_LEGACY),
-                createGruppeForRole(adRoller.REGIONAL),
-                createGruppeForEnhet(overordnetEnhet.enhetNr),
-            )
-            val veileder = Veileder(
-                veilederident = VEILEDER_IDENT,
-                token = validToken,
-                adGrupper = grupper,
-            )
-            every { valkeyStore.getObject<Tilgang?>(any()) } returns null
-            coEvery { norgClient.getNAVKontorForGT(any(), any()) } returns innbyggerEnhet
-            coEvery {
-                norgClient.getOverordnetEnhetListForNAVKontor(
-                    any(),
-                    Enhet(UserConstants.ENHET_INNBYGGER)
-                )
-            } returns listOf(overordnetEnhet)
-
-            val tilgang = runBlocking {
-                tilgangService.checkTilgangToPerson(personident, veileder, callId, appName)
-            }
-
-            assertTrue(tilgang.erGodkjent)
-            verify(exactly = 1) { valkeyStore.getObject<Tilgang?>(key = cacheKey) }
-            coVerify(exactly = 0) {
-                behandlendeEnhetClient.getEnhetWithOboToken(any(), personident, any())
-            }
-            coVerify(exactly = 1) {
-                norgClient.getOverordnetEnhetListForNAVKontor(
-                    callId = callId,
-                    enhet = Enhet(id = UserConstants.ENHET_INNBYGGER)
-                )
-            }
-            coVerify(exactly = 1) {
-                norgClient.getNAVKontorForGT(
-                    callId = callId,
-                    geografiskTilknytning = GeografiskTilknytning(
-                        GeografiskTilknytningType.BYDEL,
-                        UserConstants.ENHET_VEILEDER_GT
-                    )
-                )
-            }
-            coVerify(exactly = 1) {
-                norgClient.getOverordnetEnhetListForNAVKontor(
-                    callId = callId,
-                    enhet = Enhet(id = UserConstants.ENHET_OVERORDNET)
-                )
-            }
+            coVerify(exactly = 0) { norgClient.getNAVKontorForGT(any(), any()) }
+            coVerify(exactly = 0) { norgClient.getOverordnetEnhetListForNAVKontor(any(), any()) }
             coVerify(exactly = 2) { pdlClient.getPerson(any(), personident) }
             coVerify(exactly = 1) { skjermedePersonerPipClient.getIsSkjermetWithOboToken(any(), personident, any()) }
             verifyCacheSet(exactly = 1, key = cacheKey)
