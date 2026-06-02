@@ -55,7 +55,7 @@ class GraphApiClient(
                 )
             }
 
-            val hasNasjonalTilgang = grupper.any { gruppe -> gruppe.uuid == adRoller.NASJONAL.id }
+            val harNasjonalTilgang = grupper.any { gruppe -> gruppe.uuid == adRoller.NASJONAL.id }
 
             if (harEnSyfoTilgang && !harEnhetEllerGeoTilgang && !harNasjonalTilgang) {
                 log.error("Veileder doesn't have access to any enheter or nasjonal tilgang, callId=$callId")
