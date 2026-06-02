@@ -25,7 +25,7 @@ class GraphApiClient(
         adRoller.SYFO_LEGACY.id,
         adRoller.SYFO_FULL.id,
         adRoller.SYFO_LES.id,
-        adRoller.SYFO_LES_MIDLERTIDIG,
+        adRoller.SYFO_LES_MIDLERTIDIG.id,
         adRoller.FINNFASTLEGE.id,
     )
 
