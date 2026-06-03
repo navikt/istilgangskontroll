@@ -25,7 +25,8 @@ class GraphApiClient(
         adRoller.SYFO_LEGACY.id,
         adRoller.SYFO_FULL.id,
         adRoller.SYFO_LES.id,
-        adRoller.FINNFASTLEGE.id
+        adRoller.SYFO_LES_MIDLERTIDIG.id,
+        adRoller.FINNFASTLEGE.id,
     )
 
     suspend fun getGrupperForVeilederOgCache(token: Token, callId: String): List<Gruppe> {
@@ -54,8 +55,10 @@ class GraphApiClient(
                 )
             }
 
-            if (harEnSyfoTilgang && !harEnhetEllerGeoTilgang) {
-                log.error("Veileder doesn't have access to any enheter, callId=$callId")
+            val harNasjonalTilgang = grupper.any { gruppe -> gruppe.uuid == adRoller.NASJONAL.id }
+
+            if (harEnSyfoTilgang && !harEnhetEllerGeoTilgang && !harNasjonalTilgang) {
+                log.error("Veileder doesn't have access to any enheter or nasjonal tilgang, callId=$callId")
             }
         }
     }
