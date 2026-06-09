@@ -65,8 +65,12 @@ fun testAppState() = ApplicationState(
 
 private const val syfooversiktsrvApplicationName: String = "syfooversiktsrv"
 private const val syfomodiapersonApplicationName: String = "syfomodiaperson"
+private const val isdialogmeldingApplicationName: String = "isdialogmelding"
+private const val fastlegerestApplicationName: String = "fastlegerest"
 const val syfooversiktsrvClientId = "$syfooversiktsrvApplicationName-client-id"
 const val syfomodiapersonClientId = "$syfomodiapersonApplicationName-client-id"
+const val isdialogmeldingClientId = "$isdialogmeldingApplicationName-client-id"
+const val fastlegerestClientId = "$fastlegerestApplicationName-client-id"
 
 val testAzureAppPreAuthorizedApps = listOf(
     PreAuthorizedApp(
@@ -76,5 +80,13 @@ val testAzureAppPreAuthorizedApps = listOf(
     PreAuthorizedApp(
         name = "cluster:teamsykefravr:$syfomodiapersonApplicationName",
         clientId = syfomodiapersonClientId,
+    ),
+    PreAuthorizedApp(
+        name = "cluster:teamsykefravr:$isdialogmeldingApplicationName",
+        clientId = isdialogmeldingClientId,
+    ),
+    PreAuthorizedApp(
+        name = "cluster:teamsykefravr:$fastlegerestApplicationName",
+        clientId = fastlegerestClientId,
     ),
 )
