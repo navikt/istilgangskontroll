@@ -13,7 +13,7 @@ import no.nav.syfo.util.*
 const val tilgangApiBasePath = "/api/tilgang"
 const val enhetNr = "enhetNr"
 private val preloadApiAuthorizedApps = listOf("syfooversiktsrv")
-private val innbyggerApiAuthorizedApps = listOf("isdialogmelding", "fastlegerest")
+private val populasjonApiAuthorizedApps = listOf("isdialogmelding", "fastlegerest")
 
 fun Route.registerTilgangApi(
     tilgangService: TilgangService,
@@ -160,21 +160,21 @@ fun Route.registerTilgangApi(
             }
         }
 
-        get("/navident/innbygger") {
+        get("/navident/populasjon") {
             val callId = call.getCallId()
             val requestedPersonident = call.getPersonidentHeader()
                 ?: throw IllegalArgumentException("Did not find a PersonIdent in request headers")
             val token = call.getBearerHeader()
-                ?: throw IllegalArgumentException("Failed to check tilgang to innbygger for veileder. No Authorization header supplied")
+                ?: throw IllegalArgumentException("Failed to check tilgang to populasjon for veileder. No Authorization header supplied")
             if (token.isMissingNAVIdent()) {
-                throw IllegalArgumentException("Failed to check tilgang to innbygger for veileder. No NAV ident in token")
+                throw IllegalArgumentException("Failed to check tilgang to populasjon for veileder. No NAV ident in token")
             }
 
-            val innbyggerApiAuthorizedClientIds = preAuthorizedApps
-                .filter { innbyggerApiAuthorizedApps.contains(it.getAppnavn()) }
+            val populasjonApiAuthorizedClientIds = preAuthorizedApps
+                .filter { populasjonApiAuthorizedApps.contains(it.getAppnavn()) }
 
-            val appName = call.getAppname(innbyggerApiAuthorizedClientIds)
-                ?: throw IllegalArgumentException("Failed to check tilgang to innbygger for veileder. No consumer clientId was found")
+            val appName = call.getAppname(populasjonApiAuthorizedClientIds)
+                ?: throw IllegalArgumentException("Failed to check tilgang to populasjon for veileder. No consumer clientId was found")
 
             val veileder = tilgangService.getVeileder(
                 token = token,

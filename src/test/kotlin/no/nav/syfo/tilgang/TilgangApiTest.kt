@@ -451,9 +451,9 @@ class TilgangApiTest {
     }
 
     @Nested
-    @DisplayName("Innbygger access")
+    @DisplayName("Populasjon access")
     inner class InnbyggerAccess {
-        private val apiUrl = "$tilgangApiBasePath/navident/innbygger"
+        private val apiUrl = "$tilgangApiBasePath/navident/populasjon"
         private val validTokenIsdialogmelding = generateJWT(
             audience = externalMockEnvironment.environment.azure.appClientId,
             issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
