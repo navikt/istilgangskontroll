@@ -7,12 +7,14 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
 import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
+import no.nav.syfo.application.exception.ForbiddenAccessVeilederException
 import no.nav.syfo.client.azuread.PreAuthorizedApp
 import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
 const val enhetNr = "enhetNr"
 private val preloadApiAuthorizedApps = listOf("syfooversiktsrv")
+private val populasjonApiAuthorizedApps = listOf("isdialogmelding", "fastlegerest")
 
 fun Route.registerTilgangApi(
     tilgangService: TilgangService,
@@ -128,7 +130,7 @@ fun Route.registerTilgangApi(
                 throw IllegalArgumentException("Failed to check tilgang to fastlege/person for veileder. No NAV ident in token")
             }
             val appName = call.getAppname(preAuthorizedApps)
-                ?: throw IllegalArgumentException("Failed to check tilgang to fastlege/person for veileder. No consumer clientId was found")
+                ?: throw ForbiddenAccessVeilederException("Failed to check tilgang to fastlege/person for veileder. No consumer clientId was found")
 
             val veileder = tilgangService.getVeileder(
                 token = token,
@@ -141,6 +143,44 @@ fun Route.registerTilgangApi(
                     message = Tilgang(erGodkjent = false)
                 )
             }
+
+            val tilgang = tilgangService.checkTilgangToPerson(
+                personident = requestedPersonident,
+                veileder = veileder,
+                callId = callId,
+                appName = appName,
+            )
+
+            if (tilgang.erGodkjent) {
+                call.respond(tilgang)
+            } else {
+                call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = tilgang
+                )
+            }
+        }
+
+        get("/navident/populasjon") {
+            val callId = call.getCallId()
+            val requestedPersonident = call.getPersonidentHeader()
+                ?: throw IllegalArgumentException("Did not find a PersonIdent in request headers")
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check tilgang to populasjon for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check tilgang to populasjon for veileder. No NAV ident in token")
+            }
+
+            val populasjonApiAuthorizedClientIds = preAuthorizedApps
+                .filter { populasjonApiAuthorizedApps.contains(it.getAppnavn()) }
+
+            val appName = call.getAppname(populasjonApiAuthorizedClientIds)
+                ?: throw ForbiddenAccessVeilederException("Failed to check tilgang to populasjon for veileder. No consumer clientId was found")
+
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
 
             val tilgang = tilgangService.checkTilgangToPerson(
                 personident = requestedPersonident,

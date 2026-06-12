@@ -15,6 +15,8 @@ import io.mockk.spyk
 import no.nav.syfo.client.graphapi.GraphApiClient
 import no.nav.syfo.testhelper.*
 import no.nav.syfo.testhelper.UserConstants.ENHET_VEILEDER
+import no.nav.syfo.testhelper.fastlegerestClientId
+import no.nav.syfo.testhelper.isdialogmeldingClientId
 import no.nav.syfo.util.NAV_CALL_ID_HEADER
 import no.nav.syfo.util.NAV_PERSONIDENT_HEADER
 import no.nav.syfo.util.configure
@@ -444,6 +446,148 @@ class TilgangApiTest {
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertFalse(tilgang.erGodkjent)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Populasjon access")
+    inner class InnbyggerAccess {
+        private val apiUrl = "$tilgangApiBasePath/navident/populasjon"
+        private val validTokenIsdialogmelding = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            azp = isdialogmeldingClientId,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+        private val validTokenFastlegerest = generateJWT(
+            audience = externalMockEnvironment.environment.azure.appClientId,
+            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
+            azp = fastlegerestClientId,
+            navIdent = UserConstants.VEILEDER_IDENT,
+        )
+
+        @Test
+        fun `Allows access for isdialogmelding with correct geografisk access`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get(apiUrl) {
+                    bearerAuth(validTokenIsdialogmelding)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erGodkjent)
+            }
+        }
+
+        @Test
+        fun `Allows access for fastlegerest with correct geografisk access`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get(apiUrl) {
+                    bearerAuth(validTokenFastlegerest)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erGodkjent)
+            }
+        }
+
+        @Test
+        fun `Forbids access when consumer app is not in authorized list`() {
+            testApplication {
+                val client = setupApi()
+
+                val response = client.get(apiUrl) {
+                    bearerAuth(validToken)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+            }
+        }
+
+        @Test
+        fun `Forbids access when no geografisk access`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns emptyList()
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get(apiUrl) {
+                    bearerAuth(validTokenIsdialogmelding)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
+        fun `Forbids access to skjermet person without EGEN_ANSATT role`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get(apiUrl) {
+                    bearerAuth(validTokenIsdialogmelding)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_SKJERMET)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
+        fun `Forbids access to adressebeskyttet person without KODE6 or KODE7 role`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                    createGruppeForEnhet(ENHET_VEILEDER)
+                )
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get(apiUrl) {
+                    bearerAuth(validTokenIsdialogmelding)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
             }
         }
     }
