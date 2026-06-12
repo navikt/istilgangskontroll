@@ -7,6 +7,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
 import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
+import no.nav.syfo.application.exception.ForbiddenAccessVeilederException
 import no.nav.syfo.client.azuread.PreAuthorizedApp
 import no.nav.syfo.util.*
 
@@ -129,7 +130,7 @@ fun Route.registerTilgangApi(
                 throw IllegalArgumentException("Failed to check tilgang to fastlege/person for veileder. No NAV ident in token")
             }
             val appName = call.getAppname(preAuthorizedApps)
-                ?: throw IllegalArgumentException("Failed to check tilgang to fastlege/person for veileder. No consumer clientId was found")
+                ?: throw ForbiddenAccessVeilederException("Failed to check tilgang to fastlege/person for veileder. No consumer clientId was found")
 
             val veileder = tilgangService.getVeileder(
                 token = token,
@@ -174,7 +175,7 @@ fun Route.registerTilgangApi(
                 .filter { populasjonApiAuthorizedApps.contains(it.getAppnavn()) }
 
             val appName = call.getAppname(populasjonApiAuthorizedClientIds)
-                ?: throw IllegalArgumentException("Failed to check tilgang to populasjon for veileder. No consumer clientId was found")
+                ?: throw ForbiddenAccessVeilederException("Failed to check tilgang to populasjon for veileder. No consumer clientId was found")
 
             val veileder = tilgangService.getVeileder(
                 token = token,

@@ -523,7 +523,7 @@ class TilgangApiTest {
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
 
-                assertEquals(HttpStatusCode.BadRequest, response.status)
+                assertEquals(HttpStatusCode.Forbidden, response.status)
             }
         }
 
