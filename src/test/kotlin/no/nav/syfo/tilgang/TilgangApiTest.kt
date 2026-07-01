@@ -128,6 +128,53 @@ class TilgangApiTest {
     }
 
     @Nested
+    @DisplayName("Finnfastlege access")
+    inner class FinnfastlegeAccess {
+
+        @Test
+        fun `Allows access to veileder with Finnfastlege-tilgang`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery {
+                    graphApiClientMock.getGrupperForVeilederOgCache(any(), any())
+                } returns listOf(createGruppeForRole(adRoller.FINNFASTLEGE))
+
+                val client = setupApi(graphApiClientMock)
+                val response = client.get("$tilgangApiBasePath/navident/finnfastlege") {
+                    bearerAuth(validToken)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erGodkjent)
+                assertTrue(tilgang.finnfastlegeTilgang)
+                assertFalse(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
+        fun `Forbids access to veileder without Fastlege-tilgang`() {
+            testApplication {
+                val client = setupApi()
+
+                val response = client.get("$tilgangApiBasePath/navident/finnfastlege") {
+                    bearerAuth(validTokenNoSyfotilgang)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+                assertFalse(tilgang.erGodkjent)
+                assertFalse(tilgang.finnfastlegeTilgang)
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("Enhet access")
     inner class EnhetAccess {
 

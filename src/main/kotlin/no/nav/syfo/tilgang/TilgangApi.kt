@@ -43,6 +43,28 @@ fun Route.registerTilgangApi(
             }
         }
 
+        get("/navident/finnfastlege") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check fastlege tilgang for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check fastlege tilgang for veileder. No NAV ident in token")
+            }
+            val veileder = tilgangService.getVeileder(
+                token = token,
+                callId = callId,
+            )
+            val tilgang = tilgangService.checkTilgangToFinnfastlege(veileder)
+            if (tilgang.erGodkjent) {
+                call.respond(tilgang)
+            } else {
+                call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = tilgang
+                )
+            }
+        }
+
         get("/navident/enhet/{$enhetNr}") {
             val callId = call.getCallId()
             val token = call.getBearerHeader()
