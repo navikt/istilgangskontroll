@@ -59,6 +59,7 @@ spec:
         - application: isoppfolgingstilfelle
         - application: ispengestopp
         - application: ispersonoppgave
+        - application: isutenlandsopphold
         - application: fastlegerest
         - application: finnfastlege
         - application: syfobehandlendeenhet
