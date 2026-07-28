@@ -9,13 +9,14 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.client.httpClientProxy
 import org.slf4j.LoggerFactory
 
 class AzureAdClient(
     private val azureEnvironment: AzureEnvironment,
-    private val valkeyStore: ValkeyStore,
+    private val valkeyStore: IValkeyStore,
     private val httpClient: HttpClient = httpClientProxy()
 ) {
     suspend fun getOnBehalfOfToken(scopeClientId: String, token: Token, callId: String): AzureAdToken? =

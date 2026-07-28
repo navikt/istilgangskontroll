@@ -1,10 +1,6 @@
 package no.nav.syfo.client.norg
 
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import no.nav.syfo.cache.ValkeyStore
-import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.testhelper.ExternalMockEnvironment
 import no.nav.syfo.testhelper.UserConstants
@@ -15,18 +11,11 @@ import java.util.*
 
 class NorgClientTest {
     private val externalMockEnvironment = ExternalMockEnvironment()
-    private val valkeyStore = mockk<ValkeyStore>(relaxed = true)
     private val norgClient = NorgClient(
         baseUrl = externalMockEnvironment.environment.clients.norgUrl,
-        valkeyStore = valkeyStore,
+        valkeyStore = externalMockEnvironment.valkeyStore,
         httpClient = getMockHttpClient(env = externalMockEnvironment.environment),
     )
-
-    init {
-        every {
-            valkeyStore.getListObject<NorgEnhet>(any())
-        } returns null
-    }
 
     @Test
     fun `returns overordnetNorgEnhet list if 200 OK from NORG`() {

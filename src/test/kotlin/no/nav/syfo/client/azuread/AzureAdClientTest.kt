@@ -6,7 +6,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.testhelper.ExternalMockEnvironment
 import no.nav.syfo.testhelper.UserConstants
@@ -19,7 +20,7 @@ import java.time.LocalDateTime
 
 class AzureAdClientTest {
     private val externalMockEnvironment = ExternalMockEnvironment()
-    private val valkeyStore = mockk<ValkeyStore>(relaxed = true)
+    private val valkeyStore = mockk<IValkeyStore>(relaxed = true)
     private val mockHttpClient = getMockHttpClient(env = externalMockEnvironment.environment)
     private val ONE_HOUR_IN_SECONDS = 1 * 60 * 60L
 

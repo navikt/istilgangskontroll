@@ -7,7 +7,8 @@ import com.microsoft.graph.serviceclient.GraphServiceClient
 import com.microsoft.kiota.ApiException
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getListObject
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.azuread.AzureAdToken
 import no.nav.syfo.tilgang.AdRoller
@@ -18,7 +19,7 @@ import java.util.*
 class GraphApiClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
-    private val valkeyStore: ValkeyStore,
+    private val valkeyStore: IValkeyStore,
     private val adRoller: AdRoller,
 ) {
     val syfoTilgangAdGrupper = setOf(

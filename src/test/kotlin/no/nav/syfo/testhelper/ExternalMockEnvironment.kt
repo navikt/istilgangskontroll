@@ -20,4 +20,6 @@ class ExternalMockEnvironment {
     val environment: Environment = testEnvironment()
 
     val wellKnownInternalAzureAD = wellKnownInternalAzureAD()
+
+    val valkeyStore = InMemoryValkeyStore()
 }

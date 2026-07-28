@@ -3,7 +3,8 @@ package no.nav.syfo.tilgang
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetDTO
@@ -29,7 +30,7 @@ class TilgangServicePersonTest {
     private val pdlClient = mockk<PdlClient>(relaxed = true)
     private val behandlendeEnhetClient = mockk<BehandlendeEnhetClient>(relaxed = true)
     private val norgClient = mockk<NorgClient>(relaxed = true)
-    private val valkeyStore = mockk<ValkeyStore>(relaxed = true)
+    private val valkeyStore = mockk<IValkeyStore>(relaxed = true)
     private val tilgangsmaskin = mockk<TilgangsmaskinClient>(relaxed = true)
     private val externalMockEnvironment = ExternalMockEnvironment()
     private val adRoller = AdRoller(externalMockEnvironment.environment)
