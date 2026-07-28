@@ -7,7 +7,8 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.application.api.auth.Token
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientProxy
 import no.nav.syfo.domain.Personident
@@ -18,7 +19,7 @@ class SkjermedePersonerPipClient(
     private val azureAdClient: AzureAdClient,
     private val skjermedePersonerUrl: String,
     val clientId: String,
-    private val valkeyStore: ValkeyStore,
+    private val valkeyStore: IValkeyStore,
     private val httpClient: HttpClient = httpClientProxy(),
 ) {
 

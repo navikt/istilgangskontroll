@@ -9,45 +9,10 @@ import redis.clients.jedis.exceptions.JedisConnectionException
 
 class ValkeyStore(
     private val jedisPool: JedisPool,
-) {
-    val objectMapper: ObjectMapper = configuredJacksonMapper()
+) : IValkeyStore {
+    override val objectMapper: ObjectMapper = configuredJacksonMapper()
 
-    inline fun <reified T> getObject(
-        key: String,
-    ): T? {
-        return get(key)?.let { it ->
-            objectMapper.readValue(it, T::class.java)
-        }
-    }
-
-    inline fun <reified T> getListObject(key: String): List<T>? {
-        val value = get(key)
-        return if (value != null) {
-            objectMapper.readValue(
-                value,
-                objectMapper.typeFactory.constructCollectionType(ArrayList::class.java, T::class.java)
-            )
-        } else {
-            null
-        }
-    }
-
-    /**
-     * Fetches values for [keys] with a single mget.
-     *
-     * @return A map where each entry is (key -> deserialized value) or (key -> null) on cache miss.
-     */
-    fun getObjects(keys: List<String>): Map<String, Tilgang?> {
-        if (keys.isEmpty()) return emptyMap()
-        val values = mget(keys)
-        return keys.zip(
-            values.map { value ->
-                value?.let { objectMapper.readValue(it, Tilgang::class.java) }
-            }
-        ).toMap()
-    }
-
-    fun get(
+    override fun get(
         key: String,
     ): String? {
         try {
@@ -60,7 +25,7 @@ class ValkeyStore(
         }
     }
 
-    fun mget(keys: List<String>): List<String?> {
+    override fun mget(keys: List<String>): List<String?> {
         return try {
             jedisPool.resource.use { jedis ->
                 jedis.mget(*keys.toTypedArray())
@@ -71,13 +36,23 @@ class ValkeyStore(
         }
     }
 
-    fun <T> setObject(
+    override fun <T> setObject(
         key: String,
         value: T,
         expireSeconds: Long,
     ) {
         val valueJson = objectMapper.writeValueAsString(value)
         set(key, valueJson, expireSeconds)
+    }
+
+    override fun getObjects(keys: List<String>): Map<String, Tilgang?> {
+        if (keys.isEmpty()) return emptyMap()
+        val values = mget(keys)
+        return keys.zip(
+            values.map { value ->
+                value?.let { objectMapper.readValue(it, Tilgang::class.java) }
+            }
+        ).toMap()
     }
 
     private fun set(

@@ -2,7 +2,6 @@ package no.nav.syfo.testhelper
 
 import io.ktor.server.application.*
 import no.nav.syfo.application.api.apiModule
-import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
@@ -12,10 +11,6 @@ import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.mocks.getMockHttpClient
 import no.nav.syfo.tilgang.AdRoller
-import redis.clients.jedis.DefaultJedisClientConfig
-import redis.clients.jedis.HostAndPort
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.JedisPoolConfig
 
 fun Application.testApiModule(
     externalMockEnvironment: ExternalMockEnvironment,
@@ -25,17 +20,7 @@ fun Application.testApiModule(
 
     val mockHttpClient = getMockHttpClient(env = externalMockEnvironment.environment)
 
-    val valkeyConfig = externalMockEnvironment.environment.valkeyConfig
-    val valkeyStore = ValkeyStore(
-        JedisPool(
-            JedisPoolConfig(),
-            HostAndPort(valkeyConfig.host, valkeyConfig.port),
-            DefaultJedisClientConfig.builder()
-                .ssl(valkeyConfig.ssl)
-                .password(valkeyConfig.valkeyPassword)
-                .build()
-        )
-    )
+    val valkeyStore = externalMockEnvironment.valkeyStore
 
     val azureAdClient = AzureAdClient(
         azureEnvironment = externalMockEnvironment.environment.azure,

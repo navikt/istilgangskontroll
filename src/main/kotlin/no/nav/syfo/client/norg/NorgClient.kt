@@ -5,7 +5,9 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getListObject
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.client.norg.domain.NorgEnhet
 import no.nav.syfo.client.pdl.GeografiskTilknytning
@@ -15,7 +17,7 @@ import org.slf4j.LoggerFactory.getLogger
 
 class NorgClient(
     private val baseUrl: String,
-    private val valkeyStore: ValkeyStore,
+    private val valkeyStore: IValkeyStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
 

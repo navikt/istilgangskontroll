@@ -10,7 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.application.metric.METRICS_NS
 import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.audit.AuditLogEvent
@@ -40,7 +41,7 @@ class TilgangService(
     val behandlendeEnhetClient: BehandlendeEnhetClient,
     val norgClient: NorgClient,
     val adRoller: AdRoller,
-    val valkeyStore: ValkeyStore,
+    val valkeyStore: IValkeyStore,
     val tilgangsmaskin: TilgangsmaskinClient,
     private val backgroundScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {

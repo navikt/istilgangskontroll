@@ -8,7 +8,8 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import net.logstash.logback.argument.StructuredArguments
-import no.nav.syfo.cache.ValkeyStore
+import no.nav.syfo.cache.IValkeyStore
+import no.nav.syfo.cache.getObject
 import no.nav.syfo.client.azuread.AzureAdClient
 import no.nav.syfo.client.httpClientDefault
 import no.nav.syfo.domain.Personident
@@ -19,7 +20,7 @@ class PdlClient(
     private val azureAdClient: AzureAdClient,
     private val baseUrl: String,
     private val clientId: String,
-    private val valkeyStore: ValkeyStore,
+    private val valkeyStore: IValkeyStore,
     private val httpClient: HttpClient = httpClientDefault(),
 ) {
     suspend fun getPerson(
