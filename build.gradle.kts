@@ -5,15 +5,15 @@ version = "0.0.1"
 
 val jacksonDataType = "2.22.1"
 val jacksonDatabindVersion = "3.2.1"
-val ktor = "3.5.1"
-val logback = "1.5.38"
+val ktor = "3.5.2"
+val logback = "1.6.1"
 val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "9.0"
 val micrometerRegistry = "1.17.0"
 val mockk = "1.14.11"
 val nimbusJoseJwt = "10.9.1"
 val jedis = "5.2.0"
-val microsoftGraphVersion = "6.62.0"
+val microsoftGraphVersion = "6.67.0"
 
 plugins {
     kotlin("jvm") version "2.3.21"
