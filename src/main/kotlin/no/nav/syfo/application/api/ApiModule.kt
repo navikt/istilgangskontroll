@@ -60,6 +60,7 @@ fun Application.apiModule(
         valkeyStore = valkeyStore,
         norgClient = norgClient,
         tilgangsmaskin = tilgangsmaskin,
+        useTilgangsmaskin = environment.useTilgangsmaskin,
     )
 
     routing {

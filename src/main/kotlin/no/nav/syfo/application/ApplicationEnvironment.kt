@@ -36,6 +36,8 @@ data class Environment(
     val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),
     val papirsykmeldingId: String = getEnvVar("ROLE_PAPIRSYKMELDING_ID"),
 
+    val useTilgangsmaskin: Boolean = getEnvVar("USE_TILGANGSMASKIN").toBoolean(),
+
     val clients: ClientsEnvironment = ClientsEnvironment(
         graphApiUrl = getEnvVar("GRAPHAPI_URL"),
         skjermedePersoner = ClientEnvironment(

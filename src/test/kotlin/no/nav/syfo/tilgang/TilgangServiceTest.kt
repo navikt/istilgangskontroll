@@ -48,6 +48,7 @@ class TilgangServiceTest {
         behandlendeEnhetClient = behandlendeEnhetClient,
         norgClient = norgClient,
         tilgangsmaskin = tilgangsmaskin,
+        useTilgangsmaskin = false,
     )
 
     private val TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60L
