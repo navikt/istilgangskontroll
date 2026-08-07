@@ -360,7 +360,7 @@ class TilgangService(
         val erGodkjent = if (useTilgangsmaskin) {
             tilgangsmaskin.hasTilgang(veileder.token, personident, callId).hasAccess
         } else {
-            checkLegacyTilgangToPersonAndCache(
+            checkLegacyTilgangToPerson(
                 personident = personident,
                 veileder = veileder,
                 callId = callId,
@@ -382,7 +382,7 @@ class TilgangService(
         }
     }
 
-    private suspend fun checkLegacyTilgangToPersonAndCache(
+    private suspend fun checkLegacyTilgangToPerson(
         personident: Personident,
         veileder: Veileder,
         callId: String,
