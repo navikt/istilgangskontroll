@@ -39,11 +39,6 @@ class TilgangApiTest {
         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
         navIdent = UserConstants.VEILEDER_IDENT_NO_SYFO_ACCESS,
     )
-    private val validTokenNoEnhetAccess = generateJWT(
-        audience = externalMockEnvironment.environment.azure.appClientId,
-        issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-        navIdent = UserConstants.VEILEDER_IDENT_NO_ENHET_ACCESS,
-    )
     private val validTokenWithoutPapirsykmeldingGroup = generateJWT(
         audience = externalMockEnvironment.environment.azure.appClientId,
         issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
@@ -246,10 +241,7 @@ class TilgangApiTest {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
-                    listOf(
-                        createGruppeForRole(adRoller.SYFO_LES),
-                        createGruppeForEnhet(ENHET_VEILEDER)
-                    )
+                    listOf(createGruppeForRole(adRoller.SYFO_LES))
                 val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/person") {
@@ -286,11 +278,14 @@ class TilgangApiTest {
         @Test
         fun `Forbid access to person if no geografisk access`() {
             testApplication {
-                val client = setupApi()
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.SYFO_LES))
+                val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/person") {
-                    bearerAuth(validTokenNoEnhetAccess)
-                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    bearerAuth(validToken)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_OTHER_ENHET)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
@@ -304,10 +299,13 @@ class TilgangApiTest {
         @Test
         fun `Forbid access to person if no access to skjermet person`() {
             testApplication {
-                val client = setupApi()
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.SYFO_LES))
+                val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/person") {
-                    bearerAuth(validTokenNoEnhetAccess)
+                    bearerAuth(validToken)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_SKJERMET)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
@@ -322,10 +320,13 @@ class TilgangApiTest {
         @Test
         fun `Forbid access to person if no access to adressebeskyttet person`() {
             testApplication {
-                val client = setupApi()
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.SYFO_LES))
+                val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/person") {
-                    bearerAuth(validTokenNoEnhetAccess)
+                    bearerAuth(validToken)
                     header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_GRADERT)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
@@ -346,10 +347,8 @@ class TilgangApiTest {
         fun `Allows access to person with FINNFASTLEGE access and correct local enhet`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForRole(adRoller.FINNFASTLEGE),
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.FINNFASTLEGE))
                 val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
@@ -387,14 +386,13 @@ class TilgangApiTest {
         fun `Forbid access to person if no geografisk access`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForRole(adRoller.FINNFASTLEGE)
-                )
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.FINNFASTLEGE))
                 val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
                     bearerAuth(validToken)
-                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_OTHER_ENHET)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
@@ -409,10 +407,8 @@ class TilgangApiTest {
         fun `Forbid access to skjermet person without EGEN_ANSATT role`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForRole(adRoller.FINNFASTLEGE),
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.FINNFASTLEGE))
                 val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
@@ -432,10 +428,8 @@ class TilgangApiTest {
         fun `Forbid access to adressebeskyttet person without KODE6 or KODE7 role`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForRole(adRoller.FINNFASTLEGE),
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                    listOf(createGruppeForRole(adRoller.FINNFASTLEGE))
                 val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/fastlege/person") {
@@ -462,8 +456,7 @@ class TilgangApiTest {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
                     createGruppeForRole(adRoller.SYFO_LES),
-                    createGruppeForRole(adRoller.PAPIRSYKMELDING),
-                    createGruppeForEnhet(ENHET_VEILEDER)
+                    createGruppeForRole(adRoller.PAPIRSYKMELDING)
                 )
                 val client = setupApi(graphApiClientMock)
                 val response = client.get("$tilgangApiBasePath/navident/person/papirsykmelding") {
@@ -517,11 +510,7 @@ class TilgangApiTest {
         @Test
         fun `Allows access for isdialogmelding with correct geografisk access`() {
             testApplication {
-                val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
-                val client = setupApi(graphApiClientMock)
+                val client = setupApi()
 
                 val response = client.get(apiUrl) {
                     bearerAuth(validTokenIsdialogmelding)
@@ -539,11 +528,7 @@ class TilgangApiTest {
         @Test
         fun `Allows access for fastlegerest with correct geografisk access`() {
             testApplication {
-                val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
-                val client = setupApi(graphApiClientMock)
+                val client = setupApi()
 
                 val response = client.get(apiUrl) {
                     bearerAuth(validTokenFastlegerest)
@@ -577,13 +562,11 @@ class TilgangApiTest {
         @Test
         fun `Forbids access when no geografisk access`() {
             testApplication {
-                val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns emptyList()
-                val client = setupApi(graphApiClientMock)
+                val client = setupApi()
 
                 val response = client.get(apiUrl) {
                     bearerAuth(validTokenIsdialogmelding)
-                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_OTHER_ENHET)
                     header(NAV_CALL_ID_HEADER, "123")
                     header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 }
@@ -597,11 +580,7 @@ class TilgangApiTest {
         @Test
         fun `Forbids access to skjermet person without EGEN_ANSATT role`() {
             testApplication {
-                val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
-                val client = setupApi(graphApiClientMock)
+                val client = setupApi()
 
                 val response = client.get(apiUrl) {
                     bearerAuth(validTokenIsdialogmelding)
@@ -619,11 +598,7 @@ class TilgangApiTest {
         @Test
         fun `Forbids access to adressebeskyttet person without KODE6 or KODE7 role`() {
             testApplication {
-                val graphApiClientMock = spyk(graphApiClient)
-                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
-                    createGruppeForEnhet(ENHET_VEILEDER)
-                )
-                val client = setupApi(graphApiClientMock)
+                val client = setupApi()
 
                 val response = client.get(apiUrl) {
                     bearerAuth(validTokenIsdialogmelding)

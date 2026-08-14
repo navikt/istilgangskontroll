@@ -35,7 +35,7 @@ fun testEnvironment() = Environment(
     skjermingId = "skjermingId",
     nasjonalId = "nasjonalId",
     papirsykmeldingId = "papirsykmeldingId",
-    useTilgangsmaskin = false,
+    useTilgangsmaskin = true,
 
     clients = ClientsEnvironment(
         graphApiUrl = "graphApiClientUrl",
