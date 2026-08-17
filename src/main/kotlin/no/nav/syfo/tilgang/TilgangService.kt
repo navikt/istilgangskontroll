@@ -43,6 +43,7 @@ class TilgangService(
     val adRoller: AdRoller,
     val valkeyStore: IValkeyStore,
     val tilgangsmaskin: TilgangsmaskinClient,
+    val useTilgangsmaskin: Boolean,
     private val backgroundScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     suspend fun getVeileder(
@@ -356,22 +357,15 @@ class TilgangService(
         cacheKey: String,
         callId: String,
     ): Tilgang {
-        val erGodkjent = if (
-            !isGeografiskAccessGodkjent(
-                callId = callId,
+        val erGodkjent = if (useTilgangsmaskin) {
+            tilgangsmaskin.hasTilgang(veileder.token, personident, callId).hasAccess
+        } else {
+            checkLegacyTilgangToPerson(
                 personident = personident,
                 veileder = veileder,
+                callId = callId,
             )
-        ) {
-            false
-        } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, veileder = veileder)) {
-            false
-        } else if (!isAdressebeskyttelseAccessGodkjent(callId = callId, personident = personident, veileder = veileder)) {
-            false
-        } else {
-            true
         }
-
         return Tilgang(
             erGodkjent = erGodkjent,
         ).utvidMedTilganger(
@@ -386,6 +380,26 @@ class TilgangService(
                 )
             }
         }
+    }
+
+    private suspend fun checkLegacyTilgangToPerson(
+        personident: Personident,
+        veileder: Veileder,
+        callId: String,
+    ) = if (
+        !isGeografiskAccessGodkjent(
+            callId = callId,
+            personident = personident,
+            veileder = veileder,
+        )
+    ) {
+        false
+    } else if (!isSkjermetAccessGodkjent(callId = callId, personident = personident, veileder = veileder)) {
+        false
+    } else if (!isAdressebeskyttelseAccessGodkjent(callId = callId, personident = personident, veileder = veileder)) {
+        false
+    } else {
+        true
     }
 
     suspend fun filterIdenterByVeilederAccess(

@@ -179,3 +179,5 @@ spec:
       value: "c7107487-310d-4c06-83e0-cf5395dc3be3" # 0000-GA-GEO_NASJONAL
     - name: ROLE_PAPIRSYKMELDING_ID
       value: "16aff429-1efc-402a-ae12-4000633d0063" # 0000-GA-papirsykmelding
+    - name: USE_TILGANGSMASKIN
+      value: "true"

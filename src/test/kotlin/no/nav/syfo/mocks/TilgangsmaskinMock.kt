@@ -18,33 +18,30 @@ suspend fun MockRequestHandleScope.getTilgangsmaskinResponse(request: HttpReques
 
     return if (requestUrl.contains(tilgangsmaskinPath)) {
         val personident = request.receiveBody<String>()
+        val avvisningsKode = personident.tilAvvisningsKode()
 
-        when (personident) {
-            UserConstants.PERSONIDENT_SKJERMET -> {
-                respond(
-                    content = mapper.writeValueAsString(
-                        ProblemDetailResponse(
-                            title = AvvisningsKode.AVVIST_SKJERMING,
-                            status = 403,
-                            instance = "",
-                            brukerIdent = personident,
-                            navIdent = UserConstants.VEILEDER_IDENT,
-                            begrunnelse = "Bruker er skjermet",
-                            traceId = "traceId",
-                            kanOverstyres = false,
-                        )
-                    ),
-                    status = HttpStatusCode.Forbidden,
-                    headers = headersOf(HttpHeaders.ContentType, "application/json")
-                )
-            }
-
-            else -> {
-                respond(
-                    content = "",
-                    status = HttpStatusCode.NoContent
-                )
-            }
+        if (avvisningsKode != null) {
+            respond(
+                content = mapper.writeValueAsString(
+                    ProblemDetailResponse(
+                        title = avvisningsKode,
+                        status = 403,
+                        instance = "",
+                        brukerIdent = personident,
+                        navIdent = UserConstants.VEILEDER_IDENT,
+                        begrunnelse = "Avvist av tilgangsmaskin",
+                        traceId = "traceId",
+                        kanOverstyres = false,
+                    )
+                ),
+                status = HttpStatusCode.Forbidden,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        } else {
+            respond(
+                content = "",
+                status = HttpStatusCode.NoContent
+            )
         }
     } else if (requestUrl.contains(tilgangsmaskinBulkPath)) {
         val personidenter = request.receiveBody<List<String>>()
@@ -54,7 +51,7 @@ suspend fun MockRequestHandleScope.getTilgangsmaskinResponse(request: HttpReques
                     resultater = personidenter.map {
                         TilgangsmaskinBulkResultat(
                             brukerId = it,
-                            status = if (it == UserConstants.PERSONIDENT_SKJERMET) {
+                            status = if (it.tilAvvisningsKode() != null) {
                                 HttpStatusCode.Forbidden.value
                             } else {
                                 HttpStatusCode.NoContent.value
@@ -69,4 +66,11 @@ suspend fun MockRequestHandleScope.getTilgangsmaskinResponse(request: HttpReques
     } else {
         throw RuntimeException("Unknown path: $requestUrl")
     }
+}
+
+private fun String.tilAvvisningsKode(): AvvisningsKode? = when (this) {
+    UserConstants.PERSONIDENT_SKJERMET -> AvvisningsKode.AVVIST_SKJERMING
+    UserConstants.PERSONIDENT_GRADERT -> AvvisningsKode.AVVIST_STRENGT_FORTROLIG_ADRESSE
+    UserConstants.PERSONIDENT_OTHER_ENHET -> AvvisningsKode.AVVIST_GEOGRAFISK
+    else -> null
 }
