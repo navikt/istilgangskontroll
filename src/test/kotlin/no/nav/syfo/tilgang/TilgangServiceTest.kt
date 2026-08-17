@@ -600,6 +600,87 @@ class TilgangServiceTest {
     }
 
     @Nested
+    @DisplayName("Check tilgang to persons using tilgangsmaskin bulk endpoint")
+    inner class CheckTilgangToPersonsWithTilgangsmaskin {
+        private val tilgangServiceWithTilgangsmaskin = TilgangService(
+            graphApiClient = graphApiClient,
+            adRoller = adRoller,
+            valkeyStore = valkeyStore,
+            azureAdClient = azureAdClient,
+            skjermedePersonerPipClient = skjermedePersonerPipClient,
+            pdlClient = pdlClient,
+            behandlendeEnhetClient = behandlendeEnhetClient,
+            norgClient = norgClient,
+            tilgangsmaskin = tilgangsmaskin,
+            useTilgangsmaskin = true,
+        )
+
+        @Test
+        fun `uses bulk endpoint instead of per-person calls when useTilgangsmaskin is enabled`() {
+            val personident = Personident(UserConstants.PERSONIDENT)
+            val otherPersonident = Personident(UserConstants.PERSONIDENT_GRADERT)
+            val personidenter = listOf(personident, otherPersonident)
+            val cacheKey1 = "tilgang-til-person-$VEILEDER_IDENT-$personident"
+            val cacheKey2 = "tilgang-til-person-$VEILEDER_IDENT-$otherPersonident"
+
+            every { valkeyStore.getObjects(listOf(cacheKey1, cacheKey2)) } returns mapOf(
+                cacheKey1 to null,
+                cacheKey2 to null,
+            )
+            coEvery {
+                tilgangsmaskin.hasTilgang(validToken, listOf(personident.value, otherPersonident.value), "callId")
+            } returns listOf(personident.value)
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_FULL),
+            )
+
+            val tilgangMap = runBlocking {
+                val veileder = tilgangServiceWithTilgangsmaskin.getVeileder(validToken, "callId")
+                tilgangServiceWithTilgangsmaskin.checkTilgangToPersons(personidenter, veileder, "callId")
+            }
+
+            assertTrue(tilgangMap[personident]!!.erGodkjent)
+            assertFalse(tilgangMap[otherPersonident]!!.erGodkjent)
+
+            coVerify(exactly = 1) {
+                tilgangsmaskin.hasTilgang(validToken, listOf(personident.value, otherPersonident.value), "callId")
+            }
+            verify(exactly = 1) {
+                valkeyStore.setObject(key = cacheKey1, value = any<Tilgang>(), expireSeconds = TWELVE_HOURS_IN_SECONDS)
+            }
+            verify(exactly = 0) {
+                valkeyStore.setObject(key = cacheKey2, value = any<Tilgang>(), expireSeconds = TWELVE_HOURS_IN_SECONDS)
+            }
+        }
+
+        @Test
+        fun `splits persons into chunks of max 1000 per bulk call`() {
+            val personidenter = (1..1500).map { Personident(it.toString().padStart(11, '0')) }
+            val cacheKeys = personidenter.map { "tilgang-til-person-$VEILEDER_IDENT-$it" }
+
+            every { valkeyStore.getObjects(cacheKeys) } returns cacheKeys.associateWith { null }
+            coEvery { tilgangsmaskin.hasTilgang(validToken, any<List<String>>(), "callId") } answers {
+                (secondArg() as List<String>)
+            }
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_FULL),
+            )
+
+            val tilgangMap = runBlocking {
+                val veileder = tilgangServiceWithTilgangsmaskin.getVeileder(validToken, "callId")
+                tilgangServiceWithTilgangsmaskin.checkTilgangToPersons(personidenter, veileder, "callId")
+            }
+
+            assertEquals(1500, tilgangMap.size)
+            assertTrue(tilgangMap.values.all { it.erGodkjent })
+
+            coVerify(exactly = 2) { tilgangsmaskin.hasTilgang(validToken, any<List<String>>(), "callId") }
+            coVerify(exactly = 1) { tilgangsmaskin.hasTilgang(validToken, match<List<String>> { it.size == 1000 }, "callId") }
+            coVerify(exactly = 1) { tilgangsmaskin.hasTilgang(validToken, match<List<String>> { it.size == 500 }, "callId") }
+        }
+    }
+
+    @Nested
     @DisplayName("Preload cache for person access")
     inner class PreloadCacheForPersonAccess {
 
