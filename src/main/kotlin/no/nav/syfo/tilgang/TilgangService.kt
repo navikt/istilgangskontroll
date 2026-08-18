@@ -333,22 +333,72 @@ class TilgangService(
                 personident to entry.value!!
             }
 
-        val hentetTilganger = supervisorScope {
-            missingEntries.map { missingEntry ->
-                async(CHECK_PERSON_TILGANG_DISPATCHER) {
-                    val cacheKey = missingEntry.key
-                    val personident = cacheKeysToPersonident[cacheKey]!!
-                    val tilgang = checkTilgangToPersonAndCache(
-                        personident = personident,
-                        veileder = veileder,
-                        cacheKey = cacheKey,
-                        callId = callId,
-                    )
-                    personident to tilgang
-                }
-            }.awaitAll().toMap()
+        val missingPersonidentToCacheKey: List<Pair<Personident, String>> = missingEntries.map { missingEntry ->
+            val cacheKey = missingEntry.key
+            cacheKeysToPersonident[cacheKey]!! to cacheKey
+        }
+
+        val hentetTilganger = if (useTilgangsmaskin) {
+            checkTilgangToPersonsBulkAndCache(
+                personidentToCacheKey = missingPersonidentToCacheKey,
+                veileder = veileder,
+                callId = callId,
+            )
+        } else {
+            supervisorScope {
+                missingPersonidentToCacheKey.map { (personident, cacheKey) ->
+                    async(CHECK_PERSON_TILGANG_DISPATCHER) {
+                        val tilgang = checkTilgangToPersonAndCache(
+                            personident = personident,
+                            veileder = veileder,
+                            cacheKey = cacheKey,
+                            callId = callId,
+                        )
+                        personident to tilgang
+                    }
+                }.awaitAll().toMap()
+            }
         }
         return cachedTilganger + hentetTilganger
+    }
+
+    private suspend fun checkTilgangToPersonsBulkAndCache(
+        personidentToCacheKey: List<Pair<Personident, String>>,
+        veileder: Veileder,
+        callId: String,
+    ): Map<Personident, Tilgang> {
+        return if (personidentToCacheKey.isEmpty()) {
+            emptyMap()
+        } else {
+            supervisorScope {
+                personidentToCacheKey.chunked(MAX_BULK_SIZE_TILGANGSMASKIN).map { chunk ->
+                    async(CHECK_PERSON_TILGANG_DISPATCHER) {
+                        val godkjentePersonidenter = tilgangsmaskin.hasTilgang(
+                            veileder.token,
+                            chunk.map { (personident, _) -> personident.value },
+                            callId,
+                        ).toSet()
+
+                        chunk.map { (personident, cacheKey) ->
+                            val tilgang = Tilgang(
+                                erGodkjent = personident.value in godkjentePersonidenter,
+                            ).utvidMedTilganger(
+                                veileder = veileder,
+                                adRoller = adRoller,
+                            )
+                            if (tilgang.erGodkjent) {
+                                valkeyStore.setObject(
+                                    key = cacheKey,
+                                    value = tilgang,
+                                    expireSeconds = TWELVE_HOURS_IN_SECS
+                                )
+                            }
+                            personident to tilgang
+                        }
+                    }
+                }.awaitAll().flatten().toMap()
+            }
+        }
     }
 
     private suspend fun checkTilgangToPersonAndCache(
