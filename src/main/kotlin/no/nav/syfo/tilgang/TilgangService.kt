@@ -1,19 +1,15 @@
 package no.nav.syfo.tilgang
 
-import io.micrometer.core.instrument.Counter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.cache.IValkeyStore
 import no.nav.syfo.cache.getObject
-import no.nav.syfo.application.metric.METRICS_NS
-import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.audit.AuditLogEvent
 import no.nav.syfo.audit.CEF
 import no.nav.syfo.audit.auditLog
@@ -282,34 +278,8 @@ class TilgangService(
                     appName = appName,
                 )
             )
-        } else {
-            log.info("Veileder har ikke tilgang til person, ingen audit-logg opprettes.")
         }
-
-        return tilgang.also {
-            if (cachedTilgang == null) {
-                backgroundScope.launch() {
-                    try {
-                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personident, callId)
-                        if (!tilgangsmaskinTilgang.hasAccess && tilgang.erGodkjent) {
-                            COUNT_TILGANGSMASKIN_DIFF.increment()
-                            log.info(
-                                "Tilgangsmaskin gir annet resultat (ikke ok: ${tilgangsmaskinTilgang.problemDetailResponse?.begrunnelse}) for ${veileder.veilederident} enn istilgangskontroll (ok): $callId"
-                            )
-                        } else if (tilgangsmaskinTilgang.hasAccess && !tilgang.erGodkjent) {
-                            COUNT_TILGANGSMASKIN_DIFF.increment()
-                            log.info(
-                                "Tilgangsmaskin gir annet resultat (ok) for ${veileder.veilederident} enn istilgangskontroll (ikke ok): $callId"
-                            )
-                        } else {
-                            COUNT_TILGANGSMASKIN_OK.increment()
-                        }
-                    } catch (e: Exception) {
-                        log.warn("Tilgangsmaskin-sjekk feilet (ignoreres): callId=$callId", e)
-                    }
-                }
-            }
-        }
+        return tilgang
     }
 
     suspend fun checkTilgangToPersons(
@@ -473,36 +443,7 @@ class TilgangService(
             .filter { (_, tilgang) -> tilgang.erGodkjent }
             .map { (personident, _) -> personident.value }
 
-        return godkjente.also {
-            if (validPersonidenter.size < MAX_BULK_SIZE_TILGANGSMASKIN) {
-                backgroundScope.launch() {
-                    try {
-                        val personidenterToCheck = validPersonidenter.map { it.value }
-                        val tilgangsmaskinTilgang = tilgangsmaskin.hasTilgang(veileder.token, personidenterToCheck, callId)
-                        val baseLineDenied = personidenterToCheck - godkjente
-                        val tilgangsmaskinDenied = personidenterToCheck - tilgangsmaskinTilgang
-                        val agreeDenied = baseLineDenied.intersect(tilgangsmaskinDenied)
-                        val diffDeniedByBaseline = baseLineDenied - agreeDenied
-                        val diffDeniedByTilgangsmaskin = tilgangsmaskinDenied - agreeDenied
-                        if (diffDeniedByBaseline.isNotEmpty()) {
-                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByBaseline.size.toDouble())
-                            log.info(
-                                "Tilgangsmaskin gir annet resultat (ok for ${diffDeniedByBaseline.size} forekomster) for ${veileder.veilederident} enn istilgangskontroll (ikke ok): $callId"
-                            )
-                        }
-                        if (diffDeniedByTilgangsmaskin.isNotEmpty()) {
-                            COUNT_TILGANGSMASKIN_DIFF.increment(diffDeniedByTilgangsmaskin.size.toDouble())
-                            log.info(
-                                "Tilgangsmaskin gir annet resultat (ikke ok for ${diffDeniedByTilgangsmaskin.size} forekomster) for ${veileder.veilederident} enn istilgangskontroll (ok): $callId"
-                            )
-                        }
-                        COUNT_TILGANGSMASKIN_OK.increment(tilgangsmaskinTilgang.size.toDouble())
-                    } catch (e: Exception) {
-                        log.warn("Tilgangsmaskin bulk-sjekk feilet (ignoreres): callId=$callId", e)
-                    }
-                }
-            }
-        }
+        return godkjente
     }
 
     private suspend fun preloadOboTokens(
@@ -549,16 +490,5 @@ class TilgangService(
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"
         const val TILGANG_TIL_PERSON_PREFIX = "tilgang-til-person-"
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
-
-        const val TILGANGSMASKIN_BASE = "${METRICS_NS}_tilgangsmaskin"
-        const val TILGANGSMASKIN_OK = "${TILGANGSMASKIN_BASE}_ok"
-        const val TILGANGSMASKIN_DIFF = "${TILGANGSMASKIN_BASE}_diff"
-
-        val COUNT_TILGANGSMASKIN_OK: Counter = Counter.builder(TILGANGSMASKIN_OK)
-            .description("Counts the number of successful calls to tilgangsmaskin where access matches")
-            .register(METRICS_REGISTRY)
-        val COUNT_TILGANGSMASKIN_DIFF: Counter = Counter.builder(TILGANGSMASKIN_DIFF)
-            .description("Counts the number of successful calls to tilgangsmaskin where access does not match")
-            .register(METRICS_REGISTRY)
     }
 }
