@@ -493,16 +493,5 @@ class TilgangService(
         const val TILGANG_TIL_ENHET_PREFIX = "tilgang-til-enhet-"
         const val TILGANG_TIL_PERSON_PREFIX = "tilgang-til-person-"
         const val TWELVE_HOURS_IN_SECS = 12 * 60 * 60L
-
-        const val TILGANGSMASKIN_BASE = "${METRICS_NS}_tilgangsmaskin"
-        const val TILGANGSMASKIN_OK = "${TILGANGSMASKIN_BASE}_ok"
-        const val TILGANGSMASKIN_DIFF = "${TILGANGSMASKIN_BASE}_diff"
-
-        val COUNT_TILGANGSMASKIN_OK: Counter = Counter.builder(TILGANGSMASKIN_OK)
-            .description("Counts the number of successful calls to tilgangsmaskin where access matches")
-            .register(METRICS_REGISTRY)
-        val COUNT_TILGANGSMASKIN_DIFF: Counter = Counter.builder(TILGANGSMASKIN_DIFF)
-            .description("Counts the number of successful calls to tilgangsmaskin where access does not match")
-            .register(METRICS_REGISTRY)
     }
 }
