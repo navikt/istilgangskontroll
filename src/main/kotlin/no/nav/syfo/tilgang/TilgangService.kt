@@ -1,6 +1,5 @@
 package no.nav.syfo.tilgang
 
-import io.micrometer.core.instrument.Counter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -11,8 +10,6 @@ import no.nav.syfo.application.api.auth.Token
 import no.nav.syfo.application.api.auth.getNAVIdent
 import no.nav.syfo.cache.IValkeyStore
 import no.nav.syfo.cache.getObject
-import no.nav.syfo.application.metric.METRICS_NS
-import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.audit.AuditLogEvent
 import no.nav.syfo.audit.CEF
 import no.nav.syfo.audit.auditLog
