@@ -179,4 +179,4 @@ spec:
     - name: ROLE_PAPIRSYKMELDING_ID
       value: "dfde2123-1969-4cd2-8977-bdf19721e76d" # 0000-GA-papirsykmelding
     - name: USE_TILGANGSMASKIN
-      value: "false"
+      value: "true"
