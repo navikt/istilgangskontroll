@@ -318,6 +318,27 @@ class TilgangApiTest {
         }
 
         @Test
+        fun `Forbid access to person if person med vergemål`() {
+            testApplication {
+                val graphApiClientMock = spyk(graphApiClient)
+                coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
+                        listOf(createGruppeForRole(adRoller.SYFO_LES))
+                val client = setupApi(graphApiClientMock)
+
+                val response = client.get("$tilgangApiBasePath/navident/person") {
+                    bearerAuth(validToken)
+                    header(NAV_PERSONIDENT_HEADER, UserConstants.PERSONIDENT_VERGE)
+                    header(NAV_CALL_ID_HEADER, "123")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                }
+
+                assertEquals(HttpStatusCode.Forbidden, response.status)
+                val tilgang = response.body<Tilgang>()
+                assertTrue(tilgang.erAvslatt)
+            }
+        }
+
+        @Test
         fun `Forbid access to person if no access to adressebeskyttet person`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)

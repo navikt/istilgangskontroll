@@ -71,6 +71,7 @@ suspend fun MockRequestHandleScope.getTilgangsmaskinResponse(request: HttpReques
 private fun String.tilAvvisningsKode(): AvvisningsKode? = when (this) {
     UserConstants.PERSONIDENT_SKJERMET -> AvvisningsKode.AVVIST_SKJERMING
     UserConstants.PERSONIDENT_GRADERT -> AvvisningsKode.AVVIST_STRENGT_FORTROLIG_ADRESSE
+    UserConstants.PERSONIDENT_VERGE -> AvvisningsKode.AVVIST_VERGEMÅL
     UserConstants.PERSONIDENT_OTHER_ENHET -> AvvisningsKode.AVVIST_GEOGRAFISK
     else -> null
 }
