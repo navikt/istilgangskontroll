@@ -322,7 +322,7 @@ class TilgangApiTest {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
-                        listOf(createGruppeForRole(adRoller.SYFO_LES))
+                    listOf(createGruppeForRole(adRoller.SYFO_LES))
                 val client = setupApi(graphApiClientMock)
 
                 val response = client.get("$tilgangApiBasePath/navident/person") {
