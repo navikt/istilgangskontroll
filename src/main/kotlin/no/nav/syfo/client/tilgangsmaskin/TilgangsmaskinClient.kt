@@ -85,7 +85,7 @@ class TilgangsmaskinClient(
                 it.brukerId
             }
         } else {
-            throw RuntimeException("Unexpected response from tilgangsmaskin bulk endpoint: ${response.status}")
+            throw RuntimeException("Unexpected response from tilgangsmaskin hasTilgang bulk endpoint: ${response.status}")
         }
     }
 
@@ -126,7 +126,7 @@ class TilgangsmaskinClient(
                 it.brukerId
             }
         } else {
-            throw RuntimeException("Unexpected response from tilgangsmaskin bulk endpoint: ${response.status}")
+            throw RuntimeException("Unexpected response from tilgangsmaskin hasKjerneTilgang bulk endpoint: ${response.status}")
         }
     }
 
