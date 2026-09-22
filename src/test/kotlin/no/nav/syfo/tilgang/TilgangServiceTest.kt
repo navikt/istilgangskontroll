@@ -681,6 +681,113 @@ class TilgangServiceTest {
     }
 
     @Nested
+    @DisplayName("Filter list of personident based on veileders kjerneregler access")
+    inner class FilterPersonidentByVeilederKjernereglerAccess {
+
+        @Test
+        fun `remove all identer if veileder is missing SYFO access`() {
+            val callId = "123"
+            val personident1 = Personident(UserConstants.PERSONIDENT)
+            val personident2 = Personident(UserConstants.PERSONIDENT_GRADERT)
+            val personidenter = listOf(personident1.value, personident2.value)
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
+
+            val filteredPersonidenter = runBlocking {
+                tilgangService.filterIdenterByVeilederKjernereglerAccess(
+                    callId = callId,
+                    token = validToken,
+                    personidenter = personidenter,
+                )
+            }
+
+            assertEquals(0, filteredPersonidenter.size)
+            coVerify(exactly = 1) { graphApiClient.getGrupperForVeilederOgCache(validToken, callId) }
+            coVerify(exactly = 0) { tilgangsmaskin.hasKjerneTilgang(any(), any(), any()) }
+        }
+
+        @Test
+        fun `removes invalid personidenter before calling tilgangsmaskin`() {
+            val callId = "123"
+            val validPersonident = Personident(UserConstants.PERSONIDENT)
+            val invalidPersonident = "1234567890"
+            val personidenter = listOf(validPersonident.value, invalidPersonident)
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_FULL),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
+            coEvery {
+                tilgangsmaskin.hasKjerneTilgang(validToken, listOf(validPersonident.value), callId)
+            } returns listOf(validPersonident.value)
+
+            val filteredPersonidenter = runBlocking {
+                tilgangService.filterIdenterByVeilederKjernereglerAccess(
+                    callId = callId,
+                    token = validToken,
+                    personidenter = personidenter,
+                )
+            }
+
+            assertEquals(1, filteredPersonidenter.size)
+            assertEquals(validPersonident.value, filteredPersonidenter[0])
+            coVerify(exactly = 1) { tilgangsmaskin.hasKjerneTilgang(validToken, listOf(validPersonident.value), callId) }
+        }
+
+        @Test
+        fun `only returns personidenter approved by tilgangsmaskin bulk endpoint`() {
+            val callId = "123"
+            val personident = Personident(UserConstants.PERSONIDENT)
+            val otherPersonident = Personident(UserConstants.PERSONIDENT_GRADERT)
+            val personidenter = listOf(personident.value, otherPersonident.value)
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_FULL),
+                createGruppeForEnhet(UserConstants.ENHET_VEILEDER)
+            )
+            coEvery {
+                tilgangsmaskin.hasKjerneTilgang(validToken, listOf(personident.value, otherPersonident.value), callId)
+            } returns listOf(personident.value)
+
+            val filteredPersonidenter = runBlocking {
+                tilgangService.filterIdenterByVeilederKjernereglerAccess(
+                    callId = callId,
+                    token = validToken,
+                    personidenter = personidenter,
+                )
+            }
+
+            assertEquals(1, filteredPersonidenter.size)
+            assertEquals(personident.value, filteredPersonidenter[0])
+            verifyCacheSet(exactly = 0)
+        }
+
+        @Test
+        fun `splits persons into chunks of max 1000 per bulk call`() {
+            val callId = "123"
+            val personidenter = (1..1500).map { it.toString().padStart(11, '0') }
+            coEvery { graphApiClient.getGrupperForVeilederOgCache(any(), any()) } returns listOf(
+                createGruppeForRole(adRoller.SYFO_FULL),
+            )
+            coEvery { tilgangsmaskin.hasKjerneTilgang(validToken, any<List<String>>(), callId) } answers {
+                (secondArg() as List<String>)
+            }
+
+            val filteredPersonidenter = runBlocking {
+                tilgangService.filterIdenterByVeilederKjernereglerAccess(
+                    callId = callId,
+                    token = validToken,
+                    personidenter = personidenter,
+                )
+            }
+
+            assertEquals(1500, filteredPersonidenter.size)
+            coVerify(exactly = 2) { tilgangsmaskin.hasKjerneTilgang(validToken, any<List<String>>(), callId) }
+            coVerify(exactly = 1) { tilgangsmaskin.hasKjerneTilgang(validToken, match<List<String>> { it.size == 1000 }, callId) }
+            coVerify(exactly = 1) { tilgangsmaskin.hasKjerneTilgang(validToken, match<List<String>> { it.size == 500 }, callId) }
+        }
+    }
+
+    @Nested
     @DisplayName("Preload cache for person access")
     inner class PreloadCacheForPersonAccess {
 

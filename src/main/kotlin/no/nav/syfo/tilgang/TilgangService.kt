@@ -371,6 +371,38 @@ class TilgangService(
         }
     }
 
+    suspend fun checkKjerneregelTilgangToPersonsBulk(
+        personidenter: List<Personident>,
+        veileder: Veileder,
+        callId: String,
+    ): Map<Personident, Tilgang> {
+        return if (personidenter.isEmpty()) {
+            emptyMap()
+        } else {
+            supervisorScope {
+                personidenter.chunked(MAX_BULK_SIZE_TILGANGSMASKIN).map { chunk ->
+                    async(CHECK_PERSON_TILGANG_DISPATCHER) {
+                        val godkjentePersonidenter = tilgangsmaskin.hasKjerneTilgang(
+                            veileder.token,
+                            chunk.map { personident -> personident.value },
+                            callId,
+                        ).toSet()
+
+                        chunk.map { personident ->
+                            val tilgang = Tilgang(
+                                erGodkjent = personident.value in godkjentePersonidenter,
+                            ).utvidMedTilganger(
+                                veileder = veileder,
+                                adRoller = adRoller,
+                            )
+                            personident to tilgang
+                        }
+                    }
+                }.awaitAll().flatten().toMap()
+            }
+        }
+    }
+
     private suspend fun checkTilgangToPersonAndCache(
         personident: Personident,
         veileder: Veileder,
@@ -436,6 +468,28 @@ class TilgangService(
         val validPersonidenter = personidenter.filterValidPersonidenter()
 
         val godkjente = checkTilgangToPersons(
+            personidenter = validPersonidenter,
+            veileder = veileder,
+            callId = callId,
+        )
+            .filter { (_, tilgang) -> tilgang.erGodkjent }
+            .map { (personident, _) -> personident.value }
+
+        return godkjente
+    }
+
+    suspend fun filterIdenterByVeilederKjernereglerAccess(
+        callId: String,
+        token: Token,
+        personidenter: List<String>,
+    ): List<String> {
+        val veileder = getVeileder(token, callId)
+        if (!veileder.hasFullEllerLesTilgang(adRoller)) {
+            return emptyList()
+        }
+        val validPersonidenter = personidenter.filterValidPersonidenter()
+
+        val godkjente = checkKjerneregelTilgangToPersonsBulk(
             personidenter = validPersonidenter,
             veileder = veileder,
             callId = callId,

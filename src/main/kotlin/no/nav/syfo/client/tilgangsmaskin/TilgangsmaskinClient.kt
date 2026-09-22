@@ -85,8 +85,54 @@ class TilgangsmaskinClient(
                 it.brukerId
             }
         } else {
-            throw RuntimeException("Unexpected response from tilgangsmaskin bulk endpoint: ${response.status}")
+            throw RuntimeException("Unexpected response from tilgangsmaskin hasTilgang bulk endpoint: ${response.status}")
         }
+    }
+
+    suspend fun hasKjerneTilgang(
+        token: Token,
+        personidenter: List<String>,
+        callId: String,
+    ): List<String> {
+        val oboToken = azureAdClient.getOnBehalfOfToken(
+            scopeClientId = clientId,
+            token = token,
+            callId = callId
+        ) ?: throw RuntimeException("Could not get oboToken from AzureAd")
+
+        val response = try {
+            httpClient.post(tilgangsmaskinBulkUrl) {
+                header(HttpHeaders.Authorization, bearerHeader(oboToken.accessToken))
+                header(NAV_CALL_ID_HEADER, callId)
+                setBody(
+                    personidenter.map { personident ->
+                        TilgangsmaskinBulkRequest(
+                            brukerId = personident,
+                            type = KJERNE_REGELTYPE,
+                        )
+                    }
+                )
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+            }
+        } catch (exc: ClientRequestException) {
+            exc.response
+        }
+        return if (response.status == HttpStatusCode.MultiStatus) {
+            val tilgangsmaskinBulk = response.body<TilgangsmaskinBulkResponse>()
+            tilgangsmaskinBulk.resultater.filter {
+                it.status == HttpStatusCode.NoContent.value
+            }.map {
+                it.brukerId
+            }
+        } else {
+            throw RuntimeException("Unexpected response from tilgangsmaskin hasKjerneTilgang bulk endpoint: ${response.status}")
+        }
+    }
+
+    companion object {
+        const val KJERNE_REGELTYPE = "KJERNE_REGELTYPE"
+        const val KOMPLETT_REGELTYPE = "KOMPLETT_REGELTYPE"
     }
 }
 
@@ -97,6 +143,7 @@ data class TilgangsmaskinTilgang(
 
 data class TilgangsmaskinBulkRequest(
     val brukerId: String,
+    val type: String = TilgangsmaskinClient.KOMPLETT_REGELTYPE,
 )
 
 data class TilgangsmaskinBulkResponse(
