@@ -283,6 +283,27 @@ fun Route.registerTilgangApi(
             call.respond(HttpStatusCode.OK, personidenterVeilederHasAccessTo)
         }
 
+        post("/navident/brukere/kjerneregler") {
+            val callId = call.getCallId()
+            val token = call.getBearerHeader()
+                ?: throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No Authorization header supplied")
+            if (token.isMissingNAVIdent()) {
+                throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No NAV ident in token")
+            }
+            call.getAppname(preAuthorizedApps)
+                ?: throw IllegalArgumentException("Failed to check tilgang to brukere for veileder. No consumer clientId was found")
+
+            val personidenter = call.receive<List<String>>()
+
+            val personidenterVeilederHasAccessTo = tilgangService.filterIdenterByVeilederKjernereglerAccess(
+                callId = callId,
+                token = token,
+                personidenter = personidenter,
+            )
+
+            call.respond(HttpStatusCode.OK, personidenterVeilederHasAccessTo)
+        }
+
         post("/system/preloadbrukere") {
             val consumerClientId = this.call.getConsumerClientId()
                 ?: throw IllegalArgumentException("Failed to preload: Token or consumer clientId was not found")
