@@ -10,12 +10,7 @@ import no.nav.syfo.application.api.auth.JwtIssuerType
 import no.nav.syfo.application.api.auth.installJwtAuthentication
 import no.nav.syfo.cache.IValkeyStore
 import no.nav.syfo.application.metric.registerMetricApi
-import no.nav.syfo.client.azuread.AzureAdClient
-import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
-import no.nav.syfo.client.norg.NorgClient
-import no.nav.syfo.client.pdl.PdlClient
-import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.client.wellknown.WellKnown
 import no.nav.syfo.tilgang.AdRoller
@@ -29,11 +24,6 @@ fun Application.apiModule(
     wellKnownInternalAzureAD: WellKnown,
     adRoller: AdRoller,
     valkeyStore: IValkeyStore,
-    azureAdClient: AzureAdClient,
-    skjermedePersonerPipClient: SkjermedePersonerPipClient,
-    pdlClient: PdlClient,
-    behandlendeEnhetClient: BehandlendeEnhetClient,
-    norgClient: NorgClient,
     tilgangsmaskin: TilgangsmaskinClient,
 ) {
     installMetrics()
@@ -51,16 +41,10 @@ fun Application.apiModule(
     )
 
     val tilgangService = TilgangService(
-        azureAdClient = azureAdClient,
         graphApiClient = graphApiClient,
-        skjermedePersonerPipClient = skjermedePersonerPipClient,
-        pdlClient = pdlClient,
-        behandlendeEnhetClient = behandlendeEnhetClient,
         adRoller = adRoller,
         valkeyStore = valkeyStore,
-        norgClient = norgClient,
         tilgangsmaskin = tilgangsmaskin,
-        useTilgangsmaskin = environment.useTilgangsmaskin,
     )
 
     routing {

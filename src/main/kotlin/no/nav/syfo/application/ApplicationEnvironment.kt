@@ -1,7 +1,6 @@
 package no.nav.syfo.application
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.ktor.server.application.*
 import no.nav.syfo.cache.ValkeyConfig
 import no.nav.syfo.client.azuread.AzureEnvironment
 import no.nav.syfo.util.configuredJacksonMapper
@@ -23,40 +22,20 @@ data class Environment(
         valkeyPassword = getEnvVar("VALKEY_PASSWORD_CACHE"),
     ),
 
-    val kode6Id: String = getEnvVar("ROLE_KODE6_ID"),
-    val kode7Id: String = getEnvVar("ROLE_KODE7_ID"),
-
     val legacySyfoTilgangGroupId: String = getEnvVar("ROLE_SYFO_ID"),
     val syfoFullTilgangGroupId: String = getEnvVar("ROLE_MODIA_SYFO_VEILEDER_ID"),
     val syfoLeseTilgangGroupId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_ID"),
     val syfoLeseTilgangMidlertidigGroupId: String = getEnvVar("ROLE_MODIA_SYFO_LESETILGANG_MIDLERTIDIG_ID"),
     val finnfastlegeTilgangGroupId: String = getEnvVar("ROLE_FINNFASTLEGE_ID"),
 
-    val skjermingId: String = getEnvVar("ROLE_SKJERMING_ID"),
-    val nasjonalId: String = getEnvVar("ROLE_NASJONAL_ID"),
     val papirsykmeldingId: String = getEnvVar("ROLE_PAPIRSYKMELDING_ID"),
-
-    val useTilgangsmaskin: Boolean = getEnvVar("USE_TILGANGSMASKIN").toBoolean(),
 
     val clients: ClientsEnvironment = ClientsEnvironment(
         graphApiUrl = getEnvVar("GRAPHAPI_URL"),
-        skjermedePersoner = ClientEnvironment(
-            baseUrl = getEnvVar("SKJERMEDE_PERSONER_URL"),
-            clientId = getEnvVar("SKJERMEDE_PERSONER_CLIENT_ID")
-        ),
         tilgangsmaskin = ClientEnvironment(
             baseUrl = getEnvVar("TILGANGSMASKIN_URL"),
             clientId = getEnvVar("TILGANGSMASKIN_CLIENT_ID")
         ),
-        pdl = ClientEnvironment(
-            baseUrl = getEnvVar("PDL_URL"),
-            clientId = getEnvVar("PDL_CLIENT_ID")
-        ),
-        behandlendeEnhet = ClientEnvironment(
-            baseUrl = getEnvVar("SYFOBEHANDLENDEENHET_URL"),
-            clientId = getEnvVar("SYFOBEHANDLENDEENHET_CLIENT_ID")
-        ),
-        norgUrl = getEnvVar("NORG2_URL"),
     ),
 )
 

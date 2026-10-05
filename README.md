@@ -5,7 +5,8 @@
 istilgangskontroll er en felles applikasjon for å sikre api'ene til sykefraværs-appene i fagsystem-sonen.
 I korte trekk gjør den oppslag mot Microsoft GraphAPI for å finne ut hvilke roller den innloggede veilederen har,
 og så sier ja eller nei til om veilederen har tilgang å bruke REST-endepunktet ut i fra det. Om veilederen prøver å få
-tilgang til informasjon om en person sjekkes det om personen er diskresjonsmerket, egen ansatt eller tilhører en annen NAV-enhet o.l.
+tilgang til informasjon om en person delegeres sjekken til tilgangsmaskinen (populasjonstilgangskontroll), som vurderer
+blant annet diskresjonsmerking, egen ansatt og NAV-enhet.
 
 ## Technologies used
 

@@ -2,11 +2,7 @@ package no.nav.syfo.application
 
 data class ClientsEnvironment(
     val graphApiUrl: String,
-    val skjermedePersoner: ClientEnvironment,
-    val pdl: ClientEnvironment,
     val tilgangsmaskin: ClientEnvironment,
-    val behandlendeEnhet: ClientEnvironment,
-    val norgUrl: String,
 )
 
 data class ClientEnvironment(

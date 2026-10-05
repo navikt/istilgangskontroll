@@ -105,16 +105,10 @@ spec:
     outbound:
       external:
         - host: "graph.microsoft.com"
-        - host: "pdl-pip-api.dev-fss-pub.nais.io"
         - host: "audit.nais"
           ports:
             - port: 6514
       rules:
-        - application: syfobehandlendeenhet
-        - application: skjermede-personer-pip
-          namespace: nom
-        - application: norg2
-          namespace: org
         - application: populasjonstilgangskontroll
           namespace: tilgangsmaskin
   azure:
@@ -139,24 +133,10 @@ spec:
   env:
     - name: GRAPHAPI_URL
       value: "https://graph.microsoft.com"
-    - name: NORG2_URL
-      value: "http://norg2.org"
-    - name: PDL_CLIENT_ID
-      value: "dev-fss.pdl.pdl-pip-api"
-    - name: PDL_URL
-      value: "https://pdl-pip-api.dev-fss-pub.nais.io"
     - name: TILGANGSMASKIN_CLIENT_ID
       value: "dev-gcp.tilgangsmaskin.populasjonstilgangskontroll"
     - name: TILGANGSMASKIN_URL
       value: "http://populasjonstilgangskontroll.tilgangsmaskin"
-    - name: SYFOBEHANDLENDEENHET_CLIENT_ID
-      value: "dev-gcp.teamsykefravr.syfobehandlendeenhet"
-    - name: SYFOBEHANDLENDEENHET_URL
-      value: "http://syfobehandlendeenhet"
-    - name: SKJERMEDE_PERSONER_CLIENT_ID
-      value: "dev-gcp.nom.skjermede-personer-pip"
-    - name: SKJERMEDE_PERSONER_URL
-      value: "http://skjermede-personer-pip.nom"
 
     - name: ROLE_SYFO_ID
       value: "c8957e0a-909c-4b62-8e11-93aae6d295e6" # 0000-GA-SYFO-SENSITIV
@@ -169,15 +149,5 @@ spec:
     - name: ROLE_FINNFASTLEGE_ID
       value: "88ffbfde-cb4e-40be-8725-cc674d500b26" # 0000-CA-FINNFASTLEGE
 
-    - name: ROLE_KODE6_ID
-      value: "a1b518e2-3947-478d-8929-e5d685c47cac" # 0000-GA-Strengt_Fortrolig_Adresse
-    - name: ROLE_KODE7_ID
-      value: "2e1dc582-f762-4510-a660-88bf68fb7128" # 0000-GA-Fortrolig_Adresse
-    - name: ROLE_SKJERMING_ID
-      value: "dbe4ad45-320b-4e9a-aaa1-73cca4ee124d" # 0000-GA-Egne_ansatte
-    - name: ROLE_NASJONAL_ID
-      value: "c7107487-310d-4c06-83e0-cf5395dc3be3" # 0000-GA-GEO_NASJONAL
     - name: ROLE_PAPIRSYKMELDING_ID
       value: "16aff429-1efc-402a-ae12-4000633d0063" # 0000-GA-papirsykmelding
-    - name: USE_TILGANGSMASKIN
-      value: "true"
