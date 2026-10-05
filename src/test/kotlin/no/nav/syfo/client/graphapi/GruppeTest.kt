@@ -38,5 +38,4 @@ class GruppeTest {
         val gruppe = Gruppe(uuid = "uuid", adGruppenavn = displayName)
         assertNull(gruppe.getEnhetNr())
     }
-
 }
