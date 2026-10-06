@@ -446,7 +446,7 @@ class TilgangApiTest {
         }
 
         @Test
-        fun `Forbid access to adressebeskyttet person without KODE6 or KODE7 role`() {
+        fun `Forbid access to adressebeskyttet person`() {
             testApplication {
                 val graphApiClientMock = spyk(graphApiClient)
                 coEvery { graphApiClientMock.getGrupperForVeilederOgCache(any(), any()) } returns
@@ -617,7 +617,7 @@ class TilgangApiTest {
         }
 
         @Test
-        fun `Forbids access to adressebeskyttet person without KODE6 or KODE7 role`() {
+        fun `Forbids access to adressebeskyttet person`() {
             testApplication {
                 val client = setupApi()
 
@@ -631,55 +631,6 @@ class TilgangApiTest {
                 assertEquals(HttpStatusCode.Forbidden, response.status)
                 val tilgang = response.body<Tilgang>()
                 assertTrue(tilgang.erAvslatt)
-            }
-        }
-    }
-
-    @Nested
-    @DisplayName("Preload cache")
-    inner class PreloadCache {
-        private val apiUrl = "$tilgangApiBasePath/system/preloadbrukere"
-        private val requestBody = listOf(UserConstants.PERSONIDENT)
-        private val validSystemToken = generateJWT(
-            audience = externalMockEnvironment.environment.azure.appClientId,
-            issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-            azp = syfooversiktsrvClientId,
-        )
-
-        @Test
-        fun `return OK after loading cache`() {
-            testApplication {
-                val client = setupApi()
-
-                val response = client.post(apiUrl) {
-                    bearerAuth(validSystemToken)
-                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    header(NAV_CALL_ID_HEADER, "123")
-                    setBody(requestBody)
-                }
-
-                assertEquals(HttpStatusCode.OK, response.status)
-            }
-        }
-
-        @Test
-        fun `should return status Forbidden if wrong consumer azp`() {
-            val invalidSystemToken = generateJWT(
-                audience = externalMockEnvironment.environment.azure.appClientId,
-                issuer = externalMockEnvironment.wellKnownInternalAzureAD.issuer,
-                azp = "invalid-consumer-azp",
-            )
-            testApplication {
-                val client = setupApi()
-
-                val response = client.post(apiUrl) {
-                    bearerAuth(invalidSystemToken)
-                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    header(NAV_CALL_ID_HEADER, "123")
-                    setBody(requestBody)
-                }
-
-                assertEquals(HttpStatusCode.Forbidden, response.status)
             }
         }
     }

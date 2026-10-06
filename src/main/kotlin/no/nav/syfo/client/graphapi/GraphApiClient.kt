@@ -42,13 +42,11 @@ class GraphApiClient(
 
         COUNT_CALL_MS_GRAPH_API_USER_GROUPS_PERSON_CACHE_MISS.increment()
         return getGrupperForVeileder(token, callId).also { grupper ->
-            val harEnhetEllerGeoTilgang = grupper.any { gruppe ->
-                gruppe.getEnhetNr() != null || gruppe.getGeoKode() != null
-            }
+            val harEnhetTilgang = grupper.any { gruppe -> gruppe.getEnhetNr() != null }
 
             val harEnSyfoTilgang = grupper.any { gruppe -> gruppe.uuid in syfoTilgangAdGrupper }
 
-            if (harEnSyfoTilgang && harEnhetEllerGeoTilgang) {
+            if (harEnSyfoTilgang && harEnhetTilgang) {
                 valkeyStore.setObject(
                     key = cacheKey,
                     value = grupper,
@@ -56,10 +54,8 @@ class GraphApiClient(
                 )
             }
 
-            val harNasjonalTilgang = grupper.any { gruppe -> gruppe.uuid == adRoller.NASJONAL.id }
-
-            if (harEnSyfoTilgang && !harEnhetEllerGeoTilgang && !harNasjonalTilgang) {
-                log.error("Veileder doesn't have access to any enheter or nasjonal tilgang, callId=$callId")
+            if (harEnSyfoTilgang && !harEnhetTilgang) {
+                log.error("Veileder doesn't have access to any enheter, callId=$callId")
             }
         }
     }

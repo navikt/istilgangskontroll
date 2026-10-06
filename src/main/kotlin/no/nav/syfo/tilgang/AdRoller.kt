@@ -11,16 +11,6 @@ class AdRolle(
 class AdRoller(
     val env: Environment
 ) {
-    val KODE6 = AdRolle(
-        name = "KODE6",
-        id = env.kode6Id,
-        rolle = "0000-GA-Strengt_Fortrolig_Adresse",
-    )
-    val KODE7 = AdRolle(
-        name = "KODE7",
-        id = env.kode7Id,
-        rolle = "0000-GA-Fortrolig_Adresse"
-    )
     val SYFO_LEGACY = AdRolle(
         name = "SYFO",
         id = env.legacySyfoTilgangGroupId,
@@ -45,16 +35,6 @@ class AdRoller(
         name = "FINNFASTLEGE",
         id = env.finnfastlegeTilgangGroupId,
         rolle = "0000-CA-FINNFASTLEGE",
-    )
-    val EGEN_ANSATT = AdRolle(
-        name = "EGEN_ANSATT",
-        id = env.skjermingId,
-        rolle = "0000-GA-Egne_ansatte",
-    )
-    val NASJONAL = AdRolle(
-        name = "NASJONAL",
-        id = env.nasjonalId,
-        rolle = "0000-GA-GEO_NASJONAL",
     )
     val PAPIRSYKMELDING = AdRolle(
         name = "PAPIRSYKMELDING",

@@ -10,11 +10,7 @@ import no.nav.syfo.application.Environment
 import no.nav.syfo.application.api.apiModule
 import no.nav.syfo.cache.ValkeyStore
 import no.nav.syfo.client.azuread.AzureAdClient
-import no.nav.syfo.client.behandlendeenhet.BehandlendeEnhetClient
 import no.nav.syfo.client.graphapi.GraphApiClient
-import no.nav.syfo.client.norg.NorgClient
-import no.nav.syfo.client.pdl.PdlClient
-import no.nav.syfo.client.skjermedepersoner.SkjermedePersonerPipClient
 import no.nav.syfo.client.tilgangsmaskin.TilgangsmaskinClient
 import no.nav.syfo.client.wellknown.getWellKnown
 import no.nav.syfo.tilgang.AdRoller
@@ -62,32 +58,6 @@ fun main() {
         adRoller = adRoller,
     )
 
-    val skjermedePersonerPipClient = SkjermedePersonerPipClient(
-        azureAdClient = azureAdClient,
-        skjermedePersonerUrl = environment.clients.skjermedePersoner.baseUrl,
-        valkeyStore = valkeyStore,
-        clientId = environment.clients.skjermedePersoner.clientId,
-    )
-
-    val pdlClient = PdlClient(
-        azureAdClient = azureAdClient,
-        baseUrl = environment.clients.pdl.baseUrl,
-        clientId = environment.clients.pdl.clientId,
-        valkeyStore = valkeyStore,
-    )
-
-    val behandlendeEnhetClient = BehandlendeEnhetClient(
-        azureAdClient = azureAdClient,
-        baseUrl = environment.clients.behandlendeEnhet.baseUrl,
-        clientId = environment.clients.behandlendeEnhet.clientId,
-        valkeyStore = valkeyStore,
-    )
-
-    val norgClient = NorgClient(
-        baseUrl = environment.clients.norgUrl,
-        valkeyStore = valkeyStore,
-    )
-
     val tilgangsmaskin = TilgangsmaskinClient(
         azureAdClient = azureAdClient,
         baseUrl = environment.clients.tilgangsmaskin.baseUrl,
@@ -122,11 +92,6 @@ fun main() {
                 wellKnownInternalAzureAD = wellKnownInternalAzureAD,
                 adRoller = adRoller,
                 valkeyStore = valkeyStore,
-                azureAdClient = azureAdClient,
-                skjermedePersonerPipClient = skjermedePersonerPipClient,
-                pdlClient = pdlClient,
-                behandlendeEnhetClient = behandlendeEnhetClient,
-                norgClient = norgClient,
                 tilgangsmaskin = tilgangsmaskin,
             )
             monitor.subscribe(ApplicationStarted) {

@@ -6,14 +6,12 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import no.nav.syfo.application.api.auth.isMissingNAVIdent
-import no.nav.syfo.application.exception.ForbiddenAccessSystemConsumer
 import no.nav.syfo.application.exception.ForbiddenAccessVeilederException
 import no.nav.syfo.client.azuread.PreAuthorizedApp
 import no.nav.syfo.util.*
 
 const val tilgangApiBasePath = "/api/tilgang"
 const val enhetNr = "enhetNr"
-private val preloadApiAuthorizedApps = listOf("syfooversiktsrv")
 private val populasjonApiAuthorizedApps = listOf("isdialogmelding", "fastlegerest")
 
 fun Route.registerTilgangApi(
@@ -302,27 +300,6 @@ fun Route.registerTilgangApi(
             )
 
             call.respond(HttpStatusCode.OK, personidenterVeilederHasAccessTo)
-        }
-
-        post("/system/preloadbrukere") {
-            val consumerClientId = this.call.getConsumerClientId()
-                ?: throw IllegalArgumentException("Failed to preload: Token or consumer clientId was not found")
-            val preloadApiAuthorizedClientIds = preAuthorizedApps
-                .filter { preloadApiAuthorizedApps.contains(it.getAppnavn()) }
-                .map { it.clientId }
-            if (!preloadApiAuthorizedClientIds.contains(consumerClientId)) {
-                throw ForbiddenAccessSystemConsumer(consumerClientIdAzp = consumerClientId)
-            }
-
-            val callId = call.getCallId()
-            val personidenter = call.receive<List<String>>()
-
-            tilgangService.preloadCacheForPersonAccess(
-                callId = callId,
-                personidenter = personidenter,
-            )
-
-            call.respond(HttpStatusCode.OK)
         }
     }
 }

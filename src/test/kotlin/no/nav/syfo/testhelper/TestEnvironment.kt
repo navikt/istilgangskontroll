@@ -23,39 +23,20 @@ fun testEnvironment() = Environment(
         ssl = false,
     ),
 
-    kode6Id = "kode6Id",
-    kode7Id = "kode7Id",
-
     legacySyfoTilgangGroupId = "legacySyfoTilgangGroupId",
     syfoFullTilgangGroupId = "syfoFullTilgangGroupId",
     syfoLeseTilgangGroupId = "syfoLeseTilgangGroupId",
     syfoLeseTilgangMidlertidigGroupId = "syfoLeseTilgangMidlertidigGroupId",
     finnfastlegeTilgangGroupId = "finnfastlegeTilgangGroupId",
 
-    skjermingId = "skjermingId",
-    nasjonalId = "nasjonalId",
     papirsykmeldingId = "papirsykmeldingId",
-    useTilgangsmaskin = true,
 
     clients = ClientsEnvironment(
         graphApiUrl = "graphApiClientUrl",
-        skjermedePersoner = ClientEnvironment(
-            baseUrl = "skjermedePersonerBaseurl",
-            clientId = "skjermedePersonerClientId",
-        ),
-        pdl = ClientEnvironment(
-            baseUrl = "pdlBaseurl",
-            clientId = "pdlClientId",
-        ),
         tilgangsmaskin = ClientEnvironment(
             baseUrl = "tilgangsmaskinBaseurl",
             clientId = "tilgangsmaskinClientId",
         ),
-        behandlendeEnhet = ClientEnvironment(
-            baseUrl = "behandlendeEnhetBaseurl",
-            clientId = "behandlendeEnhetClientId",
-        ),
-        norgUrl = "norgBaseurl",
     ),
 )
 

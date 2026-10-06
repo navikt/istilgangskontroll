@@ -13,8 +13,3 @@ fun createGruppeForEnhet(enhetNr: String) = Gruppe(
     uuid = UUID.randomUUID().toString(),
     adGruppenavn = "0000-GA-ENHET_$enhetNr"
 )
-
-fun createGruppeForGeo(geoKode: String) = Gruppe(
-    uuid = UUID.randomUUID().toString(),
-    adGruppenavn = "0000-GA-GEO_$geoKode"
-)

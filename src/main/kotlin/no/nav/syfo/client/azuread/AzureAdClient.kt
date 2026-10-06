@@ -74,34 +74,6 @@ class AzureAdClient(
         append("requested_token_use", "on_behalf_of")
     }
 
-    suspend fun getSystemToken(scopeClientId: String, callId: String): AzureAdToken? {
-        val cacheKey = "$CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX$scopeClientId"
-        val cachedSystemToken: AzureAdToken? = valkeyStore.getObject(key = cacheKey)
-        return if (cachedSystemToken?.isExpired() == false) {
-            COUNT_AZURE_AD_CACHE_HIT.increment()
-            cachedSystemToken
-        } else {
-            COUNT_AZURE_AD_CACHE_MISS.increment()
-            val azureAdTokenResponse = getAccessToken(
-                formParameters = Parameters.build {
-                    append("client_id", azureEnvironment.appClientId)
-                    append("client_secret", azureEnvironment.appClientSecret)
-                    append("grant_type", "client_credentials")
-                    append("scope", "api://$scopeClientId/.default")
-                },
-                callId = callId,
-            )
-
-            azureAdTokenResponse?.toAzureAdToken()?.also { oboToken ->
-                valkeyStore.setObject(
-                    key = cacheKey,
-                    value = oboToken,
-                    expireSeconds = azureAdTokenResponse.expires_in,
-                )
-            }
-        }
-    }
-
     private suspend fun getAccessToken(
         formParameters: Parameters,
         callId: String,
@@ -128,7 +100,6 @@ class AzureAdClient(
     }
 
     companion object {
-        const val CACHE_AZUREAD_TOKEN_SYSTEM_KEY_PREFIX = "azuread-token-system-"
         const val CACHE_AZUREAD_TOKEN_OBO_KEY_PREFIX = "azuread-token-obo-"
         private val log = LoggerFactory.getLogger(AzureAdClient::class.java)
     }
