@@ -13,10 +13,10 @@ val micrometerRegistry = "1.17.2"
 val mockk = "1.14.11"
 val nimbusJoseJwt = "10.10"
 val jedis = "7.5.3"
-val microsoftGraphVersion = "6.67.0"
+val microsoftGraphVersion = "6.72.0"
 
 plugins {
-    kotlin("jvm") version "2.3.21"
+    kotlin("jvm") version "2.4.21"
     id("com.gradleup.shadow") version "8.3.8"
     id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
     id("com.adarshr.test-logger") version "4.0.0"
