@@ -15,6 +15,7 @@ import no.nav.syfo.application.metric.METRICS_REGISTRY
 import no.nav.syfo.util.*
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.CancellationException
 
 fun Application.installContentNegotiation() {
     install(ContentNegotiation) {
@@ -43,6 +44,11 @@ fun Application.installCallId() {
 
 fun Application.installStatusPages() {
     install(StatusPages) {
+        // Client disconnected before the response was sent; rethrow so cancellation propagates
+        exception<CancellationException> { call, cause ->
+            call.application.log.debug("Request cancelled: ${cause.message}")
+            throw cause
+        }
         exception<Throwable> { call, cause ->
             val callId = call.getCallId()
             val consumerClientId = call.getConsumerClientId()
