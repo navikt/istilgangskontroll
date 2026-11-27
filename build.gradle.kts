@@ -3,20 +3,20 @@ import com.adarshr.gradle.testlogger.theme.ThemeType
 group = "no.nav.syfo"
 version = "0.0.1"
 
-val jacksonDataType = "2.22.4"
-val jacksonDatabindVersion = "3.2.4"
-val ktor = "3.6.1"
-val logback = "1.6.6"
+val jacksonDataType = "2.23.0"
+val jacksonDatabindVersion = "3.3.0"
+val ktor = "3.6.2"
+val logback = "1.6.8"
 val logbackSyslog4jVersion = "1.0.0"
 val logstashEncoder = "9.0"
-val micrometerRegistry = "1.17.2"
-val mockk = "1.14.11"
+val micrometerRegistry = "1.18.0"
+val mockk = "1.14.12"
 val nimbusJoseJwt = "10.10"
 val jedis = "7.5.3"
-val microsoftGraphVersion = "6.67.0"
+val microsoftGraphVersion = "6.72.0"
 
 plugins {
-    kotlin("jvm") version "2.3.21"
+    kotlin("jvm") version "2.4.21"
     id("com.gradleup.shadow") version "8.3.8"
     id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
     id("com.adarshr.test-logger") version "4.0.0"
@@ -35,6 +35,14 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktor")
     implementation("io.ktor:ktor-serialization-jackson:$ktor")
     implementation("io.ktor:ktor-server-auth-jwt:$ktor")
+    constraints {
+        implementation("com.google.guava:guava") {
+            version {
+                require("33.8.0-jre")
+            }
+        }
+    }
+
     implementation("io.ktor:ktor-server-call-id:$ktor")
     implementation("io.ktor:ktor-server-content-negotiation:$ktor")
     implementation("io.ktor:ktor-server-netty:$ktor")
