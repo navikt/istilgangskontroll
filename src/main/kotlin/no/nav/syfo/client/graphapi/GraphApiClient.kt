@@ -14,7 +14,6 @@ import no.nav.syfo.client.azuread.AzureAdToken
 import no.nav.syfo.tilgang.AdRoller
 import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.LoggerFactory
-import java.util.*
 
 class GraphApiClient(
     private val azureAdClient: AzureAdClient,
@@ -95,18 +94,19 @@ class GraphApiClient(
         val graphServiceClient = createGraphServiceClient(azureAdToken = oboToken)
         val directoryObjectCollectionResponse = graphServiceClient.me().memberOf().get { requestConfiguration ->
             requestConfiguration.headers.add("ConsistencyLevel", "eventual")
-            requestConfiguration.queryParameters.select =
+            val queryParameters = requireNotNull(requestConfiguration.queryParameters)
+            queryParameters.select =
                 arrayOf(
                     "id",
                     "displayName",
                 )
-            requestConfiguration.queryParameters.count = true
+            queryParameters.count = true
         }
 
         val groups = mutableListOf<Group>()
         PageIterator.Builder<Group, DirectoryObjectCollectionResponse>()
             .client(graphServiceClient)
-            .collectionPage(Objects.requireNonNull(directoryObjectCollectionResponse))
+            .collectionPage(requireNotNull(directoryObjectCollectionResponse))
             .collectionPageFactory(DirectoryObjectCollectionResponse::createFromDiscriminatorValue)
             .processPageItemCallback { group -> groups.add(group) }
             .build()
@@ -130,7 +130,7 @@ class GraphApiClient(
 
 fun Group.toGruppe(): Gruppe {
     return Gruppe(
-        uuid = this.id,
+        uuid = requireNotNull(this.id),
         adGruppenavn = this.displayName,
     )
 }

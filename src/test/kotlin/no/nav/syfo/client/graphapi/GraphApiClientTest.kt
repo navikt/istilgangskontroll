@@ -92,8 +92,8 @@ class GraphApiClientTest {
         valkeyStore.setObject(
             key = cacheKey,
             value = listOf(
-                Gruppe(uuid = syfoGroup.id, adGruppenavn = syfoGroup.displayName),
-                Gruppe(uuid = enhetGroup.id, adGruppenavn = enhetGroup.displayName),
+                Gruppe(uuid = requireNotNull(syfoGroup.id), adGruppenavn = syfoGroup.displayName),
+                Gruppe(uuid = requireNotNull(enhetGroup.id), adGruppenavn = enhetGroup.displayName),
             ),
             expireSeconds = GraphApiClient.TWELVE_HOURS_IN_SECS,
         )
